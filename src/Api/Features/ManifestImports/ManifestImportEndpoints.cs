@@ -64,28 +64,35 @@ public static class ManifestImportEndpoints
         if (preview is null) return Results.NotFound();
         var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
         var importable = rows.Where(x => x.Disposition.IsImportable()).ToArray();
-        var existing = await db.Trips.Where(x => importable.Select(row => row.TripNumber).Contains(x.TripNumber))
-            .Select(x => x.TripNumber).ToListAsync(cancellationToken);
+        if (preview.AppliedAt.HasValue)
+            return Results.Ok(new { Imported = importable.Length, Blocked = rows.Count - importable.Length });
+
+        var tripNumbers = importable.Select(row => row.TripNumber).ToArray();
+        var existing = await db.Trips.Where(x => tripNumbers.Contains(x.TripNumber))
+            .ToDictionaryAsync(x => x.TripNumber, StringComparer.OrdinalIgnoreCase, cancellationToken);
         foreach (var row in importable)
         {
-            if (existing.Contains(row.TripNumber)) continue;
-            db.Trips.Add(new Trip
+            if (!existing.TryGetValue(row.TripNumber, out var trip))
             {
+                trip = new Trip
+                {
+                    TripNumber = row.TripNumber,
+                    JourneyKey = JourneyKey(row.TripNumber)
+                };
+                db.Trips.Add(trip);
+                existing.Add(row.TripNumber, trip);
+            }
+            trip.ReconcileBrokerFields(row);
+            db.TripBrokerImports.Add(new TripBrokerImport
+            {
+                TripId = trip.Id,
+                ManifestPreviewId = preview.Id,
                 TripNumber = row.TripNumber,
-                JourneyKey = JourneyKey(row.TripNumber),
                 AppointmentDate = row.AppointmentDate!.Value,
                 AppointmentTime = row.AppointmentTime!.Value,
-                MemberFirstName = row.MemberFirstName,
-                MemberLastName = row.MemberLastName,
                 PickupAddress = row.PickupAddress,
-                PickupCity = row.PickupCity,
                 DeliveryAddress = row.DeliveryAddress,
-                DeliveryCity = row.DeliveryCity,
-                PassengerType = row.PassengerType,
-                VehicleType = row.VehicleType,
-                BrokerStatus = row.BrokerStatus,
-                IsWillCall = row.IsWillCall,
-                IsActive = row.Disposition.IsActive()
+                BrokerStatus = row.BrokerStatus
             });
         }
         preview.AppliedAt ??= DateTimeOffset.UtcNow;
