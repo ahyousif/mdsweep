@@ -1,0 +1,11 @@
+# Local manifests may contain protected health information.
+8182025WQAS.xlsx - Export Trip (1).csv
+
+# Local development state
+.aspire/
+.angular/
+bin/
+obj/
+node_modules/
+TestResults/
+playwright-report/
