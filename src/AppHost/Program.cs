@@ -2,7 +2,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder.AddPostgres("postgres");
 var database = postgres.AddDatabase("mdsweep");
-var dispatcherPassword = builder.AddParameter("dispatcher-password", secret: true);
+var dispatcherPassword = builder.Environment.EnvironmentName == "Development"
+    ? builder.AddParameter("dispatcher-password", "P@ssw0rd!?", secret: true)
+    : builder.AddParameter("dispatcher-password", secret: true);
 
 var api = builder.AddProject<Projects.Mdsweep_Api>("api")
     .WithHttpEndpoint(port: 5080, name: "http")
@@ -13,7 +15,7 @@ var api = builder.AddProject<Projects.Mdsweep_Api>("api")
 
 builder.AddJavaScriptApp("web", "../Web", "start")
     .WithReference(api)
-    .WithHttpEndpoint(port: 4200, targetPort: 4200)
+    .WithHttpEndpoint(targetPort: 4200)
     .WaitFor(api);
 
 builder.Build().Run();

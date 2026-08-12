@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "src/AppHost/Mdsweep.AppHost.csproj"
+  }
+}

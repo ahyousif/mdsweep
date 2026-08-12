@@ -11,6 +11,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     : IdentityDbContext<ApplicationUser, IdentityRole, string>(options)
 {
     public DbSet<Trip> Trips => Set<Trip>();
+    public DbSet<TripBrokerImport> TripBrokerImports => Set<TripBrokerImport>();
     public DbSet<ManifestPreview> ManifestPreviews => Set<ManifestPreview>();
 
     protected override void OnModelCreating(ModelBuilder builder)

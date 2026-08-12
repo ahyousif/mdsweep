@@ -5,19 +5,50 @@ public sealed class Trip
     public Guid Id { get; init; } = Guid.NewGuid();
     public required string TripNumber { get; init; }
     public required string JourneyKey { get; init; }
+    public DateOnly AppointmentDate { get; internal set; }
+    public TimeOnly AppointmentTime { get; internal set; }
+    public string MemberFirstName { get; internal set; } = null!;
+    public string MemberLastName { get; internal set; } = null!;
+    public string PickupAddress { get; internal set; } = null!;
+    public string PickupCity { get; internal set; } = null!;
+    public string DeliveryAddress { get; internal set; } = null!;
+    public string DeliveryCity { get; internal set; } = null!;
+    public string PassengerType { get; internal set; } = null!;
+    public string VehicleType { get; internal set; } = null!;
+    public string BrokerStatus { get; internal set; } = null!;
+    public bool IsWillCall { get; internal set; }
+    public bool IsActive { get; internal set; }
+
+    public void ReconcileBrokerFields(ManifestPreviewRow row)
+    {
+        AppointmentDate = row.AppointmentDate!.Value;
+        AppointmentTime = row.AppointmentTime!.Value;
+        MemberFirstName = row.MemberFirstName;
+        MemberLastName = row.MemberLastName;
+        PickupAddress = row.PickupAddress;
+        PickupCity = row.PickupCity;
+        DeliveryAddress = row.DeliveryAddress;
+        DeliveryCity = row.DeliveryCity;
+        PassengerType = row.PassengerType;
+        VehicleType = row.VehicleType;
+        BrokerStatus = row.BrokerStatus;
+        IsWillCall = row.IsWillCall;
+        IsActive = row.Disposition.IsActive();
+    }
+}
+
+public sealed class TripBrokerImport
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid TripId { get; init; }
+    public Guid ManifestPreviewId { get; init; }
+    public DateTimeOffset ImportedAt { get; init; } = DateTimeOffset.UtcNow;
+    public required string TripNumber { get; init; }
     public DateOnly AppointmentDate { get; init; }
     public TimeOnly AppointmentTime { get; init; }
-    public required string MemberFirstName { get; init; }
-    public required string MemberLastName { get; init; }
     public required string PickupAddress { get; init; }
-    public required string PickupCity { get; init; }
     public required string DeliveryAddress { get; init; }
-    public required string DeliveryCity { get; init; }
-    public required string PassengerType { get; init; }
-    public required string VehicleType { get; init; }
     public required string BrokerStatus { get; init; }
-    public bool IsWillCall { get; init; }
-    public bool IsActive { get; init; }
 }
 
 public sealed class ManifestPreview

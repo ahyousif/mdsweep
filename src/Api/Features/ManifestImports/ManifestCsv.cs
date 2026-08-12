@@ -29,8 +29,22 @@ internal static class ManifestCsv
             throw new ManifestFormatException($"Missing required columns: {string.Join(", ", missing)}.");
         }
 
-        return records.Skip(1).Where(row => row.Any(value => !string.IsNullOrWhiteSpace(value)))
+        var rows = records.Skip(1).Where(row => row.Any(value => !string.IsNullOrWhiteSpace(value)))
             .Select(row => Classify(row, positions)).ToArray();
+        var duplicateTripNumbers = rows
+            .Where(row => !string.IsNullOrWhiteSpace(row.TripNumber))
+            .GroupBy(row => row.TripNumber, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return rows.Select(row => duplicateTripNumbers.Contains(row.TripNumber)
+            ? row with
+            {
+                Disposition = ManifestRowDisposition.Blocked,
+                Messages = row.Messages.Append("Trip Number appears more than once in this Manifest.").ToArray()
+            }
+            : row).ToArray();
     }
 
     private static ManifestPreviewRow Classify(IReadOnlyList<string> row, IReadOnlyDictionary<string, int> positions)
