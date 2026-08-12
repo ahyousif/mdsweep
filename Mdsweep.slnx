@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Api/Mdsweep.Api.csproj" />
+    <Project Path="src/AppHost/Mdsweep.AppHost.csproj" />
+    <Project Path="src/ServiceDefaults/Mdsweep.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Api.IntegrationTests/Mdsweep.Api.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
