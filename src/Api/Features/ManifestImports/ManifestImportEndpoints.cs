@@ -1,0 +1,133 @@
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Mdsweep.Api.Infrastructure;
+
+namespace Mdsweep.Api.Features.ManifestImports;
+
+public static class ManifestImportEndpoints
+{
+    public static IEndpointRouteBuilder MapManifestImports(this IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapPost("/api/manifest-imports/preview", Preview)
+            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"))
+            .DisableAntiforgery();
+        endpoints.MapPost("/api/manifest-imports/{previewId:guid}/apply", Apply)
+            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
+        endpoints.MapGet("/api/manifest-imports/{previewId:guid}", GetPreview)
+            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
+        endpoints.MapGet("/api/service-days/{serviceDate}/trips", GetServiceDay)
+            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
+        return endpoints;
+    }
+
+    private static async Task<IResult> Preview(
+        IFormFile? file,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+            return Results.BadRequest(new { message = "Choose a non-empty MTM CSV file." });
+        if (!Path.GetExtension(file.FileName).Equals(".csv", StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new { message = "Upload an MTM CSV file. Other spreadsheet formats are not supported yet." });
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var rows = await ManifestCsv.Preview(stream, cancellationToken);
+            var preview = new ManifestPreview
+            {
+                FileName = Path.GetFileName(file.FileName),
+                RowsJson = JsonSerializer.Serialize(rows)
+            };
+            db.ManifestPreviews.Add(preview);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.Ok(new ManifestPreviewResponse(
+                preview.Id,
+                rows.Count(x => x.Disposition == ManifestRowDisposition.Ready),
+                rows.Count(x => x.Disposition == ManifestRowDisposition.Warning),
+                rows.Count(x => x.Disposition == ManifestRowDisposition.Blocked),
+                rows.Where(x => x.AppointmentDate.HasValue).Select(x => x.AppointmentDate!.Value).Distinct().Order().ToArray(),
+                rows));
+        }
+        catch (ManifestFormatException exception)
+        {
+            return Results.BadRequest(new { message = exception.Message });
+        }
+    }
+
+    private static async Task<IResult> Apply(
+        Guid previewId,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var preview = await db.ManifestPreviews.FindAsync([previewId], cancellationToken);
+        if (preview is null) return Results.NotFound();
+        var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
+        var importable = rows.Where(x => x.Disposition.IsImportable()).ToArray();
+        var existing = await db.Trips.Where(x => importable.Select(row => row.TripNumber).Contains(x.TripNumber))
+            .Select(x => x.TripNumber).ToListAsync(cancellationToken);
+        foreach (var row in importable)
+        {
+            if (existing.Contains(row.TripNumber)) continue;
+            db.Trips.Add(new Trip
+            {
+                TripNumber = row.TripNumber,
+                JourneyKey = JourneyKey(row.TripNumber),
+                AppointmentDate = row.AppointmentDate!.Value,
+                AppointmentTime = row.AppointmentTime!.Value,
+                MemberFirstName = row.MemberFirstName,
+                MemberLastName = row.MemberLastName,
+                PickupAddress = row.PickupAddress,
+                PickupCity = row.PickupCity,
+                DeliveryAddress = row.DeliveryAddress,
+                DeliveryCity = row.DeliveryCity,
+                PassengerType = row.PassengerType,
+                VehicleType = row.VehicleType,
+                BrokerStatus = row.BrokerStatus,
+                IsWillCall = row.IsWillCall,
+                IsActive = row.Disposition.IsActive()
+            });
+        }
+        preview.AppliedAt ??= DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return Results.Ok(new { Imported = importable.Length, Blocked = rows.Count - importable.Length });
+    }
+
+    private static async Task<IResult> GetPreview(
+        Guid previewId,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var preview = await db.ManifestPreviews.AsNoTracking().SingleOrDefaultAsync(x => x.Id == previewId, cancellationToken);
+        if (preview is null) return Results.NotFound();
+        var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
+        return Results.Ok(new ManifestPreviewResponse(
+            preview.Id,
+            rows.Count(x => x.Disposition == ManifestRowDisposition.Ready),
+            rows.Count(x => x.Disposition == ManifestRowDisposition.Warning),
+            rows.Count(x => x.Disposition == ManifestRowDisposition.Blocked),
+            rows.Where(x => x.AppointmentDate.HasValue).Select(x => x.AppointmentDate!.Value).Distinct().Order().ToArray(),
+            rows));
+    }
+
+    private static async Task<IResult> GetServiceDay(
+        DateOnly serviceDate,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var trips = await db.Trips.Where(x => x.AppointmentDate == serviceDate)
+            .OrderBy(x => x.AppointmentTime)
+            .Select(x => new ServiceDayTripResponse(
+                x.TripNumber, x.JourneyKey, x.MemberFirstName + " " + x.MemberLastName,
+                x.PickupAddress, x.PickupCity, x.DeliveryAddress, x.DeliveryCity,
+                x.PassengerType, x.VehicleType, x.BrokerStatus, x.AppointmentTime,
+                x.IsWillCall, x.IsActive))
+            .ToListAsync(cancellationToken);
+        return Results.Ok(trips);
+    }
+
+    private static string JourneyKey(string tripNumber) =>
+        tripNumber.Length > 1 && (tripNumber.EndsWith('A') || tripNumber.EndsWith('B'))
+            ? tripNumber[..^1]
+            : tripNumber;
+}

@@ -1,0 +1,81 @@
+<header>
+  <div>
+    <span class="eyebrow">{{ text.productContext }}</span>
+    <h1>{{ text.pageTitle }}</h1>
+  </div>
+</header>
+
+<main>
+  @if (!signedIn()) {
+    <section class="card narrow">
+      <h2>{{ text.signInTitle }}</h2>
+      <p>{{ text.signInHelp }}</p>
+      <form (ngSubmit)="signIn()">
+        <label>{{ text.email }}<input name="email" type="email" [(ngModel)]="email" autocomplete="username" required /></label>
+        <label>{{ text.password }}<input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required /></label>
+        <button type="submit" [disabled]="busy()">{{ busy() ? text.signingIn : text.signIn }}</button>
+      </form>
+    </section>
+  } @else {
+    <section class="card upload">
+      <div>
+        <h2>{{ text.uploadTitle }}</h2>
+        <p>{{ text.uploadHelp }}</p>
+      </div>
+      <label class="file-button">
+        {{ text.chooseCsv }}
+        <input type="file" accept=".csv,text/csv" (change)="chooseFile($event)" [disabled]="busy()" />
+      </label>
+    </section>
+
+    @if (preview(); as result) {
+      <section class="card">
+        <div class="summary" aria-label="Manifest check summary">
+          <strong class="ready">{{ result.ready }} ready</strong>
+          <strong class="warning">{{ result.warning }} warning</strong>
+          <strong class="blocked">{{ result.blocked }} blocked</strong>
+        </div>
+        @if (result.warning || result.blocked) {
+          <h2>{{ text.needsReview }}</h2>
+          @for (row of result.rows; track row.tripNumber) {
+            @if (row.disposition !== 'Ready') {
+              <article class="exception">
+                <strong>{{ row.tripNumber || 'Trip without a number' }}</strong>
+                <span class="pill" [class]="row.disposition.toLowerCase()">{{ row.disposition }}</span>
+                @for (message of row.messages; track message) { <p>{{ message }}</p> }
+              </article>
+            }
+          }
+        }
+        <button (click)="apply()" [disabled]="busy()">Import {{ result.ready + result.warning }} trips</button>
+      </section>
+    }
+
+    @if (trips().length) {
+      <section class="card board">
+        <h2>{{ serviceDate() }}</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>{{ text.appointment }}</th><th>{{ text.passenger }}</th><th>{{ text.route }}</th><th>{{ text.service }}</th><th>{{ text.status }}</th></tr></thead>
+            <tbody>
+              @for (journey of journeys(); track journey.journeyKey) {
+                <tr class="journey"><td colspan="5">Journey {{ journey.journeyKey }} · {{ journey.trips.length }} {{ journey.trips.length === 1 ? 'leg' : 'legs' }}</td></tr>
+                @for (trip of journey.trips; track trip.tripNumber) {
+                  <tr [class.inactive]="!trip.isActive">
+                    <td>{{ trip.isWillCall ? 'Will call' : trip.appointmentTime }}</td>
+                    <td><strong>{{ trip.memberName }}</strong><small>{{ trip.tripNumber }}</small></td>
+                    <td>{{ trip.pickupCity }} → {{ trip.deliveryCity }}</td>
+                    <td>{{ trip.vehicleType || trip.passengerType }}</td>
+                    <td><span class="pill" [class.warning]="!trip.isActive">{{ trip.isActive ? 'Ready' : trip.brokerStatus }}</span></td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  }
+
+  @if (error()) { <div class="alert" role="alert">{{ error() }}</div> }
+</main>
