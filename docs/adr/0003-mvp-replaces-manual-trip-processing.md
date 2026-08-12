@@ -1,0 +1,3 @@
+# MVP replaces manual trip processing
+
+The MVP will replace the provider's existing operations site with one closed workflow: import an MTM manifest, suggest scheduled pickup times in bulk, manually assign drivers, let drivers record actual pickup and drop-off times, retain trip history, and export a billing spreadsheet for manual upload to MTM. MTM API integration, browser automation, automatic driver assignment, route optimization, multilingual UI, and broader fleet management are deferred so the product can quickly validate whether it eliminates spreadsheet copying and per-trip billing entry.
