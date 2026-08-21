@@ -28,6 +28,7 @@ public sealed class DriverTripEventCorrection
 public sealed class DriverTripSyncConflict
 {
     public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid ActionId { get; init; }
     public Guid ProviderId { get; init; }
     public Guid DriverId { get; init; }
     public required string TripNumber { get; init; }
@@ -35,6 +36,9 @@ public sealed class DriverTripSyncConflict
     public DateTimeOffset DeviceCapturedAt { get; init; }
     public DateTimeOffset ReceivedAt { get; init; }
     public required string Reason { get; init; }
+    public bool? TripLogSigned { get; init; }
+    public string? OutcomeReason { get; init; }
+    public string? Note { get; init; }
 }
 
 public interface IDriverWorkClock { DateTimeOffset UtcNow { get; } }

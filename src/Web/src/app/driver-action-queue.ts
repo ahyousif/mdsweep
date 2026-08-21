@@ -27,7 +27,7 @@ export class DriverActionQueue {
   synchronize(): void {
     if (!navigator.onLine) return;
     for (const action of this.actions().filter((item) => item.state === 'WaitingToSync')) {
-      this.http.post(`/api/driver-work/events/sync`, { tripNumber: action.tripNumber, event: action.event }).subscribe({
+      this.http.post(`/api/driver-work/events/sync`, { actionId: action.id, tripNumber: action.tripNumber, event: action.event }).subscribe({
         next: () => this.update(this.actions().filter((item) => item.id !== action.id)),
         error: (response) => {
           if (response.status && response.status !== 0) {
