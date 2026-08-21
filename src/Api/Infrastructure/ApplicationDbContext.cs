@@ -13,6 +13,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<ManifestPreview> ManifestPreviews => Set<ManifestPreview>();
     public DbSet<TripSchedule> TripSchedules => Set<TripSchedule>();
     public DbSet<ScheduledPickupTimeChange> ScheduledPickupTimeChanges => Set<ScheduledPickupTimeChange>();
+    public DbSet<Driver> Drivers => Set<Driver>();
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<TripAssignment> TripAssignments => Set<TripAssignment>();
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<ProviderMembership> ProviderMemberships => Set<ProviderMembership>();

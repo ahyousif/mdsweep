@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mdsweep.Api.Infrastructure;
 using Mdsweep.Api.Features.ManifestImports;
 using Mdsweep.Api.Features.Identity;
+using Mdsweep.Api.Features.Dispatch;
 using Testcontainers.PostgreSql;
 
 namespace Mdsweep.Api.IntegrationTests;
@@ -31,6 +32,8 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
                 services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseNpgsql(database.GetConnectionString()));
+                services.RemoveAll<IKeycloakUserAdministration>();
+                services.AddSingleton<IKeycloakUserAdministration, TestKeycloakUserAdministration>();
                 services.AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
             });
@@ -97,6 +100,61 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         using var response = await client.GetAsync("/api/service-days/2026-09-15/trips");
 
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Dispatcher_can_assign_a_journey_then_reassign_one_trip_with_history()
+    {
+        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        Guid driverId;
+        Guid vehicleId;
+        await using (var scope = application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var driverUser = new AppUser { KeycloakSubject = "driver-test" };
+            db.AppUsers.Add(driverUser);
+            db.ProviderMemberships.Add(new ProviderMembership { ProviderId = providerId, AppUserId = driverUser.Id, Role = "Driver" });
+            var driver = new Driver { ProviderId = providerId, AppUserId = driverUser.Id, DisplayName = "Synthetic Driver", MtmDriverNumber = "DRV-1" };
+            var vehicle = new Vehicle { ProviderId = providerId, DisplayName = "Van 1", Vin = "SYNTHETICVIN00001" };
+            db.Drivers.Add(driver); db.Vehicles.Add(vehicle);
+            await db.SaveChangesAsync();
+            driverId = driver.Id; vehicleId = vehicle.Id;
+        }
+
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var preview = await PreviewCsv(client, Manifest(
+            Row("ASSIGN100A", "VALID", "0915", "100 First St", "200 Main St"),
+            Row("ASSIGN100B", "VALID", "1015", "100 First St", "200 Main St")));
+        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+        using var journeyResponse = await client.PostAsJsonAsync("/api/journeys/ASSIGN100/assignments", new { driverId, vehicleId });
+        journeyResponse.EnsureSuccessStatusCode();
+        using var tripResponse = await client.PostAsJsonAsync("/api/trips/ASSIGN100A/assignments", new { driverId, vehicleId });
+        tripResponse.EnsureSuccessStatusCode();
+
+        var history = await client.GetFromJsonAsync<List<AssignmentResponse>>("/api/trips/ASSIGN100A/assignments");
+        Assert.NotNull(history);
+        Assert.Equal(2, history.Count);
+        Assert.NotNull(history[0].SupersededAt);
+        Assert.Null(history[1].SupersededAt);
+    }
+
+    [Fact]
+    public async Task Dispatcher_can_create_and_reset_driver_access_without_exposing_keycloak_to_the_client()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        await AddAntiforgeryToken(client);
+        using var create = await client.PostAsJsonAsync("/api/drivers/access", new { email = "driver2@example.test", temporaryPassword = "Temporary-42!", displayName = "Driver Two", mtmDriverNumber = "DRV-2" });
+        create.EnsureSuccessStatusCode();
+        var driver = await create.Content.ReadFromJsonAsync<DriverResponse>();
+        Assert.NotNull(driver);
+        using var reset = await client.PostAsJsonAsync($"/api/drivers/{driver.Id}/reset-access", new { temporaryPassword = "Changed-42!" });
+        Assert.Equal(System.Net.HttpStatusCode.NoContent, reset.StatusCode);
+        await using var scope = application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.True(await db.Drivers.AnyAsync(x => x.Id == driver.Id && x.MtmDriverNumber == "DRV-2"));
     }
 
     [Fact]
@@ -332,4 +390,12 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         TimeOnly? ScheduledPickupTime,
         bool IsActive);
     private sealed record ScheduledPickupChange(long Sequence, TimeOnly ScheduledPickupTime, string ChangedBy);
+    private sealed record AssignmentResponse(Guid DriverId, Guid VehicleId, Guid AssignedByAppUserId, DateTimeOffset AssignedAt, DateTimeOffset? SupersededAt);
+    private sealed record DriverResponse(Guid Id, Guid AppUserId, string DisplayName, string MtmDriverNumber, bool IsActive);
+
+    private sealed class TestKeycloakUserAdministration : IKeycloakUserAdministration
+    {
+        public Task<string> CreateDriverAsync(string email, string temporaryPassword, string organizationId, CancellationToken cancellationToken) => Task.FromResult($"test-{email}");
+        public Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
 }
