@@ -481,11 +481,15 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
-        using var response = await client.PostAsJsonAsync("/api/driver-work/events/sync", new { tripNumber = "SYNC1", @event = new { type = "ArrivedAtPickup", deviceCapturedAt = new DateTimeOffset(2026, 9, 15, 8, 0, 0, TimeSpan.Zero), tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null } });
+        var actionId = Guid.NewGuid();
+        var queued = new { actionId, tripNumber = "SYNC1", @event = new { type = "ArrivedAtPickup", deviceCapturedAt = new DateTimeOffset(2026, 9, 15, 8, 0, 0, TimeSpan.Zero), tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null } };
+        using var response = await client.PostAsJsonAsync("/api/driver-work/events/sync", queued);
         Assert.Equal(System.Net.HttpStatusCode.Conflict, response.StatusCode);
+        using var retry = await client.PostAsJsonAsync("/api/driver-work/events/sync", queued);
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, retry.StatusCode);
         await using var conflictScope = application.Services.CreateAsyncScope();
         var conflictDb = conflictScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Assert.True(await conflictDb.DriverTripSyncConflicts.AnyAsync(x => x.TripNumber == "SYNC1" && x.Reason.Contains("no longer assigned")));
+        Assert.Equal(1, await conflictDb.DriverTripSyncConflicts.CountAsync(x => x.TripNumber == "SYNC1" && x.Reason.Contains("no longer assigned")));
     }
 
     [Fact]
