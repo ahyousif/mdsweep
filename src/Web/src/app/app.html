@@ -18,6 +18,7 @@
       <h2>My Trips Today</h2>
       <p>Only your currently assigned trips appear here.</p>
     </section>
+    @if (queuedDriverActions().length) { <section class="alert sync" role="status">{{ queuedDriverActions().length }} action{{ queuedDriverActions().length === 1 ? '' : 's' }} {{ queuedDriverActions()[0].state === 'WaitingToSync' ? 'waiting to sync' : 'need attention' }}.</section> }
     @if (!driverTrips().length) {
       <section class="card"><p>You have no assigned trips today.</p></section>
     }
@@ -39,6 +40,7 @@
         @if (trip.nextAction) {
           <details><summary>Could not complete this trip</summary><label>Reason <select #reason><option value="PassengerNoShow">Passenger no-show</option><option value="PassengerCancelled">Passenger cancelled</option><option value="UnableToLocatePassenger">Unable to locate passenger</option><option value="VehicleIssue">Vehicle issue</option><option value="Other">Other</option></select></label><label>Note (optional)<input #note type="text" /></label><button type="button" class="secondary" (click)="recordDriverEvent(trip, 'CouldNotComplete', reason.value, note.value)" [disabled]="busy()">Record outcome</button></details>
         }
+        @if (trip.lastEventType) { <button type="button" class="secondary" (click)="correctLatestEvent(trip)" [disabled]="busy()">Correct latest timestamp</button> }
       </article>
     }
   } @else {

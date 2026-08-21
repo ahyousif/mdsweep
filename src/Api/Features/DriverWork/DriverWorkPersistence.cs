@@ -19,3 +19,28 @@ internal sealed class DriverTripEventConfiguration : IEntityTypeConfiguration<Dr
         entity.HasOne<Driver>().WithMany().HasForeignKey(x => x.DriverId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class DriverTripEventCorrectionConfiguration : IEntityTypeConfiguration<DriverTripEventCorrection>
+{
+    public void Configure(EntityTypeBuilder<DriverTripEventCorrection> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => new { x.DriverTripEventId, x.ReceivedAt });
+        entity.Property(x => x.Reason).HasMaxLength(500);
+        entity.HasOne<DriverTripEvent>().WithMany().HasForeignKey(x => x.DriverTripEventId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne<Driver>().WithMany().HasForeignKey(x => x.CorrectedByDriverId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class DriverTripSyncConflictConfiguration : IEntityTypeConfiguration<DriverTripSyncConflict>
+{
+    public void Configure(EntityTypeBuilder<DriverTripSyncConflict> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => new { x.ProviderId, x.ReceivedAt });
+        entity.Property(x => x.TripNumber).HasMaxLength(64);
+        entity.Property(x => x.Type).HasConversion<string>().HasMaxLength(40);
+        entity.Property(x => x.Reason).HasMaxLength(500);
+        entity.HasOne<Driver>().WithMany().HasForeignKey(x => x.DriverId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

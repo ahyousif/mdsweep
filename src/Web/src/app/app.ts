@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { uiText } from './ui-text';
+import { DriverActionQueue, DriverEvent } from './driver-action-queue';
 
 type PreviewRow = {
   tripNumber: string;
@@ -28,7 +29,6 @@ type Trip = {
   isActive: boolean;
 };
 type ProviderContext = { appUserId: string; providerId: string; role: 'Dispatcher' | 'Driver' };
-type DriverEvent = 'ArrivedAtPickup' | 'PickedUp' | 'ArrivedAtDropOff' | 'DroppedOff' | 'CouldNotComplete';
 type DriverTrip = {
   tripNumber: string; appointmentDate: string; appointmentTime: string; memberName: string;
   passengerType: string; vehicleType: string; pickupAddress: string; pickupCity: string;
@@ -36,6 +36,7 @@ type DriverTrip = {
   passengerPhone: string | null;
   tripLogSigned?: boolean;
 };
+type DriverHistoryEvent = { id: string; deviceCapturedAt: string };
 
 @Component({
   selector: 'app-root',
@@ -44,6 +45,7 @@ type DriverTrip = {
 })
 export class App implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly driverActionQueue = inject(DriverActionQueue);
   protected readonly text = uiText;
   protected readonly signedIn = signal(false);
   protected readonly role = signal<ProviderContext['role'] | null>(null);
@@ -53,6 +55,7 @@ export class App implements OnInit {
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
   protected readonly driverTrips = signal<DriverTrip[]>([]);
+  protected readonly queuedDriverActions = this.driverActionQueue.actions;
   ngOnInit(): void {
     this.http.get<ProviderContext[]>('/api/auth/me').subscribe({
       next: (contexts) => {
@@ -102,20 +105,46 @@ export class App implements OnInit {
   protected recordDriverEvent(trip: DriverTrip, type: DriverEvent, outcomeReason?: string, note?: string): void {
     this.busy.set(true);
     this.error.set('');
-    this.http.post(`/api/driver-work/trips/${encodeURIComponent(trip.tripNumber)}/events`, {
+    const event = {
       type,
       deviceCapturedAt: new Date().toISOString(),
       tripLogSigned: type === 'DroppedOff' ? !!trip.tripLogSigned : null,
-      outcomeReason: type === 'CouldNotComplete' ? outcomeReason : null,
+      outcomeReason: type === 'CouldNotComplete' ? outcomeReason ?? null : null,
       note: type === 'CouldNotComplete' ? note?.trim() || null : null,
-    }).subscribe({
+    };
+    this.http.post(`/api/driver-work/trips/${encodeURIComponent(trip.tripNumber)}/events`, event).subscribe({
       next: () => this.loadDriverTrips(),
-      error: (response) => { this.error.set(response.error?.message ?? 'This trip action could not be recorded.'); this.busy.set(false); },
+      error: (response) => {
+        if (!response.status) {
+          this.driverActionQueue.enqueue({ tripNumber: trip.tripNumber, event });
+          this.error.set('Waiting to sync. This action is safely stored on this device.');
+        } else this.error.set(response.error?.message ?? 'This trip action could not be recorded.');
+        this.busy.set(false);
+      },
     });
   }
 
   protected setTripLogSigned(tripNumber: string, signed: boolean): void {
     this.driverTrips.update((trips) => trips.map((trip) => trip.tripNumber === tripNumber ? { ...trip, tripLogSigned: signed } : trip));
+  }
+
+  protected correctLatestEvent(trip: DriverTrip): void {
+    const reason = window.prompt('Why is this timestamp being corrected?');
+    if (!reason?.trim()) return;
+    const capturedAt = window.prompt('Correct device time (ISO 8601)', new Date().toISOString());
+    if (!capturedAt || Number.isNaN(Date.parse(capturedAt))) { this.error.set('Enter a valid timestamp to correct the event.'); return; }
+    this.busy.set(true);
+    this.http.get<DriverHistoryEvent[]>(`/api/driver-work/trips/${encodeURIComponent(trip.tripNumber)}/history`).subscribe({
+      next: (history) => {
+        const event = history.at(-1);
+        if (!event) { this.error.set('There is no event to correct.'); this.busy.set(false); return; }
+        this.http.post(`/api/driver-work/trips/${encodeURIComponent(trip.tripNumber)}/events/${event.id}/corrections`, { deviceCapturedAt: capturedAt, reason: reason.trim() }).subscribe({
+          next: () => { this.error.set('Correction saved. The original timestamp remains in history.'); this.busy.set(false); },
+          error: (response) => { this.error.set(response.error?.message ?? 'This event can no longer be corrected by a Driver.'); this.busy.set(false); },
+        });
+      },
+      error: () => { this.error.set('Event history could not be loaded.'); this.busy.set(false); },
+    });
   }
 
   protected chooseFile(event: Event): void {

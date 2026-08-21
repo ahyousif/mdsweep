@@ -18,6 +18,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<TripAssignment> TripAssignments => Set<TripAssignment>();
     public DbSet<DriverTripEvent> DriverTripEvents => Set<DriverTripEvent>();
+    public DbSet<DriverTripEventCorrection> DriverTripEventCorrections => Set<DriverTripEventCorrection>();
+    public DbSet<DriverTripSyncConflict> DriverTripSyncConflicts => Set<DriverTripSyncConflict>();
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<ProviderMembership> ProviderMemberships => Set<ProviderMembership>();

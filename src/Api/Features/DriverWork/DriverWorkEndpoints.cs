@@ -16,6 +16,8 @@ public static class DriverWorkEndpoints
         endpoints.MapGet("/api/driver-work/trips", ListTrips).RequireAuthorization();
         endpoints.MapGet("/api/driver-work/trips/{tripNumber}/history", TripHistory).RequireAuthorization();
         endpoints.MapPost("/api/driver-work/trips/{tripNumber}/events", RecordEvent).RequireAuthorization();
+        endpoints.MapPost("/api/driver-work/events/sync", SynchronizeEvent).RequireAuthorization();
+        endpoints.MapPost("/api/driver-work/trips/{tripNumber}/events/{eventId:guid}/corrections", CorrectEvent).RequireAuthorization();
         return endpoints;
     }
 
@@ -57,7 +59,7 @@ public static class DriverWorkEndpoints
 
         var history = await db.DriverTripEvents.Where(x => x.TripId == trip.Id)
             .OrderBy(x => x.ReceivedAt).ThenBy(x => x.Id)
-            .Select(x => new DriverTripEventResponse(x.Type, x.DeviceCapturedAt, x.ReceivedAt, x.OutcomeReason, x.Note, x.TripLogSigned))
+            .Select(x => new DriverTripEventResponse(x.Id, x.Type, x.DeviceCapturedAt, x.ReceivedAt, x.OutcomeReason, x.Note, x.TripLogSigned))
             .ToListAsync(ct);
         return Results.Ok(history);
     }
@@ -81,7 +83,7 @@ public static class DriverWorkEndpoints
         if (existing is not null)
         {
             if (SameEvent(existing, driver.Id, request))
-                return Results.Ok(new DriverTripEventResponse(existing.Type, existing.DeviceCapturedAt, existing.ReceivedAt, existing.OutcomeReason, existing.Note, existing.TripLogSigned));
+                return Results.Ok(new DriverTripEventResponse(existing.Id, existing.Type, existing.DeviceCapturedAt, existing.ReceivedAt, existing.OutcomeReason, existing.Note, existing.TripLogSigned));
             return Results.Conflict(new { message = "An event with this device capture time was already recorded with different details." });
         }
 
@@ -109,7 +111,46 @@ public static class DriverWorkEndpoints
         db.DriverTripEvents.Add(recorded);
         await db.SaveChangesAsync(ct);
         return Results.Created($"/api/driver-work/trips/{tripNumber}/history", new DriverTripEventResponse(
-            recorded.Type, recorded.DeviceCapturedAt, recorded.ReceivedAt, recorded.OutcomeReason, recorded.Note, recorded.TripLogSigned));
+            recorded.Id, recorded.Type, recorded.DeviceCapturedAt, recorded.ReceivedAt, recorded.OutcomeReason, recorded.Note, recorded.TripLogSigned));
+    }
+
+    private static async Task<IResult> SynchronizeEvent(SynchronizeDriverTripEventRequest request, ClaimsPrincipal user, ApplicationDbContext db, IDriverWorkClock clock, CancellationToken ct)
+    {
+        var driver = await ResolveDriver(user, db, ct);
+        if (driver is null) return Results.Forbid();
+        if (await AssignedTrip(driver.Id, request.TripNumber, db, ct) is not null)
+            return await RecordEvent(request.TripNumber, request.Event, user, db, clock, ct);
+
+        var context = await ProviderContextResolver.ResolveActive(user, db, ct);
+        db.DriverTripSyncConflicts.Add(new DriverTripSyncConflict
+        {
+            ProviderId = context!.ProviderId,
+            DriverId = driver.Id,
+            TripNumber = request.TripNumber,
+            Type = request.Event.Type,
+            DeviceCapturedAt = request.Event.DeviceCapturedAt,
+            ReceivedAt = clock.UtcNow,
+            Reason = "Trip is no longer assigned to this Driver."
+        });
+        await db.SaveChangesAsync(ct);
+        return Results.Conflict(new { message = "This queued action needs Dispatcher attention because the Trip is no longer assigned to you." });
+    }
+
+    private static async Task<IResult> CorrectEvent(string tripNumber, Guid eventId, CorrectDriverTripEventRequest request, ClaimsPrincipal user, ApplicationDbContext db, IDriverWorkClock clock, CancellationToken ct)
+    {
+        var driver = await ResolveDriver(user, db, ct);
+        if (driver is null) return Results.Forbid();
+        if (string.IsNullOrWhiteSpace(request.Reason)) return Results.BadRequest(new { message = "A correction reason is required." });
+        var trip = await AssignedTrip(driver.Id, tripNumber, db, ct);
+        if (trip is null) return Results.NotFound();
+        var original = await db.DriverTripEvents.SingleOrDefaultAsync(x => x.Id == eventId && x.TripId == trip.Id && x.DriverId == driver.Id, ct);
+        if (original is null) return Results.NotFound();
+        if (clock.UtcNow - original.ReceivedAt > TimeSpan.FromMinutes(15))
+            return Results.BadRequest(new { message = "This event is no longer eligible for a Driver correction. Ask a Dispatcher for help." });
+        var correction = new DriverTripEventCorrection { DriverTripEventId = original.Id, CorrectedByDriverId = driver.Id, CorrectedDeviceCapturedAt = request.DeviceCapturedAt, ReceivedAt = clock.UtcNow, Reason = request.Reason.Trim() };
+        db.DriverTripEventCorrections.Add(correction);
+        await db.SaveChangesAsync(ct);
+        return Results.Created($"/api/driver-work/trips/{tripNumber}/history", new DriverTripEventCorrectionResponse(correction.Id, correction.DriverTripEventId, correction.CorrectedDeviceCapturedAt, correction.ReceivedAt, correction.Reason));
     }
 
     private static async Task<Driver?> ResolveDriver(ClaimsPrincipal user, ApplicationDbContext db, CancellationToken ct)
@@ -156,7 +197,12 @@ public sealed record RecordDriverTripEventRequest(
     string? OutcomeReason,
     string? Note);
 
+public sealed record SynchronizeDriverTripEventRequest(string TripNumber, RecordDriverTripEventRequest Event);
+public sealed record CorrectDriverTripEventRequest(DateTimeOffset DeviceCapturedAt, string Reason);
+public sealed record DriverTripEventCorrectionResponse(Guid Id, Guid DriverTripEventId, DateTimeOffset CorrectedDeviceCapturedAt, DateTimeOffset ReceivedAt, string Reason);
+
 public sealed record DriverTripEventResponse(
+    Guid Id,
     DriverTripEventType Type,
     DateTimeOffset DeviceCapturedAt,
     DateTimeOffset ReceivedAt,
