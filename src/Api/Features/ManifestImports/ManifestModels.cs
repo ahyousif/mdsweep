@@ -14,6 +14,7 @@ public sealed class Trip
     public string PickupCity { get; internal set; } = null!;
     public string DeliveryAddress { get; internal set; } = null!;
     public string DeliveryCity { get; internal set; } = null!;
+    public string? PassengerPhone { get; internal set; }
     public string PassengerType { get; internal set; } = null!;
     public string VehicleType { get; internal set; } = null!;
     public string BrokerStatus { get; internal set; } = null!;
@@ -30,6 +31,7 @@ public sealed class Trip
         PickupCity = row.PickupCity;
         DeliveryAddress = row.DeliveryAddress;
         DeliveryCity = row.DeliveryCity;
+        PassengerPhone = row.PassengerPhone;
         PassengerType = row.PassengerType;
         VehicleType = row.VehicleType;
         BrokerStatus = row.BrokerStatus;
@@ -48,6 +50,7 @@ public sealed class Trip
         AddIfDifferent(Same(PickupCity, row.PickupCity), "pickup city");
         AddIfDifferent(Same(DeliveryAddress, row.DeliveryAddress), "destination address");
         AddIfDifferent(Same(DeliveryCity, row.DeliveryCity), "destination city");
+        AddIfDifferent(Same(PassengerPhone, row.PassengerPhone), "passenger phone");
         AddIfDifferent(Same(PassengerType, row.PassengerType), "passenger type");
         AddIfDifferent(Same(VehicleType, row.VehicleType), "vehicle type");
         AddIfDifferent(Same(BrokerStatus, row.BrokerStatus), "MTM status");
@@ -60,7 +63,7 @@ public sealed class Trip
         }
     }
 
-    private static bool Same(string left, string right) =>
+    private static bool Same(string? left, string? right) =>
         string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 }
 
@@ -112,6 +115,7 @@ public sealed record ManifestPreviewRow(
     string PickupCity,
     string DeliveryAddress,
     string DeliveryCity,
+    string? PassengerPhone,
     string PassengerType,
     string VehicleType,
     string BrokerStatus,

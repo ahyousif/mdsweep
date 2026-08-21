@@ -7,6 +7,7 @@ main { display: grid; gap: 1rem; max-width: 1200px; margin: auto; padding: 1.5re
 .narrow { width: min(100%, 28rem); justify-self: center; margin-top: 3rem; }
 form, label { display: grid; gap: .4rem; } form { gap: 1rem; } label { font-weight: 650; }
 input { min-height: 44px; box-sizing: border-box; padding: .65rem; border: 1px solid #9aaab1; border-radius: .4rem; font: inherit; }
+select { min-height: 44px; padding: .65rem; border: 1px solid #9aaab1; border-radius: .4rem; font: inherit; }
 button, .file-button { min-height: 44px; box-sizing: border-box; display: inline-grid; place-items: center; padding: .65rem 1rem; color: white; background: #087b68; border: 0; border-radius: .4rem; font: inherit; font-weight: 750; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }.file-button input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
 .secondary { min-height: 36px; padding: .35rem .65rem; color: #087b68; background: white; border: 1px solid #087b68; }
@@ -20,4 +21,5 @@ button:disabled { opacity: .6; cursor: wait; }.file-button input { position: abs
 .table-wrap { overflow-x: auto; } table { width: 100%; border-collapse: collapse; } th, td { padding: .75rem; border-bottom: 1px solid #e3e8ea; text-align: left; } th { color: #50616a; font-size: .8rem; text-transform: uppercase; } td small { display: block; color: #64757d; }.inactive { background: #fffaf0; }
 .journey td { padding-top: 1rem; color: #38545f; background: #eef4f5; font-size: .8rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
 .alert { padding: .8rem 1rem; color: #7c2020; background: #fde8e8; border-radius: .5rem; }
+.driver-heading { padding: .5rem 0; }.driver-heading p { margin-bottom: 0; color: #50616a; }.driver-trip { display: grid; gap: 1rem; }.driver-trip p { margin-bottom: 0; color: #50616a; }.trip-title { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }.trip-title small { display: block; color: #64757d; }.stops { display: grid; gap: .75rem; }.stops div { display: grid; gap: .15rem; padding-left: .75rem; border-left: 4px solid #087b68; }.stops span { color: #50616a; font-size: .8rem; font-weight: 800; text-transform: uppercase; }.stops a { color: #075f99; font-weight: 700; }.check { display: flex; align-items: center; gap: .5rem; }.check input { min-height: auto; width: 1.2rem; height: 1.2rem; } details { display: grid; gap: .75rem; } details summary { cursor: pointer; color: #38545f; font-weight: 700; } details label { margin-top: .75rem; }
 @media (max-width: 650px) { .upload { align-items: stretch; flex-direction: column; } th:nth-child(4), td:nth-child(4) { display: none; } }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Features.ManifestImports;
 using Mdsweep.Api.Features.Dispatch;
+using Mdsweep.Api.Features.DriverWork;
 using Mdsweep.Api.Features.Identity;
 
 namespace Mdsweep.Api.Infrastructure;
@@ -16,6 +17,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Driver> Drivers => Set<Driver>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<TripAssignment> TripAssignments => Set<TripAssignment>();
+    public DbSet<DriverTripEvent> DriverTripEvents => Set<DriverTripEvent>();
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<ProviderMembership> ProviderMemberships => Set<ProviderMembership>();
