@@ -100,6 +100,8 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         using var response = await client.GetAsync("/api/service-days/2026-09-15/trips");
 
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
+        using var driverManagementResponse = await client.GetAsync("/api/drivers");
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, driverManagementResponse.StatusCode);
     }
 
     [Fact]
