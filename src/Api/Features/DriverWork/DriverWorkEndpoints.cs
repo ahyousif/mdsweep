@@ -76,16 +76,24 @@ public static class DriverWorkEndpoints
         if (request.Type != DriverTripEventType.CouldNotComplete && (!string.IsNullOrWhiteSpace(request.OutcomeReason) || !string.IsNullOrWhiteSpace(request.Note)))
             return Results.BadRequest(new { message = "An outcome reason and note may only be recorded for Could Not Complete." });
 
+        var existing = await db.DriverTripEvents.SingleOrDefaultAsync(x =>
+            x.TripId == trip.Id && x.DeviceCapturedAt == request.DeviceCapturedAt, ct);
+        if (existing is not null)
+        {
+            if (SameEvent(existing, driver.Id, request))
+                return Results.Ok(new DriverTripEventResponse(existing.Type, existing.DeviceCapturedAt, existing.ReceivedAt, existing.OutcomeReason, existing.Note, existing.TripLogSigned));
+            return Results.Conflict(new { message = "An event with this device capture time was already recorded with different details." });
+        }
+
         var lastEvent = await db.DriverTripEvents.Where(x => x.TripId == trip.Id)
-            .OrderByDescending(x => x.ReceivedAt).ThenByDescending(x => x.Id)
-            .Select(x => (DriverTripEventType?)x.Type).FirstOrDefaultAsync(ct);
-        var expected = NextAction(lastEvent);
+            .OrderByDescending(x => x.ReceivedAt).ThenByDescending(x => x.Id).FirstOrDefaultAsync(ct);
+        var expected = NextAction(lastEvent?.Type);
         if (expected is null || (request.Type != expected && request.Type != DriverTripEventType.CouldNotComplete))
             return Results.BadRequest(new { message = expected is null
                 ? "This Trip already has a physical outcome and cannot receive another event."
                 : $"Record {Display(expected.Value)} before {Display(request.Type)}." });
-        if (await db.DriverTripEvents.AnyAsync(x => x.TripId == trip.Id && x.DeviceCapturedAt == request.DeviceCapturedAt, ct))
-            return Results.Conflict(new { message = "An event with this device capture time was already recorded. Refresh before retrying." });
+        if (lastEvent is not null && request.DeviceCapturedAt < lastEvent.DeviceCapturedAt)
+            return Results.BadRequest(new { message = "Device capture time must not be earlier than the preceding Trip event." });
 
         var recorded = new DriverTripEvent
         {
@@ -134,6 +142,11 @@ public static class DriverWorkEndpoints
         DriverTripEventType.DroppedOff => "Dropped Off",
         _ => "Could Not Complete"
     };
+
+    private static bool SameEvent(DriverTripEvent existing, Guid driverId, RecordDriverTripEventRequest request) =>
+        existing.DriverId == driverId && existing.Type == request.Type && existing.TripLogSigned == request.TripLogSigned &&
+        string.Equals(existing.OutcomeReason, request.OutcomeReason?.Trim(), StringComparison.Ordinal) &&
+        string.Equals(existing.Note, request.Note?.Trim(), StringComparison.Ordinal);
 }
 
 public sealed record RecordDriverTripEventRequest(

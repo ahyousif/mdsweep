@@ -425,6 +425,14 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         {
             using var response = await client.PostAsJsonAsync("/api/driver-work/trips/DRIVERFLOW1/events", new { type, deviceCapturedAt = capturedAt.AddMinutes(index), tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null });
             response.EnsureSuccessStatusCode();
+            if (type == "ArrivedAtPickup")
+            {
+                using var retry = await client.PostAsJsonAsync("/api/driver-work/trips/DRIVERFLOW1/events", new { type, deviceCapturedAt = capturedAt.AddMinutes(index), tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null });
+                retry.EnsureSuccessStatusCode();
+                Assert.Equal(System.Net.HttpStatusCode.OK, retry.StatusCode);
+                using var reversed = await client.PostAsJsonAsync("/api/driver-work/trips/DRIVERFLOW1/events", new { type = "PickedUp", deviceCapturedAt = capturedAt.AddMinutes(-1), tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null });
+                Assert.Equal(System.Net.HttpStatusCode.BadRequest, reversed.StatusCode);
+            }
         }
 
         using var missingSignature = await client.PostAsJsonAsync("/api/driver-work/trips/DRIVERFLOW1/events", new { type = "DroppedOff", deviceCapturedAt = capturedAt, tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null });

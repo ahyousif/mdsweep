@@ -74,7 +74,7 @@ internal static class ManifestCsv
             PickupCity = Get("Pickup City"),
             DeliveryAddress = Get("Delivery Address"),
             DeliveryCity = Get("Delivery City"),
-            PassengerPhone = Optional("Member Phone") ?? Optional("Passenger Phone"),
+            PassengerPhone = Optional("Member's Phone Number") ?? Optional("Member Phone") ?? Optional("Passenger Phone"),
             PassengerType = Get("Passenger Type"),
             VehicleType = Get("Vehicle Type"),
             BrokerStatus = Get("Trip Status"),
