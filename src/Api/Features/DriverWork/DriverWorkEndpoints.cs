@@ -159,11 +159,12 @@ public static class DriverWorkEndpoints
         var driver = await ResolveDriver(user, db, ct);
         if (driver is null) return Results.Forbid();
         if (string.IsNullOrWhiteSpace(request.Reason)) return Results.BadRequest(new { message = "A correction reason is required." });
+        if (request.DeviceCapturedAt == default) return Results.BadRequest(new { message = "Corrected device capture time is required." });
         var trip = await AssignedTrip(driver.Id, tripNumber, db, ct);
         if (trip is null) return Results.NotFound();
         var original = await db.DriverTripEvents.SingleOrDefaultAsync(x => x.Id == eventId && x.TripId == trip.Id && x.DriverId == driver.Id, ct);
         if (original is null) return Results.NotFound();
-        if (clock.UtcNow - original.ReceivedAt > TimeSpan.FromMinutes(15))
+        if (original.ReceivedAt > clock.UtcNow || clock.UtcNow - original.ReceivedAt > TimeSpan.FromMinutes(15))
             return Results.BadRequest(new { message = "This event is no longer eligible for a Driver correction. Ask a Dispatcher for help." });
         var correction = new DriverTripEventCorrection { DriverTripEventId = original.Id, CorrectedByDriverId = driver.Id, CorrectedDeviceCapturedAt = request.DeviceCapturedAt, ReceivedAt = clock.UtcNow, Reason = request.Reason.Trim() };
         db.DriverTripEventCorrections.Add(correction);
