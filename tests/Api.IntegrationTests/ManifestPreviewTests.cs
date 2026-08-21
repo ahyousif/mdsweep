@@ -75,6 +75,31 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Dispatcher_realm_role_does_not_override_a_driver_membership_for_the_active_provider()
+    {
+        await using (var scope = application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var membership = await db.ProviderMemberships.SingleAsync();
+            db.ProviderMemberships.Remove(membership);
+            db.ProviderMemberships.Add(new ProviderMembership
+            {
+                ProviderId = membership.ProviderId,
+                AppUserId = membership.AppUserId,
+                Role = "Driver"
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+
+        using var response = await client.GetAsync("/api/service-days/2026-09-15/trips");
+
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Applying_preview_imports_trips_groups_journeys_and_retains_blocked_rows()
     {
         using var client = application.CreateClient();

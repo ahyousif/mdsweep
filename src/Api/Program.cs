@@ -42,6 +42,7 @@ builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
     options.Cookie.Name = "XSRF-TOKEN";
+    options.Cookie.HttpOnly = false;
 });
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -50,7 +51,10 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.EnsureCreatedAsync();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+    if (app.Environment.IsDevelopment())
+        await DevelopmentIdentitySeeder.SeedAsync(db);
 }
 
 app.UseAuthentication();

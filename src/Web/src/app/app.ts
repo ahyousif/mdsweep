@@ -27,6 +27,7 @@ type Trip = {
   isWillCall: boolean;
   isActive: boolean;
 };
+type ProviderContext = { appUserId: string; providerId: string; role: 'Dispatcher' | 'Driver' };
 
 @Component({
   selector: 'app-root',
@@ -43,11 +44,18 @@ export class App implements OnInit {
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
   ngOnInit(): void {
-    this.http.get('/api/auth/me').subscribe({
-      next: () => {
-        this.http.get('/api/auth/antiforgery').subscribe({
-          next: () => this.signedIn.set(true),
-          error: () => this.error.set('Unable to establish the application session.'),
+    this.http.get<ProviderContext[]>('/api/auth/me').subscribe({
+      next: (contexts) => {
+        if (contexts.length !== 1) {
+          this.error.set('Choose a Provider before using MDSweep.');
+          return;
+        }
+        this.http.post('/api/auth/provider-context', { providerId: contexts[0].providerId }).subscribe({
+          next: () => this.http.get('/api/auth/antiforgery').subscribe({
+            next: () => this.signedIn.set(true),
+            error: () => this.error.set('Unable to establish the application session.'),
+          }),
+          error: () => this.error.set('Unable to select the Provider context.'),
         });
       },
       error: () => this.signedIn.set(false),

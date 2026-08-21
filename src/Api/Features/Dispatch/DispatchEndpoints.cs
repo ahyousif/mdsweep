@@ -9,12 +9,9 @@ public static class DispatchEndpoints
 {
     public static IEndpointRouteBuilder MapDispatch(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPut("/api/trips/{tripNumber}/scheduled-pickup-time", SetScheduledPickupTime)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
-        endpoints.MapGet("/api/trips/{tripNumber}/scheduled-pickup-time/history", GetScheduledPickupTimeHistory)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
-        endpoints.MapGet("/api/service-days/{serviceDate}/trips", GetServiceDay)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
+        endpoints.MapPut("/api/trips/{tripNumber}/scheduled-pickup-time", SetScheduledPickupTime).RequireAuthorization();
+        endpoints.MapGet("/api/trips/{tripNumber}/scheduled-pickup-time/history", GetScheduledPickupTimeHistory).RequireAuthorization();
+        endpoints.MapGet("/api/service-days/{serviceDate}/trips", GetServiceDay).RequireAuthorization();
         return endpoints;
     }
 
@@ -26,7 +23,7 @@ public static class DispatchEndpoints
         CancellationToken cancellationToken)
     {
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null) return Results.Forbid();
+        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
 
         var trip = await db.Trips.SingleOrDefaultAsync(x => x.ProviderId == context.ProviderId && x.TripNumber == tripNumber, cancellationToken);
         if (trip is null) return Results.NotFound();
@@ -64,7 +61,7 @@ public static class DispatchEndpoints
         CancellationToken cancellationToken)
     {
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null) return Results.Forbid();
+        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
         var tripId = await db.Trips.Where(x => x.ProviderId == context.ProviderId && x.TripNumber == tripNumber)
             .Select(x => (Guid?)x.Id).SingleOrDefaultAsync(cancellationToken);
         if (!tripId.HasValue) return Results.NotFound();
@@ -84,7 +81,7 @@ public static class DispatchEndpoints
         CancellationToken cancellationToken)
     {
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null) return Results.Forbid();
+        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
         var trips = await db.Trips.Where(x => x.ProviderId == context.ProviderId && x.AppointmentDate == serviceDate)
             .OrderBy(x => x.AppointmentTime)
             .Select(x => new ServiceDayTripResponse(

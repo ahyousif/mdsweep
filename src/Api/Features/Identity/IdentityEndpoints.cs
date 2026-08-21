@@ -44,9 +44,13 @@ public static class IdentityEndpoints
         if (context is null) return Results.Forbid();
 
         var identity = new ClaimsIdentity(user.Identity);
-        foreach (var claim in identity.FindAll(ProviderContextResolver.ActiveProviderIdClaim).ToArray())
+        foreach (var claim in identity.FindAll(ProviderContextResolver.ActiveProviderIdClaim)
+                     .Concat(identity.FindAll(ClaimTypes.Role))
+                     .Concat(identity.FindAll("roles"))
+                     .ToArray())
             identity.RemoveClaim(claim);
         identity.AddClaim(new Claim(ProviderContextResolver.ActiveProviderIdClaim, context.ProviderId.ToString()));
+        identity.AddClaim(new Claim(ClaimTypes.Role, context.Role));
         await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
         return Results.NoContent();
     }

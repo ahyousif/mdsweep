@@ -10,6 +10,9 @@ public static class ProviderContextResolver
 {
     public const string ActiveProviderIdClaim = "mdsweep_provider_id";
 
+    public static bool HasRole(ProviderContext? context, string role) =>
+        context is not null && string.Equals(context.Role, role, StringComparison.Ordinal);
+
     public static async Task<IReadOnlyList<ProviderContext>> ResolveAll(
         ClaimsPrincipal user, ApplicationDbContext db, CancellationToken cancellationToken)
     {

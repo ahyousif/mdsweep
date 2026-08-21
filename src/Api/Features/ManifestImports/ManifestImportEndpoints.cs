@@ -11,12 +11,9 @@ public static class ManifestImportEndpoints
 {
     public static IEndpointRouteBuilder MapManifestImports(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/api/manifest-imports/preview", Preview)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
-        endpoints.MapPost("/api/manifest-imports/{previewId:guid}/apply", Apply)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
-        endpoints.MapGet("/api/manifest-imports/{previewId:guid}", GetPreview)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
+        endpoints.MapPost("/api/manifest-imports/preview", Preview).RequireAuthorization();
+        endpoints.MapPost("/api/manifest-imports/{previewId:guid}/apply", Apply).RequireAuthorization();
+        endpoints.MapGet("/api/manifest-imports/{previewId:guid}", GetPreview).RequireAuthorization();
         return endpoints;
     }
 
@@ -27,7 +24,7 @@ public static class ManifestImportEndpoints
         CancellationToken cancellationToken)
     {
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null) return Results.Forbid();
+        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
         if (file is null || file.Length == 0)
             return Results.BadRequest(new { message = "Choose a non-empty MTM CSV file." });
         if (!Path.GetExtension(file.FileName).Equals(".csv", StringComparison.OrdinalIgnoreCase))
@@ -67,7 +64,7 @@ public static class ManifestImportEndpoints
         CancellationToken cancellationToken)
     {
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null) return Results.Forbid();
+        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
         var preview = await db.ManifestPreviews.SingleOrDefaultAsync(x => x.Id == previewId && x.ProviderId == context.ProviderId, cancellationToken);
         if (preview is null) return Results.NotFound();
         var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
@@ -117,7 +114,7 @@ public static class ManifestImportEndpoints
         CancellationToken cancellationToken)
     {
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null) return Results.Forbid();
+        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
         var preview = await db.ManifestPreviews.AsNoTracking().SingleOrDefaultAsync(x => x.Id == previewId && x.ProviderId == context.ProviderId, cancellationToken);
         if (preview is null) return Results.NotFound();
         var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
