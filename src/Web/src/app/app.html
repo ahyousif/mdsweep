@@ -18,7 +18,11 @@
       <h2>My Trips Today</h2>
       <p>Only your currently assigned trips appear here.</p>
     </section>
-    @if (queuedDriverActions().length) { <section class="alert sync" role="status">{{ queuedDriverActions().length }} action{{ queuedDriverActions().length === 1 ? '' : 's' }} {{ queuedDriverActions()[0].state === 'WaitingToSync' ? 'waiting to sync' : 'need attention' }}.</section> }
+    @if (queuedDriverActions().length) {
+      <section class="alert sync" role="status"><strong>Sync status</strong>
+        @for (action of queuedDriverActions(); track action.id) { <p>{{ action.tripNumber }} · {{ action.event.type }} · {{ action.state === 'WaitingToSync' ? 'Waiting to sync' : 'Needs attention' }}</p> }
+      </section>
+    }
     @if (!driverTrips().length) {
       <section class="card"><p>You have no assigned trips today.</p></section>
     }
