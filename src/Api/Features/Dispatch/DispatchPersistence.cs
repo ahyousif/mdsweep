@@ -25,3 +25,38 @@ internal sealed class ScheduledPickupTimeChangeConfiguration : IEntityTypeConfig
         entity.HasOne<Trip>().WithMany().HasForeignKey(x => x.TripId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal sealed class DriverConfiguration : IEntityTypeConfiguration<Driver>
+{
+    public void Configure(EntityTypeBuilder<Driver> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => new { x.ProviderId, x.MtmDriverNumber }).IsUnique();
+        entity.HasIndex(x => new { x.ProviderId, x.AppUserId }).IsUnique();
+        entity.Property(x => x.DisplayName).HasMaxLength(200);
+        entity.Property(x => x.MtmDriverNumber).HasMaxLength(64);
+    }
+}
+
+internal sealed class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
+{
+    public void Configure(EntityTypeBuilder<Vehicle> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => new { x.ProviderId, x.Vin }).IsUnique();
+        entity.Property(x => x.DisplayName).HasMaxLength(200);
+        entity.Property(x => x.Vin).HasMaxLength(32);
+    }
+}
+
+internal sealed class TripAssignmentConfiguration : IEntityTypeConfiguration<TripAssignment>
+{
+    public void Configure(EntityTypeBuilder<TripAssignment> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => x.TripId).HasFilter("\"SupersededAt\" IS NULL").IsUnique();
+        entity.HasOne<Trip>().WithMany().HasForeignKey(x => x.TripId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne<Driver>().WithMany().HasForeignKey(x => x.DriverId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne<Vehicle>().WithMany().HasForeignKey(x => x.VehicleId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

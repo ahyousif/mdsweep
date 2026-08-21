@@ -1,6 +1,12 @@
 {
   "realm": "mdsweep",
   "enabled": true,
+  "organizations": [{
+    "id": "b6d8ea17-b31c-45c0-b5f2-4fec5df7c6cf",
+    "name": "Synthetic Provider",
+    "alias": "synthetic-provider",
+    "enabled": true
+  }],
   "roles": { "realm": [{ "name": "Dispatcher" }, { "name": "Driver" }] },
   "clients": [{
     "clientId": "mdsweep-server",
@@ -17,6 +23,14 @@
       "protocolMapper": "oidc-usermodel-realm-role-mapper",
       "config": { "claim.name": "roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true" }
     }]
+  }, {
+    "clientId": "mdsweep-administration",
+    "enabled": true,
+    "publicClient": false,
+    "secret": "Development-only-administration-secret",
+    "serviceAccountsEnabled": true,
+    "standardFlowEnabled": false,
+    "serviceAccountClientRoles": { "realm-management": ["manage-users", "view-users", "manage-realm"] }
   }],
   "users": [{
     "id": "d4ba70d7-6173-4ad0-9b48-59aa2c6a322a",

@@ -38,6 +38,7 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
@@ -62,6 +63,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 app.MapManifestImports();
 app.MapDispatch();
+app.MapDispatchManagement();
 app.MapIdentity();
 app.MapDefaultEndpoints();
 app.Run();
