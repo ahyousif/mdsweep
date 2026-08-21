@@ -113,7 +113,9 @@ public sealed record ManifestPreviewRow(
     string VehicleType,
     string BrokerStatus,
     bool IsWillCall,
-    ManifestBrokerChange BrokerChange = ManifestBrokerChange.New);
+    ManifestBrokerChange BrokerChange = ManifestBrokerChange.New,
+    bool HasProviderOverrides = false,
+    bool IsActive = false);
 
 public static class ManifestRowDispositionRules
 {
@@ -123,19 +125,3 @@ public static class ManifestRowDispositionRules
     public static bool IsActive(this ManifestRowDisposition disposition) =>
         disposition is ManifestRowDisposition.Ready;
 }
-
-public sealed record ServiceDayTripResponse(
-    string TripNumber,
-    string JourneyKey,
-    string MemberName,
-    string PickupAddress,
-    string PickupCity,
-    string DeliveryAddress,
-    string DeliveryCity,
-    string PassengerType,
-    string VehicleType,
-    string BrokerStatus,
-    TimeOnly AppointmentTime,
-    TimeOnly? ScheduledPickupTime,
-    bool IsWillCall,
-    bool IsActive);

@@ -14,6 +14,8 @@ export const uiText = {
   newTrips: 'new',
   brokerChanged: 'changed by MTM',
   unchanged: 'unchanged',
+  locallyOverridden: 'provider schedules protected',
+  inactive: 'inactive',
   appointment: 'Appointment',
   scheduledPickup: 'Scheduled pickup',
   save: 'Save',

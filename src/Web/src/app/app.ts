@@ -7,6 +7,8 @@ type PreviewRow = {
   tripNumber: string;
   disposition: 'Ready' | 'Warning' | 'Blocked';
   brokerChange: 'New' | 'BrokerChanged' | 'Unchanged' | 'Blocked';
+  hasProviderOverrides: boolean;
+  isActive: boolean;
   messages: string[];
 };
 type Preview = { previewId: string; ready: number; warning: number; blocked: number; serviceDates: string[]; rows: PreviewRow[] };
@@ -46,6 +48,12 @@ export class App {
   protected readonly serviceDate = signal('');
   protected countBrokerChanges(change: PreviewRow['brokerChange']): number {
     return this.preview()?.rows.filter((row) => row.brokerChange === change).length ?? 0;
+  }
+  protected countProviderOverrides(): number {
+    return this.preview()?.rows.filter((row) => row.hasProviderOverrides).length ?? 0;
+  }
+  protected countInactive(): number {
+    return this.preview()?.rows.filter((row) => !row.isActive && row.disposition !== 'Blocked').length ?? 0;
   }
 
   protected readonly journeys = () => {

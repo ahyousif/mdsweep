@@ -57,6 +57,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         Assert.Equal(1, preview.Blocked);
         Assert.Equal(4, preview.Rows.Count);
         Assert.Equal([new DateOnly(2026, 9, 15)], preview.ServiceDates);
+        Assert.False(preview.Rows.Single(x => x.TripNumber == "SYNTH200A").IsActive);
 
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -187,6 +188,16 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
             "/api/trips/SCHEDULED1/scheduled-pickup-time",
             new { ScheduledPickupTime = new TimeOnly(8, 0) });
         firstSchedule.EnsureSuccessStatusCode();
+
+        var unchangedWithProviderSchedule = await PreviewCsv(client,
+            Manifest(Row("SCHEDULED1", "VALID", "0915", "100 First St", "200 Main St")));
+        var unchanged = Assert.Single(unchangedWithProviderSchedule.Rows);
+        Assert.Equal("Unchanged", unchanged.BrokerChange);
+        Assert.True(unchanged.HasProviderOverrides);
+        Assert.True(unchanged.IsActive);
+        Assert.Contains(unchanged.Messages, message =>
+            message.Contains("scheduled pickup time will be preserved", StringComparison.OrdinalIgnoreCase));
+
         using var replacementSchedule = await client.PutAsJsonAsync(
             "/api/trips/SCHEDULED1/scheduled-pickup-time",
             new { ScheduledPickupTime = new TimeOnly(8, 10) });
@@ -200,6 +211,8 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
             Manifest(Row("SCHEDULED1", "VALID", "1030", "300 Revised St", "400 Changed St")));
         var changed = Assert.Single(revised.Rows);
         Assert.Equal("BrokerChanged", changed.BrokerChange);
+        Assert.True(changed.HasProviderOverrides);
+        Assert.True(changed.IsActive);
         Assert.Contains(changed.Messages, message =>
             message.Contains("scheduled pickup time will be preserved", StringComparison.OrdinalIgnoreCase));
 
@@ -214,6 +227,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         var history = await client.GetFromJsonAsync<List<ScheduledPickupChange>>(
             "/api/trips/SCHEDULED1/scheduled-pickup-time/history");
         Assert.Equal([new TimeOnly(8, 0), new TimeOnly(8, 10)], history!.Select(x => x.ScheduledPickupTime));
+        Assert.Equal([1L, 2L], history!.Select(x => x.Sequence));
         Assert.All(history!, change => Assert.Equal("dispatcher-test", change.ChangedBy));
     }
 
@@ -256,7 +270,13 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         $"09/15/2026,{delivery},{pickup},{time},{tripNumber},{status},Test,Rider,Phoenix,Mesa,Ambulatory,Cab,N";
 
     private sealed record PreviewResponse(Guid PreviewId, int Ready, int Warning, int Blocked, List<DateOnly> ServiceDates, List<PreviewRow> Rows);
-    private sealed record PreviewRow(string TripNumber, string Disposition, string BrokerChange, IReadOnlyList<string> Messages);
+    private sealed record PreviewRow(
+        string TripNumber,
+        string Disposition,
+        string BrokerChange,
+        bool HasProviderOverrides,
+        bool IsActive,
+        IReadOnlyList<string> Messages);
     private sealed record ApplyResponse(int Imported, int Blocked);
     private sealed record ServiceDayTrip(
         string TripNumber,
@@ -266,5 +286,5 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         string PickupAddress,
         TimeOnly? ScheduledPickupTime,
         bool IsActive);
-    private sealed record ScheduledPickupChange(TimeOnly ScheduledPickupTime, string ChangedBy);
+    private sealed record ScheduledPickupChange(long Sequence, TimeOnly ScheduledPickupTime, string ChangedBy);
 }

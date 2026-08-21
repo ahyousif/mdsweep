@@ -39,6 +39,8 @@
           <span>{{ countBrokerChanges('New') }} {{ text.newTrips }}</span>
           <span>{{ countBrokerChanges('BrokerChanged') }} {{ text.brokerChanged }}</span>
           <span>{{ countBrokerChanges('Unchanged') }} {{ text.unchanged }}</span>
+          <span>{{ countProviderOverrides() }} {{ text.locallyOverridden }}</span>
+          <span>{{ countInactive() }} {{ text.inactive }}</span>
         </div>
         @if (result.warning || result.blocked || countBrokerChanges('BrokerChanged')) {
           <h2>{{ text.needsReview }}</h2>

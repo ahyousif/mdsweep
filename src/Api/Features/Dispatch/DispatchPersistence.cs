@@ -18,6 +18,8 @@ internal sealed class ScheduledPickupTimeChangeConfiguration : IEntityTypeConfig
     public void Configure(EntityTypeBuilder<ScheduledPickupTimeChange> entity)
     {
         entity.HasKey(x => x.Id);
+        entity.Property(x => x.Sequence).ValueGeneratedOnAdd();
+        entity.HasIndex(x => x.Sequence).IsUnique();
         entity.HasIndex(x => new { x.TripId, x.ChangedAt });
         entity.Property(x => x.ChangedBy).HasMaxLength(450);
         entity.HasOne<Trip>().WithMany().HasForeignKey(x => x.TripId).OnDelete(DeleteBehavior.Restrict);

@@ -12,6 +12,8 @@ public static class DispatchEndpoints
             .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
         endpoints.MapGet("/api/trips/{tripNumber}/scheduled-pickup-time/history", GetScheduledPickupTimeHistory)
             .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
+        endpoints.MapGet("/api/service-days/{serviceDate}/trips", GetServiceDay)
+            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
         return endpoints;
     }
 
@@ -22,6 +24,9 @@ public static class DispatchEndpoints
         ApplicationDbContext db,
         CancellationToken cancellationToken)
     {
+        var changedBy = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(changedBy)) return Results.Forbid();
+
         var trip = await db.Trips.SingleOrDefaultAsync(x => x.TripNumber == tripNumber, cancellationToken);
         if (trip is null) return Results.NotFound();
         if (!trip.IsActive)
@@ -45,7 +50,7 @@ public static class DispatchEndpoints
         {
             TripId = trip.Id,
             ScheduledPickupTime = request.ScheduledPickupTime,
-            ChangedBy = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown-dispatcher"
+            ChangedBy = changedBy
         });
         await db.SaveChangesAsync(cancellationToken);
         return Results.Ok(new { request.ScheduledPickupTime });
@@ -62,9 +67,27 @@ public static class DispatchEndpoints
 
         var changes = await db.ScheduledPickupTimeChanges
             .Where(x => x.TripId == tripId.Value)
-            .OrderBy(x => x.ChangedAt)
-            .Select(x => new ScheduledPickupTimeChangeResponse(x.ScheduledPickupTime, x.ChangedAt, x.ChangedBy))
+            .OrderBy(x => x.Sequence)
+            .Select(x => new ScheduledPickupTimeChangeResponse(x.Sequence, x.ScheduledPickupTime, x.ChangedAt, x.ChangedBy))
             .ToListAsync(cancellationToken);
         return Results.Ok(changes);
+    }
+
+    private static async Task<IResult> GetServiceDay(
+        DateOnly serviceDate,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var trips = await db.Trips.Where(x => x.AppointmentDate == serviceDate)
+            .OrderBy(x => x.AppointmentTime)
+            .Select(x => new ServiceDayTripResponse(
+                x.TripNumber, x.JourneyKey, x.MemberFirstName + " " + x.MemberLastName,
+                x.PickupAddress, x.PickupCity, x.DeliveryAddress, x.DeliveryCity,
+                x.PassengerType, x.VehicleType, x.BrokerStatus, x.AppointmentTime,
+                db.TripSchedules.Where(schedule => schedule.TripId == x.Id)
+                    .Select(schedule => (TimeOnly?)schedule.ScheduledPickupTime).SingleOrDefault(),
+                x.IsWillCall, x.IsActive))
+            .ToListAsync(cancellationToken);
+        return Results.Ok(trips);
     }
 }
