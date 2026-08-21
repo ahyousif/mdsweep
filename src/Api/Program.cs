@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Mdsweep.Api.Features.Dispatch;
+using Mdsweep.Api.Features.DriverWork;
 using Mdsweep.Api.Features.ManifestImports;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Api.Infrastructure;
@@ -38,6 +39,7 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IDriverWorkClock, SystemDriverWorkClock>();
 builder.Services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 builder.Services.AddAntiforgery(options =>
 {
@@ -64,6 +66,7 @@ app.UseAntiforgery();
 app.MapManifestImports();
 app.MapDispatch();
 app.MapDispatchManagement();
+app.MapDriverWork();
 app.MapIdentity();
 app.MapDefaultEndpoints();
 app.Run();

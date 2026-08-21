@@ -50,6 +50,7 @@ internal static class ManifestCsv
     private static ManifestPreviewRow Classify(IReadOnlyList<string> row, IReadOnlyDictionary<string, int> positions)
     {
         string Get(string name) => positions[name] < row.Count ? row[positions[name]].Trim() : string.Empty;
+        string? Optional(string name) => positions.TryGetValue(name, out var index) && index < row.Count && !string.IsNullOrWhiteSpace(row[index]) ? row[index].Trim() : null;
         var tripNumber = Get("Trip Number");
         var messages = new List<string>();
 
@@ -73,6 +74,7 @@ internal static class ManifestCsv
             PickupCity = Get("Pickup City"),
             DeliveryAddress = Get("Delivery Address"),
             DeliveryCity = Get("Delivery City"),
+            PassengerPhone = Optional("Member Phone") ?? Optional("Passenger Phone"),
             PassengerType = Get("Passenger Type"),
             VehicleType = Get("Vehicle Type"),
             BrokerStatus = Get("Trip Status"),
@@ -94,7 +96,7 @@ internal static class ManifestCsv
         ManifestPreviewRow Row(ManifestRowDisposition disposition, IReadOnlyList<string> rowMessages) => new(
             tripNumber, disposition, rowMessages, values.AppointmentDate, values.AppointmentTime,
             values.MemberFirstName, values.MemberLastName, values.PickupAddress, values.PickupCity,
-            values.DeliveryAddress, values.DeliveryCity, values.PassengerType, values.VehicleType,
+            values.DeliveryAddress, values.DeliveryCity, values.PassengerPhone, values.PassengerType, values.VehicleType,
             values.BrokerStatus, values.IsWillCall,
             disposition == ManifestRowDisposition.Blocked ? ManifestBrokerChange.Blocked : ManifestBrokerChange.New);
     }

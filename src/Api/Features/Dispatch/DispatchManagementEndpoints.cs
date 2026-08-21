@@ -21,7 +21,6 @@ public static class DispatchManagementEndpoints
         endpoints.MapPost("/api/journeys/{journeyKey}/assignments", AssignJourney).RequireAuthorization();
         endpoints.MapPost("/api/trips/{tripNumber}/assignments", AssignTrip).RequireAuthorization();
         endpoints.MapGet("/api/trips/{tripNumber}/assignments", AssignmentHistory).RequireAuthorization();
-        endpoints.MapGet("/api/driver-work/assignments", DriverAssignments).RequireAuthorization();
         return endpoints;
     }
 
@@ -151,19 +150,6 @@ public static class DispatchManagementEndpoints
         var trip = await db.Trips.SingleOrDefaultAsync(x => x.ProviderId == context.ProviderId && x.TripNumber == tripNumber, ct); if (trip is null) return Results.NotFound();
         return Results.Ok(await db.TripAssignments.Where(x => x.TripId == trip.Id).OrderBy(x => x.AssignedAt)
             .Select(x => new AssignmentResponse(x.DriverId, x.VehicleId, x.AssignedByAppUserId, x.AssignedAt, x.SupersededAt)).ToListAsync(ct));
-    }
-
-    private static async Task<IResult> DriverAssignments(ClaimsPrincipal user, ApplicationDbContext db, CancellationToken ct)
-    {
-        var context = await ProviderContextResolver.ResolveActive(user, db, ct);
-        if (context is null || !ProviderContextResolver.HasRole(context, "Driver")) return Results.Forbid();
-        var driverId = await db.Drivers.Where(x => x.ProviderId == context.ProviderId && x.AppUserId == context.AppUserId && x.IsActive).Select(x => (Guid?)x.Id).SingleOrDefaultAsync(ct);
-        if (!driverId.HasValue) return Results.Forbid();
-        return Results.Ok(await (from assignment in db.TripAssignments
-                                 join trip in db.Trips on assignment.TripId equals trip.Id
-                                 where assignment.DriverId == driverId && assignment.SupersededAt == null && trip.IsActive
-                                 orderby trip.AppointmentDate, trip.AppointmentTime
-                                 select new { trip.TripNumber, trip.JourneyKey, assignment.VehicleId }).ToListAsync(ct));
     }
 
     private static async Task<ProviderContext?> DispatcherContext(ClaimsPrincipal user, ApplicationDbContext db, CancellationToken ct)

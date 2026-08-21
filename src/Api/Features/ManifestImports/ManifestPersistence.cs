@@ -12,6 +12,7 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         entity.HasIndex(x => x.ProviderId);
         entity.Property(x => x.TripNumber).HasMaxLength(64);
         entity.Property(x => x.JourneyKey).HasMaxLength(64);
+        entity.Property(x => x.PassengerPhone).HasMaxLength(32);
     }
 }
 

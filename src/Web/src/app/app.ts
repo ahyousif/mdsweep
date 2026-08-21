@@ -28,6 +28,14 @@ type Trip = {
   isActive: boolean;
 };
 type ProviderContext = { appUserId: string; providerId: string; role: 'Dispatcher' | 'Driver' };
+type DriverEvent = 'ArrivedAtPickup' | 'PickedUp' | 'ArrivedAtDropOff' | 'DroppedOff' | 'CouldNotComplete';
+type DriverTrip = {
+  tripNumber: string; appointmentDate: string; appointmentTime: string; memberName: string;
+  passengerType: string; vehicleType: string; pickupAddress: string; pickupCity: string;
+  deliveryAddress: string; deliveryCity: string; nextAction: DriverEvent | null; lastEventType: DriverEvent | null;
+  passengerPhone: string | null;
+  tripLogSigned?: boolean;
+};
 
 @Component({
   selector: 'app-root',
@@ -38,11 +46,13 @@ export class App implements OnInit {
   private readonly http = inject(HttpClient);
   protected readonly text = uiText;
   protected readonly signedIn = signal(false);
+  protected readonly role = signal<ProviderContext['role'] | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   protected readonly preview = signal<Preview | null>(null);
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
+  protected readonly driverTrips = signal<DriverTrip[]>([]);
   ngOnInit(): void {
     this.http.get<ProviderContext[]>('/api/auth/me').subscribe({
       next: (contexts) => {
@@ -52,7 +62,11 @@ export class App implements OnInit {
         }
         this.http.post('/api/auth/provider-context', { providerId: contexts[0].providerId }).subscribe({
           next: () => this.http.get('/api/auth/antiforgery').subscribe({
-            next: () => this.signedIn.set(true),
+            next: () => {
+              this.role.set(contexts[0].role);
+              this.signedIn.set(true);
+              if (contexts[0].role === 'Driver') this.loadDriverTrips();
+            },
             error: () => this.error.set('Unable to establish the application session.'),
           }),
           error: () => this.error.set('Unable to select the Provider context.'),
@@ -79,6 +93,29 @@ export class App implements OnInit {
 
   protected signIn(): void {
     window.location.assign('/api/auth/login');
+  }
+
+  protected navigationUrl(address: string, city: string): string {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${address}, ${city}`)}`;
+  }
+
+  protected recordDriverEvent(trip: DriverTrip, type: DriverEvent, outcomeReason?: string, note?: string): void {
+    this.busy.set(true);
+    this.error.set('');
+    this.http.post(`/api/driver-work/trips/${encodeURIComponent(trip.tripNumber)}/events`, {
+      type,
+      deviceCapturedAt: new Date().toISOString(),
+      tripLogSigned: type === 'DroppedOff' ? !!trip.tripLogSigned : null,
+      outcomeReason: type === 'CouldNotComplete' ? outcomeReason : null,
+      note: type === 'CouldNotComplete' ? note?.trim() || null : null,
+    }).subscribe({
+      next: () => this.loadDriverTrips(),
+      error: (response) => { this.error.set(response.error?.message ?? 'This trip action could not be recorded.'); this.busy.set(false); },
+    });
+  }
+
+  protected setTripLogSigned(tripNumber: string, signed: boolean): void {
+    this.driverTrips.update((trips) => trips.map((trip) => trip.tripNumber === tripNumber ? { ...trip, tripLogSigned: signed } : trip));
   }
 
   protected chooseFile(event: Event): void {
@@ -129,6 +166,13 @@ export class App implements OnInit {
     this.http.get<Trip[]>(`/api/service-days/${serviceDate}/trips`).subscribe({
       next: (trips) => { this.trips.set(trips); this.busy.set(false); },
       error: () => { this.error.set('Trips were imported, but the service day could not be loaded.'); this.busy.set(false); },
+    });
+  }
+
+  private loadDriverTrips(): void {
+    this.http.get<DriverTrip[]>('/api/driver-work/trips').subscribe({
+      next: (trips) => { this.driverTrips.set(trips); this.busy.set(false); },
+      error: () => { this.error.set('Your assigned trips could not be loaded.'); this.busy.set(false); },
     });
   }
 }
