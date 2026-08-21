@@ -44,9 +44,9 @@ The file shape is established, but production compatibility remains gated on a b
 
 ### Identity
 
-ASP.NET Core Identity owns authentication through secure cookies. MVP roles are `Dispatcher` and `Driver`. Dispatchers access provider-wide operations; Drivers access only their own assigned Trips.
+Keycloak owns user identities, credentials, sessions, and the `Dispatcher` and `Driver` roles. The Angular PWA signs users in with OpenID Connect authorization code flow with PKCE. The API accepts Keycloak-issued bearer tokens, validates its configured issuer and audience, and maps the Keycloak role claim to its authorization policies.
 
-Identity supports the workflow modules and does not become a generic permission framework.
+Dispatchers access provider-wide operations; Drivers access only their own assigned Trips. Application records that identify a user store Keycloak's immutable subject (`sub`), never a local password or a mutable email address. Identity supports the workflow modules and does not become a generic permission framework.
 
 ## Seams and adapters
 

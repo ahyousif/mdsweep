@@ -14,7 +14,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 
 1. As a Dispatcher, I want to sign in securely, so that Provider operations are not publicly accessible.
 2. As a Driver, I want an individual account, so that my actions are attributable to me.
-3. As a Dispatcher, I want to manage Driver accounts, so that only active Drivers can access assignments.
+3. As a Dispatcher, I want to manage Driver access through the Provider's identity service, so that only active Drivers can access assignments.
 4. As a Dispatcher, I want to upload an MTM CSV or supported spreadsheet, so that I do not copy Trip fields manually.
 5. As a Dispatcher, I want an import preview, so that I understand what will happen before records change.
 6. As a Dispatcher, I want ready, warning, and blocked counts, so that I review exceptions instead of every normal row.
@@ -52,8 +52,8 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 
 - Use .NET 10, .NET Aspire, ASP.NET Core, Angular, EF Core, and PostgreSQL.
 - Build a modular monolith using slim vertical slices for Manifest Import, Dispatch, Driver Work, Billing Export, and Identity.
-- Use ASP.NET Core Identity with secure cookies and the roles Dispatcher and Driver.
-- Model one Provider in the MVP. Users belong to that Provider, but tenant resolution, tenant administration, and Keycloak are deferred.
+- Use Keycloak as the OpenID Connect identity provider. The Angular PWA uses authorization code flow with PKCE; the API validates bearer tokens and authorizes the `Dispatcher` and `Driver` roles.
+- Model one Provider in the MVP. Users belong to that Provider, but tenant resolution and tenant administration are deferred.
 - Manifest Import owns parsing, normalization, validation, Trip identity, repeat-import comparison, broker-status handling, and Journey grouping.
 - Broker-original facts, Provider overrides, and append-only Operational History remain distinct.
 - Dispatch owns bulk Scheduled Pickup Time suggestions and manual assignments. It does not automatically select Drivers.
@@ -97,7 +97,7 @@ The repository has no existing application tests. Synthetic Manifest fixtures an
 - Other brokers
 - Payment reconciliation
 - Payroll, fleet maintenance, credential management, or general NEMT management
-- Multiple Providers, tenant administration, and Keycloak
+- Multiple Providers and tenant administration
 - Managed PostgreSQL migration
 - Broad Playwright coverage, visual snapshots, and coverage-percentage targets
 

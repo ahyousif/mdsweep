@@ -5,6 +5,11 @@
       "resolved": "ghcr.io/devcontainers-extra/features/angular-cli@sha256:ce6e5b54a1da409b24f84c624ec8973e6027c6e1bad0385fe65d7fa3e2db5bc8",
       "integrity": "sha256:ce6e5b54a1da409b24f84c624ec8973e6027c6e1bad0385fe65d7fa3e2db5bc8"
     },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "version": "2.5.9",
+      "resolved": "ghcr.io/devcontainers/features/common-utils@sha256:cb0c4d3c276f157eed17935747e364178d75fee17f55c4e129966f64633deb3a",
+      "integrity": "sha256:cb0c4d3c276f157eed17935747e364178d75fee17f55c4e129966f64633deb3a"
+    },
     "ghcr.io/devcontainers/features/docker-in-docker:4.0.0": {
       "version": "4.0.0",
       "resolved": "ghcr.io/devcontainers/features/docker-in-docker@sha256:4fa87399214366e320d489991769c4f3f461e1ffe461f54eea78a41b34945bb5",
@@ -14,6 +19,16 @@
       "version": "2.5.0",
       "resolved": "ghcr.io/devcontainers/features/dotnet@sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093",
       "integrity": "sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093"
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "2.5.0",
+      "resolved": "ghcr.io/devcontainers/features/dotnet@sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093",
+      "integrity": "sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093"
+    },
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "2.1.0",
+      "resolved": "ghcr.io/devcontainers/features/node@sha256:586c9a6f7dd40bd3ba2cd41e7f2f88dcc31fbe5d1442afcbf07ffbc66b686857",
+      "integrity": "sha256:586c9a6f7dd40bd3ba2cd41e7f2f88dcc31fbe5d1442afcbf07ffbc66b686857"
     },
     "ghcr.io/nikiforovall/devcontainer-features/dotnet-csharpier:1": {
       "version": "1.0.0",
