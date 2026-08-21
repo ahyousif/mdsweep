@@ -48,6 +48,7 @@
         "gruntfuggly.todo-tree",
         "humao.rest-client",
         "meganrogge.template-string-converter",
+        "ms-dotnettools.csdevkit",
         "ms-dotnettools.csharp",
         "openai.chatgpt",
         "sonarsource.sonarlint-vscode"

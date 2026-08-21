@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mdsweep.Api.Infrastructure;
 using Mdsweep.Api.Features.ManifestImports;
+using Mdsweep.Api.Features.Identity;
 using Testcontainers.PostgreSql;
 
 namespace Mdsweep.Api.IntegrationTests;
@@ -34,6 +35,14 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
                     .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
             });
         });
+        await using var scope = application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var appUser = new AppUser { KeycloakSubject = "dispatcher-test" };
+        db.Providers.Add(new Provider { Id = providerId, Name = "Synthetic Provider", KeycloakOrganizationId = "synthetic-provider" });
+        db.AppUsers.Add(appUser);
+        db.ProviderMemberships.Add(new ProviderMembership { ProviderId = providerId, AppUserId = appUser.Id, Role = "Dispatcher" });
+        await db.SaveChangesAsync();
     }
 
     [Fact]
@@ -41,6 +50,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
     {
         using var client = application.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        await AddAntiforgeryToken(client);
         await using var file = File.OpenRead(FixturePath("mtm-manifest.csv"));
         using var form = new MultipartFormDataContent
         {
@@ -62,6 +72,31 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Equal(0, await db.Trips.CountAsync());
+    }
+
+    [Fact]
+    public async Task Dispatcher_realm_role_does_not_override_a_driver_membership_for_the_active_provider()
+    {
+        await using (var scope = application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var membership = await db.ProviderMemberships.SingleAsync();
+            db.ProviderMemberships.Remove(membership);
+            db.ProviderMemberships.Add(new ProviderMembership
+            {
+                ProviderId = membership.ProviderId,
+                AppUserId = membership.AppUserId,
+                Role = "Driver"
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+
+        using var response = await client.GetAsync("/api/service-days/2026-09-15/trips");
+
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
@@ -228,7 +263,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
             "/api/trips/SCHEDULED1/scheduled-pickup-time/history");
         Assert.Equal([new TimeOnly(8, 0), new TimeOnly(8, 10)], history!.Select(x => x.ScheduledPickupTime));
         Assert.Equal([1L, 2L], history!.Select(x => x.Sequence));
-        Assert.All(history!, change => Assert.Equal("dispatcher-test", change.ChangedBy));
+        Assert.All(history!, change => Assert.True(Guid.TryParse(change.ChangedBy, out _)));
     }
 
     public async Task DisposeAsync()
@@ -241,6 +276,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
 
     private static async Task<PreviewResponse> Preview(HttpClient client, string fixture)
     {
+        await AddAntiforgeryToken(client);
         await using var file = File.OpenRead(FixturePath(fixture));
         using var form = new MultipartFormDataContent
         {
@@ -253,6 +289,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
 
     private static async Task<PreviewResponse> PreviewCsv(HttpClient client, string csv, string fileName = "manifest.csv")
     {
+        await AddAntiforgeryToken(client);
         using var form = new MultipartFormDataContent
         {
             { new StringContent(csv), "file", fileName }
@@ -260,6 +297,13 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         using var response = await client.PostAsync("/api/manifest-imports/preview", form);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PreviewResponse>())!;
+    }
+
+    private static async Task AddAntiforgeryToken(HttpClient client)
+    {
+        var result = await client.GetFromJsonAsync<AntiforgeryResponse>("/api/auth/antiforgery");
+        client.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", result!.Token);
     }
 
     private static string Manifest(params string[] rows) =>
@@ -278,6 +322,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         bool IsActive,
         IReadOnlyList<string> Messages);
     private sealed record ApplyResponse(int Imported, int Blocked);
+    private sealed record AntiforgeryResponse(string Token);
     private sealed record ServiceDayTrip(
         string TripNumber,
         string JourneyKey,

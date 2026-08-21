@@ -8,6 +8,12 @@ This context describes the daily work of turning broker-provided transportation 
 The transportation business responsible for scheduling, performing, and billing trips.
 _Avoid_: Client, account
 
+**App User**:
+The MDSweep-owned identity record for a person. It maps to an external identity-provider subject but remains the local reference used by operational records.
+
+**Provider Membership**:
+An App User's authorized relationship to a Provider, including coarse operational roles such as Dispatcher or Driver.
+
 **Dispatcher**:
 The provider user who imports requested trips, plans pickup times, assigns drivers, and resolves operational exceptions.
 _Avoid_: Admin

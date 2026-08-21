@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
-using Mdsweep.Api.Features.Identity;
+using System.Security.Claims;
 using Mdsweep.Api.Features.Dispatch;
 using Mdsweep.Api.Features.ManifestImports;
+using Mdsweep.Api.Features.Identity;
 using Mdsweep.Api.Infrastructure;
 using System.Text.Json.Serialization;
 
@@ -12,30 +13,37 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("mdsweep")));
-builder.Services.AddIdentityCore<ApplicationUser>()
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager();
-builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
-    .AddIdentityCookies();
-builder.Services.Configure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, options =>
-{
-    options.Cookie.Name = ".Mdsweep.Auth";
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Events.OnRedirectToLogin = context =>
+builder.Services.AddAuthentication(options =>
     {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
-    };
-    options.Events.OnRedirectToAccessDenied = context =>
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie(options =>
     {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        return Task.CompletedTask;
-    };
-});
+        options.Cookie.Name = ".Mdsweep.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Events.OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; };
+        options.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
+    })
+    .AddOpenIdConnect(options =>
+    {
+        options.Authority = builder.Configuration["Authentication:Authority"] ?? "https://keycloak.invalid/realms/mdsweep";
+        options.ClientId = builder.Configuration["Authentication:ClientId"] ?? "mdsweep-server";
+        options.ClientSecret = builder.Configuration["Authentication:ClientSecret"];
+        options.ResponseType = "code";
+        options.SaveTokens = false;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.TokenValidationParameters.NameClaimType = "sub";
+        options.TokenValidationParameters.RoleClaimType = "roles";
+    });
 builder.Services.AddAuthorization();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.Name = "XSRF-TOKEN";
+    options.Cookie.HttpOnly = false;
+});
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -43,15 +51,18 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.EnsureCreatedAsync();
-    await BootstrapDispatcher.SeedAsync(scope.ServiceProvider, app.Configuration);
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+    if (app.Environment.IsDevelopment())
+        await DevelopmentIdentitySeeder.SeedAsync(db);
 }
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapIdentity();
+app.UseAntiforgery();
 app.MapManifestImports();
 app.MapDispatch();
+app.MapIdentity();
 app.MapDefaultEndpoints();
 app.Run();
 

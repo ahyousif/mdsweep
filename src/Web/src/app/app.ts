@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { uiText } from './ui-text';
 
 type PreviewRow = {
@@ -28,24 +27,40 @@ type Trip = {
   isWillCall: boolean;
   isActive: boolean;
 };
+type ProviderContext = { appUserId: string; providerId: string; role: 'Dispatcher' | 'Driver' };
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
+export class App implements OnInit {
   private readonly http = inject(HttpClient);
   protected readonly text = uiText;
-  protected email = 'dispatcher@example.test';
-  protected password = '';
   protected readonly signedIn = signal(false);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   protected readonly preview = signal<Preview | null>(null);
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
+  ngOnInit(): void {
+    this.http.get<ProviderContext[]>('/api/auth/me').subscribe({
+      next: (contexts) => {
+        if (contexts.length !== 1) {
+          this.error.set('Choose a Provider before using MDSweep.');
+          return;
+        }
+        this.http.post('/api/auth/provider-context', { providerId: contexts[0].providerId }).subscribe({
+          next: () => this.http.get('/api/auth/antiforgery').subscribe({
+            next: () => this.signedIn.set(true),
+            error: () => this.error.set('Unable to establish the application session.'),
+          }),
+          error: () => this.error.set('Unable to select the Provider context.'),
+        });
+      },
+      error: () => this.signedIn.set(false),
+    });
+  }
   protected countBrokerChanges(change: PreviewRow['brokerChange']): number {
     return this.preview()?.rows.filter((row) => row.brokerChange === change).length ?? 0;
   }
@@ -63,12 +78,7 @@ export class App {
   };
 
   protected signIn(): void {
-    this.busy.set(true);
-    this.error.set('');
-    this.http.post('/api/auth/login', { email: this.email, password: this.password }).subscribe({
-      next: () => { this.signedIn.set(true); this.busy.set(false); },
-      error: (response) => { this.error.set(response.error?.message ?? 'Unable to sign in.'); this.busy.set(false); },
-    });
+    window.location.assign('/api/auth/login');
   }
 
   protected chooseFile(event: Event): void {
