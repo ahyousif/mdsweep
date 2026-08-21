@@ -8,6 +8,7 @@ public interface IKeycloakUserAdministration
 {
     Task<string> CreateDriverAsync(string email, string temporaryPassword, string organizationId, CancellationToken cancellationToken);
     Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken);
+    Task DeleteUserAsync(string subject, CancellationToken cancellationToken);
 }
 
 internal sealed class KeycloakUserAdministration(HttpClient client, IConfiguration configuration) : IKeycloakUserAdministration
@@ -25,15 +26,23 @@ internal sealed class KeycloakUserAdministration(HttpClient client, IConfigurati
         response.EnsureSuccessStatusCode();
         var subject = response.Headers.Location?.Segments.LastOrDefault()?.Trim('/');
         if (string.IsNullOrWhiteSpace(subject)) throw new InvalidOperationException("Keycloak did not return the created user identifier.");
-        await ResetPasswordAsync(subject, temporaryPassword, cancellationToken);
-        await AddToOrganizationAsync(subject, organizationId, cancellationToken);
-        return subject;
+        try
+        {
+            await ResetPasswordAsync(subject, temporaryPassword, cancellationToken);
+            await AddToOrganizationAsync(subject, organizationId, cancellationToken);
+            return subject;
+        }
+        catch
+        {
+            await DeleteUserAsync(subject, CancellationToken.None);
+            throw;
+        }
     }
 
     private async Task AddToOrganizationAsync(string subject, string organizationId, CancellationToken cancellationToken)
     {
         var token = await AccessToken(cancellationToken);
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"{AdminBase()}/organizations/{organizationId}/members") { Content = JsonContent.Create(new { userId = subject }) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{AdminBase()}/organizations/{organizationId}/members") { Content = JsonContent.Create(subject) };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var response = await client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -43,6 +52,15 @@ internal sealed class KeycloakUserAdministration(HttpClient client, IConfigurati
     {
         var token = await AccessToken(cancellationToken);
         using var request = new HttpRequestMessage(HttpMethod.Put, $"{AdminBase()}/users/{subject}/reset-password") { Content = JsonContent.Create(new { type = "password", value = temporaryPassword, temporary = true }) };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await client.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteUserAsync(string subject, CancellationToken cancellationToken)
+    {
+        var token = await AccessToken(cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"{AdminBase()}/users/{subject}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var response = await client.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();

@@ -482,5 +482,6 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
     {
         public Task<string> CreateDriverAsync(string email, string temporaryPassword, string organizationId, CancellationToken cancellationToken) => Task.FromResult($"test-{email}");
         public Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task DeleteUserAsync(string subject, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

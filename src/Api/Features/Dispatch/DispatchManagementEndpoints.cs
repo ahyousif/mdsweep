@@ -52,7 +52,15 @@ public static class DispatchManagementEndpoints
         var appUser = new AppUser { KeycloakSubject = subject };
         var driver = new Driver { ProviderId = context.ProviderId, AppUserId = appUser.Id, DisplayName = request.DisplayName.Trim(), MtmDriverNumber = request.MtmDriverNumber.Trim() };
         db.AppUsers.Add(appUser); db.ProviderMemberships.Add(new ProviderMembership { ProviderId = context.ProviderId, AppUserId = appUser.Id, Role = "Driver" }); db.Drivers.Add(driver);
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            await keycloak.DeleteUserAsync(subject, CancellationToken.None);
+            throw;
+        }
         return Results.Created($"/api/drivers/{driver.Id}", new DriverResponse(driver.Id, appUser.Id, driver.DisplayName, driver.MtmDriverNumber, driver.IsActive));
     }
 
