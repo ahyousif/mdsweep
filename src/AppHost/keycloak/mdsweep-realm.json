@@ -3,13 +3,14 @@
   "enabled": true,
   "roles": { "realm": [{ "name": "Dispatcher" }, { "name": "Driver" }] },
   "clients": [{
-    "clientId": "mdsweep-web",
+    "clientId": "mdsweep-server",
     "enabled": true,
-    "publicClient": true,
+    "publicClient": false,
+    "secret": "Development-only-secret",
     "protocol": "openid-connect",
     "standardFlowEnabled": true,
-    "redirectUris": ["http://localhost:4200/*"],
-    "webOrigins": ["http://localhost:4200"],
+    "redirectUris": ["http://localhost:5080/signin-oidc"],
+    "webOrigins": [],
     "protocolMappers": [{
       "name": "roles",
       "protocol": "openid-connect",

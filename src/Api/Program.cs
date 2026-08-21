@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Mdsweep.Api.Features.Dispatch;
 using Mdsweep.Api.Features.ManifestImports;
+using Mdsweep.Api.Features.Identity;
 using Mdsweep.Api.Infrastructure;
 using System.Text.Json.Serialization;
 
@@ -15,7 +16,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie(options =>
     {
@@ -27,8 +28,8 @@ builder.Services.AddAuthentication(options =>
     })
     .AddOpenIdConnect(options =>
     {
-        options.Authority = builder.Configuration["Authentication:Authority"];
-        options.ClientId = builder.Configuration["Authentication:ClientId"];
+        options.Authority = builder.Configuration["Authentication:Authority"] ?? "https://keycloak.invalid/realms/mdsweep";
+        options.ClientId = builder.Configuration["Authentication:ClientId"] ?? "mdsweep-server";
         options.ClientSecret = builder.Configuration["Authentication:ClientSecret"];
         options.ResponseType = "code";
         options.SaveTokens = false;
@@ -37,6 +38,11 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 builder.Services.AddAuthorization();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.Name = "XSRF-TOKEN";
+});
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -49,11 +55,10 @@ using (var scope = app.Services.CreateScope())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 app.MapManifestImports();
 app.MapDispatch();
-app.MapGet("/api/auth/login", () => Results.Challenge(new AuthenticationProperties { RedirectUri = "/" }, [OpenIdConnectDefaults.AuthenticationScheme]));
-app.MapGet("/api/auth/me", (ClaimsPrincipal user) => Results.Ok(new { subject = user.FindFirstValue("sub"), roles = user.FindAll("roles").Select(x => x.Value) })).RequireAuthorization();
-app.MapPost("/api/auth/logout", () => Results.SignOut([CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme])).RequireAuthorization();
+app.MapIdentity();
 app.MapDefaultEndpoints();
 app.Run();
 

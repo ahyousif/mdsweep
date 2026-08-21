@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Features.ManifestImports;
 using Mdsweep.Api.Features.Dispatch;
+using Mdsweep.Api.Features.Identity;
 
 namespace Mdsweep.Api.Infrastructure;
 
@@ -12,6 +13,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<ManifestPreview> ManifestPreviews => Set<ManifestPreview>();
     public DbSet<TripSchedule> TripSchedules => Set<TripSchedule>();
     public DbSet<ScheduledPickupTimeChange> ScheduledPickupTimeChanges => Set<ScheduledPickupTimeChange>();
+    public DbSet<Provider> Providers => Set<Provider>();
+    public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<ProviderMembership> ProviderMemberships => Set<ProviderMembership>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

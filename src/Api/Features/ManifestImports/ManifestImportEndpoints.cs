@@ -2,6 +2,8 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Infrastructure;
 using Mdsweep.Api.Features.Dispatch;
+using Mdsweep.Api.Features.Identity;
+using System.Security.Claims;
 
 namespace Mdsweep.Api.Features.ManifestImports;
 
@@ -10,8 +12,7 @@ public static class ManifestImportEndpoints
     public static IEndpointRouteBuilder MapManifestImports(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapPost("/api/manifest-imports/preview", Preview)
-            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"))
-            .DisableAntiforgery();
+            .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
         endpoints.MapPost("/api/manifest-imports/{previewId:guid}/apply", Apply)
             .RequireAuthorization(policy => policy.RequireRole("Dispatcher"));
         endpoints.MapGet("/api/manifest-imports/{previewId:guid}", GetPreview)
@@ -21,9 +22,12 @@ public static class ManifestImportEndpoints
 
     private static async Task<IResult> Preview(
         IFormFile? file,
+        ClaimsPrincipal user,
         ApplicationDbContext db,
         CancellationToken cancellationToken)
     {
+        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
+        if (context is null) return Results.Forbid();
         if (file is null || file.Length == 0)
             return Results.BadRequest(new { message = "Choose a non-empty MTM CSV file." });
         if (!Path.GetExtension(file.FileName).Equals(".csv", StringComparison.OrdinalIgnoreCase))
@@ -33,10 +37,11 @@ public static class ManifestImportEndpoints
         {
             await using var stream = file.OpenReadStream();
             var parsedRows = await ManifestCsv.Preview(stream, cancellationToken);
-            var rows = await IdentifyBrokerChanges(parsedRows, db, cancellationToken);
+            var rows = await IdentifyBrokerChanges(parsedRows, context.ProviderId, db, cancellationToken);
             var preview = new ManifestPreview
             {
                 FileName = Path.GetFileName(file.FileName),
+                ProviderId = context.ProviderId,
                 RowsJson = JsonSerializer.Serialize(rows)
             };
             db.ManifestPreviews.Add(preview);
@@ -57,10 +62,13 @@ public static class ManifestImportEndpoints
 
     private static async Task<IResult> Apply(
         Guid previewId,
+        ClaimsPrincipal user,
         ApplicationDbContext db,
         CancellationToken cancellationToken)
     {
-        var preview = await db.ManifestPreviews.FindAsync([previewId], cancellationToken);
+        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
+        if (context is null) return Results.Forbid();
+        var preview = await db.ManifestPreviews.SingleOrDefaultAsync(x => x.Id == previewId && x.ProviderId == context.ProviderId, cancellationToken);
         if (preview is null) return Results.NotFound();
         var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
         var importable = rows.Where(x => x.Disposition.IsImportable()).ToArray();
@@ -68,7 +76,7 @@ public static class ManifestImportEndpoints
             return Results.Ok(new { Imported = importable.Length, Blocked = rows.Count - importable.Length });
 
         var tripNumbers = importable.Select(row => row.TripNumber).ToArray();
-        var existing = await db.Trips.Where(x => tripNumbers.Contains(x.TripNumber))
+        var existing = await db.Trips.Where(x => x.ProviderId == context.ProviderId && tripNumbers.Contains(x.TripNumber))
             .ToDictionaryAsync(x => x.TripNumber, StringComparer.OrdinalIgnoreCase, cancellationToken);
         foreach (var row in importable)
         {
@@ -77,6 +85,7 @@ public static class ManifestImportEndpoints
                 trip = new Trip
                 {
                     TripNumber = row.TripNumber,
+                    ProviderId = context.ProviderId,
                     JourneyKey = JourneyKey(row.TripNumber)
                 };
                 db.Trips.Add(trip);
@@ -86,6 +95,7 @@ public static class ManifestImportEndpoints
             db.TripBrokerImports.Add(new TripBrokerImport
             {
                 TripId = trip.Id,
+                ProviderId = context.ProviderId,
                 ManifestPreviewId = preview.Id,
                 TripNumber = row.TripNumber,
                 AppointmentDate = row.AppointmentDate!.Value,
@@ -102,10 +112,13 @@ public static class ManifestImportEndpoints
 
     private static async Task<IResult> GetPreview(
         Guid previewId,
+        ClaimsPrincipal user,
         ApplicationDbContext db,
         CancellationToken cancellationToken)
     {
-        var preview = await db.ManifestPreviews.AsNoTracking().SingleOrDefaultAsync(x => x.Id == previewId, cancellationToken);
+        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
+        if (context is null) return Results.Forbid();
+        var preview = await db.ManifestPreviews.AsNoTracking().SingleOrDefaultAsync(x => x.Id == previewId && x.ProviderId == context.ProviderId, cancellationToken);
         if (preview is null) return Results.NotFound();
         var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
         return Results.Ok(new ManifestPreviewResponse(
@@ -124,6 +137,7 @@ public static class ManifestImportEndpoints
 
     private static async Task<IReadOnlyList<ManifestPreviewRow>> IdentifyBrokerChanges(
         IReadOnlyList<ManifestPreviewRow> rows,
+        Guid providerId,
         ApplicationDbContext db,
         CancellationToken cancellationToken)
     {
@@ -132,7 +146,7 @@ public static class ManifestImportEndpoints
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var existing = await db.Trips.AsNoTracking()
-            .Where(trip => tripNumbers.Contains(trip.TripNumber))
+            .Where(trip => trip.ProviderId == providerId && tripNumbers.Contains(trip.TripNumber))
             .ToDictionaryAsync(trip => trip.TripNumber, StringComparer.OrdinalIgnoreCase, cancellationToken);
         var scheduledTripIds = await DispatchReadModel.GetTripIdsWithProviderOverrides(
             db, existing.Values.Select(trip => trip.Id), cancellationToken);

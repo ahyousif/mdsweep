@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { uiText } from './ui-text';
 
 type PreviewRow = {
@@ -33,7 +33,7 @@ type Trip = {
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
+export class App implements OnInit {
   private readonly http = inject(HttpClient);
   protected readonly text = uiText;
   protected readonly signedIn = signal(false);
@@ -42,6 +42,17 @@ export class App {
   protected readonly preview = signal<Preview | null>(null);
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
+  ngOnInit(): void {
+    this.http.get('/api/auth/me').subscribe({
+      next: () => {
+        this.http.get('/api/auth/antiforgery').subscribe({
+          next: () => this.signedIn.set(true),
+          error: () => this.error.set('Unable to establish the application session.'),
+        });
+      },
+      error: () => this.signedIn.set(false),
+    });
+  }
   protected countBrokerChanges(change: PreviewRow['brokerChange']): number {
     return this.preview()?.rows.filter((row) => row.brokerChange === change).length ?? 0;
   }
