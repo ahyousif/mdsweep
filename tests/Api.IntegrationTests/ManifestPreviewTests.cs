@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -208,6 +209,24 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         apply.EnsureSuccessStatusCode();
         using var response = await client.PostAsJsonAsync("/api/trips/ACTIVE2/assignments", new { driverId, vehicleId });
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reassigning_one_journey_leg_to_a_different_driver_returns_a_warning()
+    {
+        var (firstDriverId, vehicleId) = await AddActiveResources();
+        var (secondDriverId, _) = await AddActiveResources();
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var preview = await PreviewCsv(client, Manifest(Row("WARNING100A", "VALID", "0915", "100 First St", "200 Main St"), Row("WARNING100B", "VALID", "1015", "100 First St", "200 Main St")));
+        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+        using var journey = await client.PostAsJsonAsync("/api/journeys/WARNING100/assignments", new { driverId = firstDriverId, vehicleId });
+        journey.EnsureSuccessStatusCode();
+        using var reassign = await client.PostAsJsonAsync("/api/trips/WARNING100A/assignments", new { driverId = secondDriverId, vehicleId });
+        reassign.EnsureSuccessStatusCode();
+        using var result = JsonDocument.Parse(await reassign.Content.ReadAsStreamAsync());
+        Assert.True(result.RootElement.GetProperty("warning").GetBoolean());
     }
 
     [Fact]
