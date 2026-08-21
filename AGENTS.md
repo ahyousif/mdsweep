@@ -4,6 +4,14 @@ Build the smallest complete workflow that replaces manual manifest processing. K
 
 Favor delivery over ceremony. For this two-developer MVP, create only buildable issues that prevent duplicated work or preserve acceptance criteria; add process only after a concrete coordination problem appears.
 
+## Current delivery state
+
+The repository is **local-only and pre-deployment**. There is no shared development, staging, pilot, or production environment, and all local data must remain synthetic.
+
+- Treat the current EF Core migration set as the baseline for a new database; do not add speculative legacy-data backfills or production-operational runbooks.
+- Before the first non-local deployment or any use of non-synthetic data, create a deployment-readiness issue that defines the target environment, database migration/backup/restore procedure, Keycloak realm administration, and data-safety approval.
+- Once any shared environment exists, update this section with its purpose and promote schema/data changes through an explicit tested upgrade path.
+
 ## Agent skills
 
 ### Issue tracker
