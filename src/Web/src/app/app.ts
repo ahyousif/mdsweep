@@ -1,6 +1,5 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { uiText } from './ui-text';
 
 type PreviewRow = {
@@ -31,15 +30,12 @@ type Trip = {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
   private readonly http = inject(HttpClient);
   protected readonly text = uiText;
-  protected email = 'dispatcher@example.test';
-  protected password = '';
   protected readonly signedIn = signal(false);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
@@ -63,12 +59,7 @@ export class App {
   };
 
   protected signIn(): void {
-    this.busy.set(true);
-    this.error.set('');
-    this.http.post('/api/auth/login', { email: this.email, password: this.password }).subscribe({
-      next: () => { this.signedIn.set(true); this.busy.set(false); },
-      error: (response) => { this.error.set(response.error?.message ?? 'Unable to sign in.'); this.busy.set(false); },
-    });
+    window.location.assign('/api/auth/login');
   }
 
   protected chooseFile(event: Event): void {

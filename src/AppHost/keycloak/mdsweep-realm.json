@@ -1,0 +1,27 @@
+{
+  "realm": "mdsweep",
+  "enabled": true,
+  "roles": { "realm": [{ "name": "Dispatcher" }, { "name": "Driver" }] },
+  "clients": [{
+    "clientId": "mdsweep-web",
+    "enabled": true,
+    "publicClient": true,
+    "protocol": "openid-connect",
+    "standardFlowEnabled": true,
+    "redirectUris": ["http://localhost:4200/*"],
+    "webOrigins": ["http://localhost:4200"],
+    "protocolMappers": [{
+      "name": "roles",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-realm-role-mapper",
+      "config": { "claim.name": "roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true" }
+    }]
+  }],
+  "users": [{
+    "username": "dispatcher@example.test",
+    "enabled": true,
+    "emailVerified": true,
+    "realmRoles": ["Dispatcher"],
+    "credentials": [{ "type": "password", "value": "Test-only-password-42!", "temporary": false }]
+  }]
+}

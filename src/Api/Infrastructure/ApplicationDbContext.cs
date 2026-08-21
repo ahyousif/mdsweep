@@ -1,15 +1,11 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Features.ManifestImports;
 using Mdsweep.Api.Features.Dispatch;
 
 namespace Mdsweep.Api.Infrastructure;
 
-public sealed class ApplicationUser : IdentityUser;
-
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-    : IdentityDbContext<ApplicationUser, IdentityRole, string>(options)
+    : DbContext(options)
 {
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<TripBrokerImport> TripBrokerImports => Set<TripBrokerImport>();

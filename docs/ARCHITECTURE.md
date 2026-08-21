@@ -44,9 +44,9 @@ The file shape is established, but production compatibility remains gated on a b
 
 ### Identity
 
-Keycloak owns user identities, credentials, sessions, and the `Dispatcher` and `Driver` roles. The Angular PWA signs users in with OpenID Connect authorization code flow with PKCE. The API accepts Keycloak-issued bearer tokens, validates its configured issuer and audience, and maps the Keycloak role claim to its authorization policies.
+Keycloak owns user identities, credentials, sessions, and coarse membership roles. One MDSweep Keycloak realm serves each production environment; a Provider maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
 
-Dispatchers access provider-wide operations; Drivers access only their own assigned Trips. Application records that identify a user store Keycloak's immutable subject (`sub`), never a local password or a mutable email address. Identity supports the workflow modules and does not become a generic permission framework.
+ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API resolves an App User and allowed Provider context server-side, maps Keycloak's immutable `sub` to the local App User ID, and enforces Provider/resource authorization itself. Every Provider-owned entity stores the local `ProviderId`; the application stores the ProviderId-to-Keycloak-Organization mapping and never trusts a client-supplied ProviderId without membership verification.
 
 ## Seams and adapters
 
