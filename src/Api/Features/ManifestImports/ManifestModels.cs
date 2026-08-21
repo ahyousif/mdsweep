@@ -35,6 +35,32 @@ public sealed class Trip
         IsWillCall = row.IsWillCall;
         IsActive = row.Disposition.IsActive();
     }
+
+    public IReadOnlyList<string> BrokerDifferences(ManifestPreviewRow row)
+    {
+        var differences = new List<string>();
+        AddIfDifferent(AppointmentDate == row.AppointmentDate, "appointment date");
+        AddIfDifferent(AppointmentTime == row.AppointmentTime, "appointment time");
+        AddIfDifferent(Same(MemberFirstName, row.MemberFirstName), "member first name");
+        AddIfDifferent(Same(MemberLastName, row.MemberLastName), "member last name");
+        AddIfDifferent(Same(PickupAddress, row.PickupAddress), "pickup address");
+        AddIfDifferent(Same(PickupCity, row.PickupCity), "pickup city");
+        AddIfDifferent(Same(DeliveryAddress, row.DeliveryAddress), "destination address");
+        AddIfDifferent(Same(DeliveryCity, row.DeliveryCity), "destination city");
+        AddIfDifferent(Same(PassengerType, row.PassengerType), "passenger type");
+        AddIfDifferent(Same(VehicleType, row.VehicleType), "vehicle type");
+        AddIfDifferent(Same(BrokerStatus, row.BrokerStatus), "MTM status");
+        AddIfDifferent(IsWillCall == row.IsWillCall, "will-call flag");
+        return differences;
+
+        void AddIfDifferent(bool same, string field)
+        {
+            if (!same) differences.Add(field);
+        }
+    }
+
+    private static bool Same(string left, string right) =>
+        string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class TripBrokerImport
@@ -61,6 +87,7 @@ public sealed class ManifestPreview
 }
 
 public enum ManifestRowDisposition { Ready, Warning, Blocked }
+public enum ManifestBrokerChange { New, BrokerChanged, Unchanged, Blocked }
 
 public sealed record ManifestPreviewResponse(
     Guid PreviewId,
@@ -85,7 +112,8 @@ public sealed record ManifestPreviewRow(
     string PassengerType,
     string VehicleType,
     string BrokerStatus,
-    bool IsWillCall);
+    bool IsWillCall,
+    ManifestBrokerChange BrokerChange = ManifestBrokerChange.New);
 
 public static class ManifestRowDispositionRules
 {

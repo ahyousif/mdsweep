@@ -1,6 +1,10 @@
 # Local manifests may contain protected health information.
 8182025WQAS.xlsx - Export Trip (1).csv
 
+# First-party MTM reference artifacts may contain example operational identifiers.
+MTM LInk Bulk Upload Template.xlsx
+MTM Link - Claiming a Trip Bulk Upload.pdf
+
 # Local development state
 .aspire/
 .angular/

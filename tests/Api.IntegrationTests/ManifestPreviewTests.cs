@@ -142,6 +142,37 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         Assert.Equal(["100 First St", "300 New St"], history.Select(x => x.PickupAddress));
     }
 
+    [Fact]
+    public async Task Repeat_import_preview_identifies_unchanged_and_broker_changed_trips_without_applying_them()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var originalCsv = Manifest(
+            Row("SAME1", "VALID", "0915", "100 First St", "200 Main St"),
+            Row("CHANGED1", "VALID", "1015", "300 Second St", "400 Oak St"));
+        var original = await PreviewCsv(client, originalCsv);
+        using var apply = await client.PostAsync($"/api/manifest-imports/{original.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+
+        var revised = await PreviewCsv(client, Manifest(
+            Row("SAME1", "VALID", "0915", "100 First St", "200 Main St"),
+            Row("CHANGED1", "TURN BACK", "1030", "500 Revised St", "600 Changed St"),
+            Row("NEW1", "VALID", "1100", "700 New St", "800 Newer St")));
+
+        Assert.Equal("Unchanged", revised.Rows.Single(x => x.TripNumber == "SAME1").BrokerChange);
+        var changed = revised.Rows.Single(x => x.TripNumber == "CHANGED1");
+        Assert.Equal("BrokerChanged", changed.BrokerChange);
+        Assert.Contains(changed.Messages, message =>
+            message.Contains("appointment time", StringComparison.OrdinalIgnoreCase) &&
+            message.Contains("pickup address", StringComparison.OrdinalIgnoreCase) &&
+            message.Contains("MTM status", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("New", revised.Rows.Single(x => x.TripNumber == "NEW1").BrokerChange);
+
+        var serviceDay = await client.GetFromJsonAsync<List<ServiceDayTrip>>("/api/service-days/2026-09-15/trips");
+        Assert.Equal("VALID", serviceDay!.Single(x => x.TripNumber == "CHANGED1").BrokerStatus);
+        Assert.DoesNotContain(serviceDay!, x => x.TripNumber == "NEW1");
+    }
+
     public async Task DisposeAsync()
     {
         await application.DisposeAsync();
@@ -181,7 +212,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         $"09/15/2026,{delivery},{pickup},{time},{tripNumber},{status},Test,Rider,Phoenix,Mesa,Ambulatory,Cab,N";
 
     private sealed record PreviewResponse(Guid PreviewId, int Ready, int Warning, int Blocked, List<DateOnly> ServiceDates, List<PreviewRow> Rows);
-    private sealed record PreviewRow(string TripNumber, string Disposition, IReadOnlyList<string> Messages);
+    private sealed record PreviewRow(string TripNumber, string Disposition, string BrokerChange, IReadOnlyList<string> Messages);
     private sealed record ApplyResponse(int Imported, int Blocked);
     private sealed record ServiceDayTrip(
         string TripNumber,

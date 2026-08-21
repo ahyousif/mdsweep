@@ -33,7 +33,8 @@ public static class ManifestImportEndpoints
         try
         {
             await using var stream = file.OpenReadStream();
-            var rows = await ManifestCsv.Preview(stream, cancellationToken);
+            var parsedRows = await ManifestCsv.Preview(stream, cancellationToken);
+            var rows = await IdentifyBrokerChanges(parsedRows, db, cancellationToken);
             var preview = new ManifestPreview
             {
                 FileName = Path.GetFileName(file.FileName),
@@ -137,4 +138,34 @@ public static class ManifestImportEndpoints
         tripNumber.Length > 1 && (tripNumber.EndsWith('A') || tripNumber.EndsWith('B'))
             ? tripNumber[..^1]
             : tripNumber;
+
+    private static async Task<IReadOnlyList<ManifestPreviewRow>> IdentifyBrokerChanges(
+        IReadOnlyList<ManifestPreviewRow> rows,
+        ApplicationDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var tripNumbers = rows.Where(row => row.Disposition.IsImportable())
+            .Select(row => row.TripNumber)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var existing = await db.Trips.AsNoTracking()
+            .Where(trip => tripNumbers.Contains(trip.TripNumber))
+            .ToDictionaryAsync(trip => trip.TripNumber, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        return rows.Select(row =>
+        {
+            if (!row.Disposition.IsImportable())
+                return row with { BrokerChange = ManifestBrokerChange.Blocked };
+            if (!existing.TryGetValue(row.TripNumber, out var trip))
+                return row with { BrokerChange = ManifestBrokerChange.New };
+            var differences = trip.BrokerDifferences(row);
+            return differences.Count == 0
+                ? row with { BrokerChange = ManifestBrokerChange.Unchanged }
+                : row with
+                {
+                    BrokerChange = ManifestBrokerChange.BrokerChanged,
+                    Messages = row.Messages.Append($"MTM changed: {string.Join(", ", differences)}.").ToArray()
+                };
+        }).ToArray();
+    }
 }

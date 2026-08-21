@@ -11,6 +11,7 @@ button, .file-button { min-height: 44px; box-sizing: border-box; display: inline
 button:disabled { opacity: .6; cursor: wait; }.file-button input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
 .upload { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .summary { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }.summary strong { padding: .5rem .75rem; border-radius: 999px; }
+.change-summary { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; color: #50616a; font-size: .9rem; }
 .ready { color: #17643d; background: #e5f6ec; }.warning { color: #755400; background: #fff1bd; }.blocked { color: #8a2828; background: #fde8e8; }
 .exception { position: relative; padding: .8rem 6rem .8rem 0; border-top: 1px solid #e3e8ea; }.exception p { margin: .25rem 0; }.exception .pill { position: absolute; top: .75rem; right: 0; }
 .pill { display: inline-block; padding: .15rem .5rem; border-radius: 999px; color: #17643d; background: #e5f6ec; font-size: .8rem; font-weight: 750; }

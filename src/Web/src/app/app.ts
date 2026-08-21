@@ -3,7 +3,12 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { uiText } from './ui-text';
 
-type PreviewRow = { tripNumber: string; disposition: 'Ready' | 'Warning' | 'Blocked'; messages: string[] };
+type PreviewRow = {
+  tripNumber: string;
+  disposition: 'Ready' | 'Warning' | 'Blocked';
+  brokerChange: 'New' | 'BrokerChanged' | 'Unchanged' | 'Blocked';
+  messages: string[];
+};
 type Preview = { previewId: string; ready: number; warning: number; blocked: number; serviceDates: string[]; rows: PreviewRow[] };
 type Trip = {
   tripNumber: string;
@@ -38,6 +43,9 @@ export class App {
   protected readonly preview = signal<Preview | null>(null);
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
+  protected countBrokerChanges(change: PreviewRow['brokerChange']): number {
+    return this.preview()?.rows.filter((row) => row.brokerChange === change).length ?? 0;
+  }
 
   protected readonly journeys = () => {
     const grouped = new Map<string, Trip[]>();

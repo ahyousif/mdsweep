@@ -35,13 +35,20 @@
           <strong class="warning">{{ result.warning }} warning</strong>
           <strong class="blocked">{{ result.blocked }} blocked</strong>
         </div>
-        @if (result.warning || result.blocked) {
+        <div class="change-summary" aria-label="Changes from earlier Manifests">
+          <span>{{ countBrokerChanges('New') }} {{ text.newTrips }}</span>
+          <span>{{ countBrokerChanges('BrokerChanged') }} {{ text.brokerChanged }}</span>
+          <span>{{ countBrokerChanges('Unchanged') }} {{ text.unchanged }}</span>
+        </div>
+        @if (result.warning || result.blocked || countBrokerChanges('BrokerChanged')) {
           <h2>{{ text.needsReview }}</h2>
           @for (row of result.rows; track row.tripNumber) {
-            @if (row.disposition !== 'Ready') {
+            @if (row.disposition !== 'Ready' || row.brokerChange === 'BrokerChanged') {
               <article class="exception">
                 <strong>{{ row.tripNumber || 'Trip without a number' }}</strong>
-                <span class="pill" [class]="row.disposition.toLowerCase()">{{ row.disposition }}</span>
+                <span class="pill" [class.warning]="row.brokerChange === 'BrokerChanged'">
+                  {{ row.brokerChange === 'BrokerChanged' ? text.brokerChanged : row.disposition }}
+                </span>
                 @for (message of row.messages; track message) { <p>{{ message }}</p> }
               </article>
             }

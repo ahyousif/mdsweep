@@ -95,7 +95,8 @@ internal static class ManifestCsv
             tripNumber, disposition, rowMessages, values.AppointmentDate, values.AppointmentTime,
             values.MemberFirstName, values.MemberLastName, values.PickupAddress, values.PickupCity,
             values.DeliveryAddress, values.DeliveryCity, values.PassengerType, values.VehicleType,
-            values.BrokerStatus, values.IsWillCall);
+            values.BrokerStatus, values.IsWillCall,
+            disposition == ManifestRowDisposition.Blocked ? ManifestBrokerChange.Blocked : ManifestBrokerChange.New);
     }
 
     private static List<List<string>> Parse(string text)
