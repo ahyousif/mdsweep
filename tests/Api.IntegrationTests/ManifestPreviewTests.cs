@@ -160,6 +160,19 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Dispatcher_cannot_assign_an_inactive_broker_trip()
+    {
+        var (driverId, vehicleId) = await AddActiveResources();
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var preview = await PreviewCsv(client, Manifest(Row("INACTIVE1", "TURN BACK", "0915", "100 First St", "200 Main St")));
+        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+        using var response = await client.PostAsJsonAsync("/api/trips/INACTIVE1/assignments", new { driverId, vehicleId });
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Applying_preview_imports_trips_groups_journeys_and_retains_blocked_rows()
     {
         using var client = application.CreateClient();
@@ -364,6 +377,19 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         var result = await client.GetFromJsonAsync<AntiforgeryResponse>("/api/auth/antiforgery");
         client.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
         client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", result!.Token);
+    }
+
+    private async Task<(Guid DriverId, Guid VehicleId)> AddActiveResources()
+    {
+        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        await using var scope = application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var appUser = new AppUser { KeycloakSubject = $"driver-{Guid.NewGuid()}" };
+        var driver = new Driver { ProviderId = providerId, AppUserId = appUser.Id, DisplayName = "Synthetic Driver", MtmDriverNumber = $"DRV-{Guid.NewGuid():N}" };
+        var vehicle = new Vehicle { ProviderId = providerId, DisplayName = "Van", Vin = $"VIN{Guid.NewGuid():N}"[..17] };
+        db.AppUsers.Add(appUser); db.ProviderMemberships.Add(new ProviderMembership { ProviderId = providerId, AppUserId = appUser.Id, Role = "Driver" }); db.Drivers.Add(driver); db.Vehicles.Add(vehicle);
+        await db.SaveChangesAsync();
+        return (driver.Id, vehicle.Id);
     }
 
     private static string Manifest(params string[] rows) =>
