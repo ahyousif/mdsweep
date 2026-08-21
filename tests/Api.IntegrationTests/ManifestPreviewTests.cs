@@ -192,6 +192,25 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Dispatcher_cannot_assign_with_an_inactive_vehicle()
+    {
+        var (driverId, vehicleId) = await AddActiveResources();
+        await using (var scope = application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            (await db.Vehicles.SingleAsync(x => x.Id == vehicleId)).IsActive = false;
+            await db.SaveChangesAsync();
+        }
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var preview = await PreviewCsv(client, Manifest(Row("ACTIVE2", "VALID", "0915", "100 First St", "200 Main St")));
+        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+        using var response = await client.PostAsJsonAsync("/api/trips/ACTIVE2/assignments", new { driverId, vehicleId });
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Applying_preview_imports_trips_groups_journeys_and_retains_blocked_rows()
     {
         using var client = application.CreateClient();
