@@ -52,6 +52,18 @@ public sealed class DispatcherSignInTests : IAsyncLifetime
         Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Anonymous_user_cannot_change_a_scheduled_pickup_time()
+    {
+        using var client = application.CreateClient();
+
+        using var response = await client.PutAsJsonAsync(
+            "/api/trips/SYNTHETIC1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 0) });
+
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     public async Task DisposeAsync()
     {
         await application.DisposeAsync();

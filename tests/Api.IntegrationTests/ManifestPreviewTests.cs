@@ -57,6 +57,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         Assert.Equal(1, preview.Blocked);
         Assert.Equal(4, preview.Rows.Count);
         Assert.Equal([new DateOnly(2026, 9, 15)], preview.ServiceDates);
+        Assert.False(preview.Rows.Single(x => x.TripNumber == "SYNTH200A").IsActive);
 
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -142,6 +143,94 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         Assert.Equal(["100 First St", "300 New St"], history.Select(x => x.PickupAddress));
     }
 
+    [Fact]
+    public async Task Repeat_import_preview_identifies_unchanged_and_broker_changed_trips_without_applying_them()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var originalCsv = Manifest(
+            Row("SAME1", "VALID", "0915", "100 First St", "200 Main St"),
+            Row("CHANGED1", "VALID", "1015", "300 Second St", "400 Oak St"));
+        var original = await PreviewCsv(client, originalCsv);
+        using var apply = await client.PostAsync($"/api/manifest-imports/{original.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+
+        var revised = await PreviewCsv(client, Manifest(
+            Row("SAME1", "VALID", "0915", "100 First St", "200 Main St"),
+            Row("CHANGED1", "TURN BACK", "1030", "500 Revised St", "600 Changed St"),
+            Row("NEW1", "VALID", "1100", "700 New St", "800 Newer St")));
+
+        Assert.Equal("Unchanged", revised.Rows.Single(x => x.TripNumber == "SAME1").BrokerChange);
+        var changed = revised.Rows.Single(x => x.TripNumber == "CHANGED1");
+        Assert.Equal("BrokerChanged", changed.BrokerChange);
+        Assert.Contains(changed.Messages, message =>
+            message.Contains("appointment time", StringComparison.OrdinalIgnoreCase) &&
+            message.Contains("pickup address", StringComparison.OrdinalIgnoreCase) &&
+            message.Contains("MTM status", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("New", revised.Rows.Single(x => x.TripNumber == "NEW1").BrokerChange);
+
+        var serviceDay = await client.GetFromJsonAsync<List<ServiceDayTrip>>("/api/service-days/2026-09-15/trips");
+        Assert.Equal("VALID", serviceDay!.Single(x => x.TripNumber == "CHANGED1").BrokerStatus);
+        Assert.DoesNotContain(serviceDay!, x => x.TripNumber == "NEW1");
+    }
+
+    [Fact]
+    public async Task Revised_manifest_preserves_provider_scheduled_pickup_and_its_history()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var original = await PreviewCsv(client,
+            Manifest(Row("SCHEDULED1", "VALID", "0915", "100 First St", "200 Main St")));
+        using var firstApply = await client.PostAsync($"/api/manifest-imports/{original.PreviewId}/apply", null);
+        firstApply.EnsureSuccessStatusCode();
+
+        using var firstSchedule = await client.PutAsJsonAsync(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 0) });
+        firstSchedule.EnsureSuccessStatusCode();
+
+        var unchangedWithProviderSchedule = await PreviewCsv(client,
+            Manifest(Row("SCHEDULED1", "VALID", "0915", "100 First St", "200 Main St")));
+        var unchanged = Assert.Single(unchangedWithProviderSchedule.Rows);
+        Assert.Equal("Unchanged", unchanged.BrokerChange);
+        Assert.True(unchanged.HasProviderOverrides);
+        Assert.True(unchanged.IsActive);
+        Assert.Contains(unchanged.Messages, message =>
+            message.Contains("scheduled pickup time will be preserved", StringComparison.OrdinalIgnoreCase));
+
+        using var replacementSchedule = await client.PutAsJsonAsync(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 10) });
+        replacementSchedule.EnsureSuccessStatusCode();
+        using var retriedSchedule = await client.PutAsJsonAsync(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 10) });
+        retriedSchedule.EnsureSuccessStatusCode();
+
+        var revised = await PreviewCsv(client,
+            Manifest(Row("SCHEDULED1", "VALID", "1030", "300 Revised St", "400 Changed St")));
+        var changed = Assert.Single(revised.Rows);
+        Assert.Equal("BrokerChanged", changed.BrokerChange);
+        Assert.True(changed.HasProviderOverrides);
+        Assert.True(changed.IsActive);
+        Assert.Contains(changed.Messages, message =>
+            message.Contains("scheduled pickup time will be preserved", StringComparison.OrdinalIgnoreCase));
+
+        using var revisedApply = await client.PostAsync($"/api/manifest-imports/{revised.PreviewId}/apply", null);
+        revisedApply.EnsureSuccessStatusCode();
+
+        var serviceDay = await client.GetFromJsonAsync<List<ServiceDayTrip>>("/api/service-days/2026-09-15/trips");
+        var trip = Assert.Single(serviceDay!);
+        Assert.Equal(new TimeOnly(10, 30), trip.AppointmentTime);
+        Assert.Equal(new TimeOnly(8, 10), trip.ScheduledPickupTime);
+
+        var history = await client.GetFromJsonAsync<List<ScheduledPickupChange>>(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time/history");
+        Assert.Equal([new TimeOnly(8, 0), new TimeOnly(8, 10)], history!.Select(x => x.ScheduledPickupTime));
+        Assert.Equal([1L, 2L], history!.Select(x => x.Sequence));
+        Assert.All(history!, change => Assert.Equal("dispatcher-test", change.ChangedBy));
+    }
+
     public async Task DisposeAsync()
     {
         await application.DisposeAsync();
@@ -181,7 +270,13 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         $"09/15/2026,{delivery},{pickup},{time},{tripNumber},{status},Test,Rider,Phoenix,Mesa,Ambulatory,Cab,N";
 
     private sealed record PreviewResponse(Guid PreviewId, int Ready, int Warning, int Blocked, List<DateOnly> ServiceDates, List<PreviewRow> Rows);
-    private sealed record PreviewRow(string TripNumber, string Disposition, IReadOnlyList<string> Messages);
+    private sealed record PreviewRow(
+        string TripNumber,
+        string Disposition,
+        string BrokerChange,
+        bool HasProviderOverrides,
+        bool IsActive,
+        IReadOnlyList<string> Messages);
     private sealed record ApplyResponse(int Imported, int Blocked);
     private sealed record ServiceDayTrip(
         string TripNumber,
@@ -189,5 +284,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         string BrokerStatus,
         TimeOnly AppointmentTime,
         string PickupAddress,
+        TimeOnly? ScheduledPickupTime,
         bool IsActive);
+    private sealed record ScheduledPickupChange(long Sequence, TimeOnly ScheduledPickupTime, string ChangedBy);
 }

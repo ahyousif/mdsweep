@@ -3,7 +3,14 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { uiText } from './ui-text';
 
-type PreviewRow = { tripNumber: string; disposition: 'Ready' | 'Warning' | 'Blocked'; messages: string[] };
+type PreviewRow = {
+  tripNumber: string;
+  disposition: 'Ready' | 'Warning' | 'Blocked';
+  brokerChange: 'New' | 'BrokerChanged' | 'Unchanged' | 'Blocked';
+  hasProviderOverrides: boolean;
+  isActive: boolean;
+  messages: string[];
+};
 type Preview = { previewId: string; ready: number; warning: number; blocked: number; serviceDates: string[]; rows: PreviewRow[] };
 type Trip = {
   tripNumber: string;
@@ -17,6 +24,7 @@ type Trip = {
   vehicleType: string;
   brokerStatus: string;
   appointmentTime: string;
+  scheduledPickupTime: string | null;
   isWillCall: boolean;
   isActive: boolean;
 };
@@ -38,6 +46,15 @@ export class App {
   protected readonly preview = signal<Preview | null>(null);
   protected readonly trips = signal<Trip[]>([]);
   protected readonly serviceDate = signal('');
+  protected countBrokerChanges(change: PreviewRow['brokerChange']): number {
+    return this.preview()?.rows.filter((row) => row.brokerChange === change).length ?? 0;
+  }
+  protected countProviderOverrides(): number {
+    return this.preview()?.rows.filter((row) => row.hasProviderOverrides).length ?? 0;
+  }
+  protected countInactive(): number {
+    return this.preview()?.rows.filter((row) => !row.isActive && row.disposition !== 'Blocked').length ?? 0;
+  }
 
   protected readonly journeys = () => {
     const grouped = new Map<string, Trip[]>();
@@ -78,6 +95,21 @@ export class App {
     this.http.post(`/api/manifest-imports/${preview.previewId}/apply`, {}).subscribe({
       next: () => this.loadServiceDay(),
       error: () => { this.error.set('Unable to import this Manifest.'); this.busy.set(false); },
+    });
+  }
+
+  protected setScheduledPickupTime(trip: Trip, value: string): void {
+    if (!value) return;
+    this.busy.set(true);
+    this.error.set('');
+    this.http.put(`/api/trips/${encodeURIComponent(trip.tripNumber)}/scheduled-pickup-time`, {
+      scheduledPickupTime: value.length === 5 ? `${value}:00` : value,
+    }).subscribe({
+      next: () => this.loadServiceDay(),
+      error: (response) => {
+        this.error.set(response.error?.message ?? this.text.scheduleSaveError);
+        this.busy.set(false);
+      },
     });
   }
 

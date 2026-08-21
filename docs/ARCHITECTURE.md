@@ -38,7 +38,9 @@ The implementation hides authorization, valid event order, offline idempotency, 
 
 **Interface:** validate Closed Trips and generate one MTM-compatible billing file.
 
-The implementation remains pinned until the current MTM bulk-upload template and training establish required fields, evidence, duplicate behavior, and rejection rules. Code may reserve the module location, but must not guess the file contract.
+The implementation generates the exact ten-column `.xlsx` Claims Sheet documented in `docs/research/mtm-bulk-claim-upload.md`, validates claim readiness before export, and records the export and included Trips in Operational History. The Dispatcher continues the manual MTM Link review and submission workflow.
+
+The file shape is established, but production compatibility remains gated on a bounded synthetic portal trial for the unresolved validation, duplicate, correction, signature-document, and partial-failure behavior recorded in the research note.
 
 ### Identity
 
@@ -100,11 +102,10 @@ The pilot acceptance path is: import a representative manifest without spreadshe
 
 ## Deferred decisions
 
-- MTM billing-file schema and validation behavior
+- Unresolved MTM portal validation, duplicate, correction, signature-document, and partial-failure behavior
 - Any authorized MTM API or browser automation
 - Live mapping provider
 - Managed PostgreSQL migration
 - Multitenancy
 - Arabic and other translations
 - Automatic assignment and route optimization
-

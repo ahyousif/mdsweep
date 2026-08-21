@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Features.ManifestImports;
+using Mdsweep.Api.Features.Dispatch;
 
 namespace Mdsweep.Api.Infrastructure;
 
@@ -13,6 +14,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<TripBrokerImport> TripBrokerImports => Set<TripBrokerImport>();
     public DbSet<ManifestPreview> ManifestPreviews => Set<ManifestPreview>();
+    public DbSet<TripSchedule> TripSchedules => Set<TripSchedule>();
+    public DbSet<ScheduledPickupTimeChange> ScheduledPickupTimeChanges => Set<ScheduledPickupTimeChange>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
