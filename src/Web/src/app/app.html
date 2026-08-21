@@ -63,12 +63,18 @@
         <h2>{{ serviceDate() }}</h2>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>{{ text.appointment }}</th><th>{{ text.passenger }}</th><th>{{ text.route }}</th><th>{{ text.service }}</th><th>{{ text.status }}</th></tr></thead>
+            <thead><tr><th>{{ text.scheduledPickup }}</th><th>{{ text.appointment }}</th><th>{{ text.passenger }}</th><th>{{ text.route }}</th><th>{{ text.service }}</th><th>{{ text.status }}</th></tr></thead>
             <tbody>
               @for (journey of journeys(); track journey.journeyKey) {
-                <tr class="journey"><td colspan="5">Journey {{ journey.journeyKey }} · {{ journey.trips.length }} {{ journey.trips.length === 1 ? 'leg' : 'legs' }}</td></tr>
+                <tr class="journey"><td colspan="6">Journey {{ journey.journeyKey }} · {{ journey.trips.length }} {{ journey.trips.length === 1 ? 'leg' : 'legs' }}</td></tr>
                 @for (trip of journey.trips; track trip.tripNumber) {
                   <tr [class.inactive]="!trip.isActive">
+                    <td>
+                      <div class="schedule-control">
+                        <input #scheduledTime type="time" [value]="trip.scheduledPickupTime?.slice(0, 5) ?? ''" [disabled]="busy() || !trip.isActive" [attr.aria-label]="text.scheduledPickup" />
+                        <button type="button" class="secondary" (click)="setScheduledPickupTime(trip, scheduledTime.value)" [disabled]="busy() || !trip.isActive || !scheduledTime.value">{{ text.save }}</button>
+                      </div>
+                    </td>
                     <td>{{ trip.isWillCall ? 'Will call' : trip.appointmentTime }}</td>
                     <td><strong>{{ trip.memberName }}</strong><small>{{ trip.tripNumber }}</small></td>
                     <td>{{ trip.pickupCity }} → {{ trip.deliveryCity }}</td>

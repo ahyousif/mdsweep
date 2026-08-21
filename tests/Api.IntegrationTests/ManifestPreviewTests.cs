@@ -173,6 +173,50 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         Assert.DoesNotContain(serviceDay!, x => x.TripNumber == "NEW1");
     }
 
+    [Fact]
+    public async Task Revised_manifest_preserves_provider_scheduled_pickup_and_its_history()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        var original = await PreviewCsv(client,
+            Manifest(Row("SCHEDULED1", "VALID", "0915", "100 First St", "200 Main St")));
+        using var firstApply = await client.PostAsync($"/api/manifest-imports/{original.PreviewId}/apply", null);
+        firstApply.EnsureSuccessStatusCode();
+
+        using var firstSchedule = await client.PutAsJsonAsync(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 0) });
+        firstSchedule.EnsureSuccessStatusCode();
+        using var replacementSchedule = await client.PutAsJsonAsync(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 10) });
+        replacementSchedule.EnsureSuccessStatusCode();
+        using var retriedSchedule = await client.PutAsJsonAsync(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time",
+            new { ScheduledPickupTime = new TimeOnly(8, 10) });
+        retriedSchedule.EnsureSuccessStatusCode();
+
+        var revised = await PreviewCsv(client,
+            Manifest(Row("SCHEDULED1", "VALID", "1030", "300 Revised St", "400 Changed St")));
+        var changed = Assert.Single(revised.Rows);
+        Assert.Equal("BrokerChanged", changed.BrokerChange);
+        Assert.Contains(changed.Messages, message =>
+            message.Contains("scheduled pickup time will be preserved", StringComparison.OrdinalIgnoreCase));
+
+        using var revisedApply = await client.PostAsync($"/api/manifest-imports/{revised.PreviewId}/apply", null);
+        revisedApply.EnsureSuccessStatusCode();
+
+        var serviceDay = await client.GetFromJsonAsync<List<ServiceDayTrip>>("/api/service-days/2026-09-15/trips");
+        var trip = Assert.Single(serviceDay!);
+        Assert.Equal(new TimeOnly(10, 30), trip.AppointmentTime);
+        Assert.Equal(new TimeOnly(8, 10), trip.ScheduledPickupTime);
+
+        var history = await client.GetFromJsonAsync<List<ScheduledPickupChange>>(
+            "/api/trips/SCHEDULED1/scheduled-pickup-time/history");
+        Assert.Equal([new TimeOnly(8, 0), new TimeOnly(8, 10)], history!.Select(x => x.ScheduledPickupTime));
+        Assert.All(history!, change => Assert.Equal("dispatcher-test", change.ChangedBy));
+    }
+
     public async Task DisposeAsync()
     {
         await application.DisposeAsync();
@@ -220,5 +264,7 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         string BrokerStatus,
         TimeOnly AppointmentTime,
         string PickupAddress,
+        TimeOnly? ScheduledPickupTime,
         bool IsActive);
+    private sealed record ScheduledPickupChange(TimeOnly ScheduledPickupTime, string ChangedBy);
 }

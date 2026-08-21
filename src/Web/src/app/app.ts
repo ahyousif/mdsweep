@@ -22,6 +22,7 @@ type Trip = {
   vehicleType: string;
   brokerStatus: string;
   appointmentTime: string;
+  scheduledPickupTime: string | null;
   isWillCall: boolean;
   isActive: boolean;
 };
@@ -86,6 +87,21 @@ export class App {
     this.http.post(`/api/manifest-imports/${preview.previewId}/apply`, {}).subscribe({
       next: () => this.loadServiceDay(),
       error: () => { this.error.set('Unable to import this Manifest.'); this.busy.set(false); },
+    });
+  }
+
+  protected setScheduledPickupTime(trip: Trip, value: string): void {
+    if (!value) return;
+    this.busy.set(true);
+    this.error.set('');
+    this.http.put(`/api/trips/${encodeURIComponent(trip.tripNumber)}/scheduled-pickup-time`, {
+      scheduledPickupTime: value.length === 5 ? `${value}:00` : value,
+    }).subscribe({
+      next: () => this.loadServiceDay(),
+      error: (response) => {
+        this.error.set(response.error?.message ?? this.text.scheduleSaveError);
+        this.busy.set(false);
+      },
     });
   }
 

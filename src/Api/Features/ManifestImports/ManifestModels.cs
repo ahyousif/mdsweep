@@ -136,5 +136,6 @@ public sealed record ServiceDayTripResponse(
     string VehicleType,
     string BrokerStatus,
     TimeOnly AppointmentTime,
+    TimeOnly? ScheduledPickupTime,
     bool IsWillCall,
     bool IsActive);

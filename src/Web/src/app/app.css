@@ -9,6 +9,8 @@ form, label { display: grid; gap: .4rem; } form { gap: 1rem; } label { font-weig
 input { min-height: 44px; box-sizing: border-box; padding: .65rem; border: 1px solid #9aaab1; border-radius: .4rem; font: inherit; }
 button, .file-button { min-height: 44px; box-sizing: border-box; display: inline-grid; place-items: center; padding: .65rem 1rem; color: white; background: #087b68; border: 0; border-radius: .4rem; font: inherit; font-weight: 750; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }.file-button input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
+.secondary { min-height: 36px; padding: .35rem .65rem; color: #087b68; background: white; border: 1px solid #087b68; }
+.schedule-control { display: flex; align-items: center; gap: .4rem; }.schedule-control input { min-height: 36px; width: 7rem; padding: .35rem; }
 .upload { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .summary { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }.summary strong { padding: .5rem .75rem; border-radius: 999px; }
 .change-summary { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; color: #50616a; font-size: .9rem; }

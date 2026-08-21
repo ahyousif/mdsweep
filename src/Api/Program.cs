@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Features.Identity;
+using Mdsweep.Api.Features.Dispatch;
 using Mdsweep.Api.Features.ManifestImports;
 using Mdsweep.Api.Infrastructure;
 using System.Text.Json.Serialization;
@@ -50,6 +51,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapIdentity();
 app.MapManifestImports();
+app.MapDispatch();
 app.MapDefaultEndpoints();
 app.Run();
 

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Mdsweep.Api.Infrastructure;
+using Mdsweep.Api.Features.Dispatch;
 
 namespace Mdsweep.Api.Features.ManifestImports;
 
@@ -129,6 +130,8 @@ public static class ManifestImportEndpoints
                 x.TripNumber, x.JourneyKey, x.MemberFirstName + " " + x.MemberLastName,
                 x.PickupAddress, x.PickupCity, x.DeliveryAddress, x.DeliveryCity,
                 x.PassengerType, x.VehicleType, x.BrokerStatus, x.AppointmentTime,
+                db.TripSchedules.Where(schedule => schedule.TripId == x.Id)
+                    .Select(schedule => (TimeOnly?)schedule.ScheduledPickupTime).SingleOrDefault(),
                 x.IsWillCall, x.IsActive))
             .ToListAsync(cancellationToken);
         return Results.Ok(trips);
@@ -151,6 +154,10 @@ public static class ManifestImportEndpoints
         var existing = await db.Trips.AsNoTracking()
             .Where(trip => tripNumbers.Contains(trip.TripNumber))
             .ToDictionaryAsync(trip => trip.TripNumber, StringComparer.OrdinalIgnoreCase, cancellationToken);
+        var scheduledTripIds = await db.TripSchedules.AsNoTracking()
+            .Where(schedule => existing.Values.Select(trip => trip.Id).Contains(schedule.TripId))
+            .Select(schedule => schedule.TripId)
+            .ToHashSetAsync(cancellationToken);
 
         return rows.Select(row =>
         {
@@ -164,7 +171,12 @@ public static class ManifestImportEndpoints
                 : row with
                 {
                     BrokerChange = ManifestBrokerChange.BrokerChanged,
-                    Messages = row.Messages.Append($"MTM changed: {string.Join(", ", differences)}.").ToArray()
+                    Messages = row.Messages
+                        .Append($"MTM changed: {string.Join(", ", differences)}.")
+                        .Concat(scheduledTripIds.Contains(trip.Id)
+                            ? ["Your scheduled pickup time will be preserved."]
+                            : [])
+                        .ToArray()
                 };
         }).ToArray();
     }
