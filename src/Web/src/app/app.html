@@ -18,6 +18,11 @@
       <h2>My Trips Today</h2>
       <p>Only your currently assigned trips appear here.</p>
     </section>
+    @if (queuedDriverActions().length) {
+      <section class="alert sync" role="status"><strong>Sync status</strong>
+        @for (action of queuedDriverActions(); track action.id) { <p>{{ action.tripNumber }} · {{ action.event.type }} · {{ action.state === 'WaitingToSync' ? 'Waiting to sync' : 'Needs attention' }}</p> }
+      </section>
+    }
     @if (!driverTrips().length) {
       <section class="card"><p>You have no assigned trips today.</p></section>
     }
@@ -39,9 +44,13 @@
         @if (trip.nextAction) {
           <details><summary>Could not complete this trip</summary><label>Reason <select #reason><option value="PassengerNoShow">Passenger no-show</option><option value="PassengerCancelled">Passenger cancelled</option><option value="UnableToLocatePassenger">Unable to locate passenger</option><option value="VehicleIssue">Vehicle issue</option><option value="Other">Other</option></select></label><label>Note (optional)<input #note type="text" /></label><button type="button" class="secondary" (click)="recordDriverEvent(trip, 'CouldNotComplete', reason.value, note.value)" [disabled]="busy()">Record outcome</button></details>
         }
+        @if (trip.lastEventType) { <button type="button" class="secondary" (click)="correctLatestEvent(trip)" [disabled]="busy()">Correct latest timestamp</button> }
       </article>
     }
   } @else {
+    @if (conflicts().length) {
+      <section class="card"><h2>Driver actions needing review</h2>@for (conflict of conflicts(); track conflict.tripNumber + conflict.deviceCapturedAt) { <article class="exception"><strong>{{ conflict.tripNumber }}</strong><p>{{ conflict.reason }}</p><small>Captured {{ conflict.deviceCapturedAt }}</small></article> }</section>
+    }
     <section class="card upload">
       <div>
         <h2>{{ text.uploadTitle }}</h2>

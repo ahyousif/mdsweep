@@ -467,6 +467,57 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         Assert.Equal("Waited at pickup.", outcome.Note);
     }
 
+    [Fact]
+    public async Task Queued_driver_action_conflict_is_retained_when_the_trip_was_reassigned()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        await AddAntiforgeryToken(client);
+        await AssignTripToAuthenticatedDriver(client, "SYNC1");
+        await using (var scope = application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            (await db.TripAssignments.SingleAsync()).SupersededAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        var actionId = Guid.NewGuid();
+        var queued = new { actionId, tripNumber = "SYNC1", @event = new { type = "ArrivedAtPickup", deviceCapturedAt = new DateTimeOffset(2026, 9, 15, 8, 0, 0, TimeSpan.Zero), tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null } };
+        using var response = await client.PostAsJsonAsync("/api/driver-work/events/sync", queued);
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, response.StatusCode);
+        using var retry = await client.PostAsJsonAsync("/api/driver-work/events/sync", queued);
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, retry.StatusCode);
+        await using var conflictScope = application.Services.CreateAsyncScope();
+        var conflictDb = conflictScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(1, await conflictDb.DriverTripSyncConflicts.CountAsync(x => x.TripNumber == "SYNC1" && x.Reason.Contains("no longer assigned")));
+    }
+
+    [Fact]
+    public async Task Driver_correction_retains_the_original_event_and_requires_a_reason()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        await AddAntiforgeryToken(client);
+        await AssignTripToAuthenticatedDriver(client, "CORRECT1");
+        var capturedAt = new DateTimeOffset(2026, 9, 15, 8, 0, 0, TimeSpan.Zero);
+        using var recorded = await client.PostAsJsonAsync("/api/driver-work/trips/CORRECT1/events", new { type = "ArrivedAtPickup", deviceCapturedAt = capturedAt, tripLogSigned = (bool?)null, outcomeReason = (string?)null, note = (string?)null });
+        recorded.EnsureSuccessStatusCode();
+        Guid eventId;
+        await using (var scope = application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            eventId = await db.DriverTripEvents.Select(x => x.Id).SingleAsync();
+        }
+        using var invalid = await client.PostAsJsonAsync($"/api/driver-work/trips/CORRECT1/events/{eventId}/corrections", new { deviceCapturedAt = capturedAt.AddMinutes(-5), reason = "" });
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, invalid.StatusCode);
+        using var correction = await client.PostAsJsonAsync($"/api/driver-work/trips/CORRECT1/events/{eventId}/corrections", new { deviceCapturedAt = capturedAt.AddMinutes(-5), reason = "Driver entered the wrong minute." });
+        correction.EnsureSuccessStatusCode();
+        await using var correctionScope = application.Services.CreateAsyncScope();
+        var correctionDb = correctionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(1, await correctionDb.DriverTripEvents.CountAsync());
+        Assert.True(await correctionDb.DriverTripEventCorrections.AnyAsync(x => x.DriverTripEventId == eventId && x.Reason == "Driver entered the wrong minute."));
+    }
+
     public async Task DisposeAsync()
     {
         await application.DisposeAsync();
