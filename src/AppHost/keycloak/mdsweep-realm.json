@@ -29,8 +29,7 @@
     "publicClient": false,
     "secret": "Development-only-administration-secret",
     "serviceAccountsEnabled": true,
-    "standardFlowEnabled": false,
-    "serviceAccountClientRoles": { "realm-management": ["manage-users", "view-users", "manage-realm"] }
+    "standardFlowEnabled": false
   }],
   "users": [{
     "id": "d4ba70d7-6173-4ad0-9b48-59aa2c6a322a",
