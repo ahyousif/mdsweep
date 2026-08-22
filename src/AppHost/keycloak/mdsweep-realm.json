@@ -1,11 +1,16 @@
 {
   "realm": "mdsweep",
   "enabled": true,
+  "organizationsEnabled": true,
   "organizations": [{
     "id": "b6d8ea17-b31c-45c0-b5f2-4fec5df7c6cf",
     "name": "Synthetic Provider",
     "alias": "synthetic-provider",
-    "enabled": true
+    "enabled": true,
+    "domains": [{
+      "name": "synthetic-provider.example.test",
+      "verified": false
+    }]
   }],
   "roles": { "realm": [{ "name": "Dispatcher" }, { "name": "Driver" }] },
   "clients": [{
@@ -34,6 +39,9 @@
   "users": [{
     "id": "d4ba70d7-6173-4ad0-9b48-59aa2c6a322a",
     "username": "dispatcher@example.test",
+    "email": "dispatcher@example.test",
+    "firstName": "Dispatcher",
+    "lastName": "Test",
     "enabled": true,
     "emailVerified": true,
     "realmRoles": ["Dispatcher"],

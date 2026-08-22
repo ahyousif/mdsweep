@@ -29,6 +29,7 @@ builder.Services.AddAuthentication(options =>
     })
     .AddOpenIdConnect(options =>
     {
+        options.MapInboundClaims = false;
         options.Authority = builder.Configuration["Authentication:Authority"] ?? "https://keycloak.invalid/realms/mdsweep";
         options.ClientId = builder.Configuration["Authentication:ClientId"] ?? "mdsweep-server";
         options.ClientSecret = builder.Configuration["Authentication:ClientSecret"];
