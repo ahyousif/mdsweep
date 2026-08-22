@@ -56,6 +56,8 @@ export class App implements OnInit {
   protected readonly serviceDate = signal('');
   protected readonly driverTrips = signal<DriverTrip[]>([]);
   protected readonly queuedDriverActions = this.driverActionQueue.actions;
+  protected readonly conflicts = signal<{ tripNumber: string; reason: string; deviceCapturedAt: string }[]>([]);
+  private driverStorageKey = '';
   ngOnInit(): void {
     this.http.get<ProviderContext[]>('/api/auth/me').subscribe({
       next: (contexts) => {
@@ -67,8 +69,9 @@ export class App implements OnInit {
           next: () => this.http.get('/api/auth/antiforgery').subscribe({
             next: () => {
               this.role.set(contexts[0].role);
+              this.driverStorageKey = `mdsweep.driver-trips.${contexts[0].providerId}.${contexts[0].appUserId}`;
               this.signedIn.set(true);
-              if (contexts[0].role === 'Driver') this.loadDriverTrips();
+              if (contexts[0].role === 'Driver') this.loadDriverTrips(); else this.loadConflicts();
             },
             error: () => this.error.set('Unable to establish the application session.'),
           }),
@@ -117,6 +120,7 @@ export class App implements OnInit {
       error: (response) => {
         if (!response.status) {
           this.driverActionQueue.enqueue({ tripNumber: trip.tripNumber, event });
+          this.driverTrips.update((trips) => trips.map((current) => current.tripNumber === trip.tripNumber ? { ...current, lastEventType: type, nextAction: this.nextAction(type) } : current));
           this.error.set('Waiting to sync. This action is safely stored on this device.');
         } else this.error.set(response.error?.message ?? 'This trip action could not be recorded.');
         this.busy.set(false);
@@ -200,8 +204,14 @@ export class App implements OnInit {
 
   private loadDriverTrips(): void {
     this.http.get<DriverTrip[]>('/api/driver-work/trips').subscribe({
-      next: (trips) => { this.driverTrips.set(trips); this.busy.set(false); },
-      error: () => { this.error.set('Your assigned trips could not be loaded.'); this.busy.set(false); },
+      next: (trips) => { this.driverTrips.set(trips); localStorage.setItem(this.driverStorageKey, JSON.stringify(trips)); this.busy.set(false); },
+      error: () => { const cached = localStorage.getItem(this.driverStorageKey); if (cached) this.driverTrips.set(JSON.parse(cached)); else this.error.set('Your assigned trips could not be loaded.'); this.busy.set(false); },
     });
+  }
+
+  private loadConflicts(): void { this.http.get<{ tripNumber: string; reason: string; deviceCapturedAt: string }[]>('/api/driver-work/conflicts').subscribe({ next: (items) => this.conflicts.set(items) }); }
+
+  private nextAction(event: DriverEvent): DriverEvent | null {
+    return ({ ArrivedAtPickup: 'PickedUp', PickedUp: 'ArrivedAtDropOff', ArrivedAtDropOff: 'DroppedOff' } as Partial<Record<DriverEvent, DriverEvent>>)[event] ?? null;
   }
 }

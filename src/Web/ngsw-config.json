@@ -26,10 +26,5 @@
         ]
       }
     }
-  ],
-  "dataGroups": [{
-    "name": "driver-current-day",
-    "urls": ["/api/driver-work/trips"],
-    "cacheConfig": { "maxSize": 1, "maxAge": "24h", "timeout": "5s", "strategy": "freshness" }
-  }]
+  ]
 }

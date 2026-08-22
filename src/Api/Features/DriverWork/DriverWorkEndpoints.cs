@@ -58,11 +58,13 @@ public static class DriverWorkEndpoints
         var trip = await AssignedTrip(driver.Id, tripNumber, db, ct);
         if (trip is null) return Results.NotFound();
 
-        var history = await db.DriverTripEvents.Where(x => x.TripId == trip.Id)
+        var events = await db.DriverTripEvents.Where(x => x.TripId == trip.Id)
             .OrderBy(x => x.ReceivedAt).ThenBy(x => x.Id)
-            .Select(x => new DriverTripEventResponse(x.Id, x.Type, x.DeviceCapturedAt, x.ReceivedAt, x.OutcomeReason, x.Note, x.TripLogSigned))
             .ToListAsync(ct);
-        return Results.Ok(history);
+        var ids = events.Select(x => x.Id).ToArray();
+        var corrections = await db.DriverTripEventCorrections.Where(x => ids.Contains(x.DriverTripEventId)).OrderBy(x => x.ReceivedAt).ToListAsync(ct);
+        return Results.Ok(events.Select(x => new DriverTripEventResponse(x.Id, x.Type, x.DeviceCapturedAt, x.ReceivedAt, x.OutcomeReason, x.Note, x.TripLogSigned,
+            corrections.Where(c => c.DriverTripEventId == x.Id).Select(c => new DriverTripEventCorrectionResponse(c.Id, c.DriverTripEventId, c.CorrectedDeviceCapturedAt, c.ReceivedAt, c.Reason)).ToList())));
     }
 
     private static async Task<IResult> RecordEvent(string tripNumber, RecordDriverTripEventRequest request, ClaimsPrincipal user, ApplicationDbContext db, IDriverWorkClock clock, CancellationToken ct)
@@ -228,7 +230,8 @@ public sealed record DriverTripEventResponse(
     DateTimeOffset ReceivedAt,
     string? OutcomeReason,
     string? Note,
-    bool? TripLogSigned);
+    bool? TripLogSigned,
+    IReadOnlyList<DriverTripEventCorrectionResponse>? Corrections = null);
 
 public sealed record DriverTripResponse(
     string TripNumber,

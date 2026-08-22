@@ -30,7 +30,7 @@ export class DriverActionQueue {
       this.http.post(`/api/driver-work/events/sync`, { actionId: action.id, tripNumber: action.tripNumber, event: action.event }).subscribe({
         next: () => this.update(this.actions().filter((item) => item.id !== action.id)),
         error: (response) => {
-          if (response.status && response.status !== 0) {
+          if (response.status >= 400 && response.status < 500 && response.status !== 401) {
             this.update(this.actions().map((item) => item.id === action.id ? { ...item, state: 'NeedsAttention' } : item));
           }
         },

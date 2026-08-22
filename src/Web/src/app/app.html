@@ -48,6 +48,9 @@
       </article>
     }
   } @else {
+    @if (conflicts().length) {
+      <section class="card"><h2>Driver actions needing review</h2>@for (conflict of conflicts(); track conflict.tripNumber + conflict.deviceCapturedAt) { <article class="exception"><strong>{{ conflict.tripNumber }}</strong><p>{{ conflict.reason }}</p><small>Captured {{ conflict.deviceCapturedAt }}</small></article> }</section>
+    }
     <section class="card upload">
       <div>
         <h2>{{ text.uploadTitle }}</h2>
