@@ -37,6 +37,13 @@
     "standardFlowEnabled": false
   }],
   "users": [{
+    "username": "service-account-mdsweep-administration",
+    "enabled": true,
+    "serviceAccountClientId": "mdsweep-administration",
+    "clientRoles": {
+      "realm-management": ["manage-realm", "manage-users", "view-users"]
+    }
+  }, {
     "id": "d4ba70d7-6173-4ad0-9b48-59aa2c6a322a",
     "username": "dispatcher@example.test",
     "email": "dispatcher@example.test",
