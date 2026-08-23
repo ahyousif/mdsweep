@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <None Update="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/AppHost/keycloak/mdsweep-realm.json"
+          Link="Fixtures/keycloak/mdsweep-realm.json"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

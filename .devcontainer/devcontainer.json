@@ -26,7 +26,9 @@
 
     "ghcr.io/nikiforovall/devcontainer-features/dotnet-csharpier:1": {},
 
-    "ghcr.io/devcontainers-extra/features/angular-cli:2": {}
+    "ghcr.io/devcontainers-extra/features/angular-cli:2": {},
+
+    "ghcr.io/devcontainers-extra/features/uv:1": {}
   },
 
   "remoteUser": "vscode",
@@ -48,20 +50,12 @@
         "gruntfuggly.todo-tree",
         "humao.rest-client",
         "meganrogge.template-string-converter",
+        "microsoft-aspire.aspire-vscode",
         "ms-dotnettools.csdevkit",
         "ms-dotnettools.csharp",
         "openai.chatgpt",
         "sonarsource.sonarlint-vscode"
-      ],
-
-      "mcp": {
-        "servers": {
-          "spartan-ui": {
-            "command": "/usr/local/share/nvm/current/bin/npx",
-            "args": ["-y", "@spartan-ng/mcp"]
-          }
-        }
-      }
+      ]
     }
   }
 }
