@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -79,6 +80,114 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Equal(0, await db.Trips.CountAsync());
+    }
+
+    [Fact]
+    public async Task Angular_xsrf_cookie_authorizes_manifest_upload()
+    {
+        using var client = application.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+        });
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        using var tokenResponse = await client.GetAsync("/api/auth/antiforgery");
+        tokenResponse.EnsureSuccessStatusCode();
+        var cookies = tokenResponse.Headers.GetValues("Set-Cookie")
+            .Select(value => value.Split(';', 2)[0])
+            .ToArray();
+        var requestToken = cookies.Single(cookie => cookie.StartsWith("XSRF-TOKEN=", StringComparison.Ordinal))
+            ["XSRF-TOKEN=".Length..];
+        client.DefaultRequestHeaders.Add("Cookie", string.Join("; ", cookies));
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", requestToken);
+        using var form = new MultipartFormDataContent
+        {
+            { new StringContent(Manifest(Row("XSRF100A", "VALID", "0915", "100 First St", "200 Main St"))), "file", "manifest.csv" }
+        };
+
+        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Excel_manifest_uses_the_same_preview_and_apply_workflow_as_csv()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.AddWorksheet("Manifest");
+        var headers = new[]
+        {
+            "Appointment Date", "Delivery Address", "Pickup Address", "Time", "Trip Number",
+            "Trip Status", "Member's First Name", "Member's Last Name", "Pickup City",
+            "Delivery City", "Passenger Type", "Vehicle Type", "Will Call Flag"
+        };
+        for (var column = 0; column < headers.Length; column++)
+            worksheet.Cell(1, column + 1).Value = headers[column];
+
+        worksheet.Cell(2, 1).Value = new DateTime(2026, 9, 15);
+        worksheet.Cell(2, 2).Value = "200 Main St";
+        worksheet.Cell(2, 3).Value = "100 First St";
+        worksheet.Cell(2, 4).Value = new TimeSpan(9, 15, 0);
+        worksheet.Cell(2, 5).Value = "EXCEL100A";
+        worksheet.Cell(2, 6).Value = "VALID";
+        worksheet.Cell(2, 7).Value = "Synthetic";
+        worksheet.Cell(2, 8).Value = "Passenger";
+        worksheet.Cell(2, 9).Value = "Phoenix";
+        worksheet.Cell(2, 10).Value = "Mesa";
+        worksheet.Cell(2, 11).Value = "Ambulatory";
+        worksheet.Cell(2, 12).Value = "Cab";
+        worksheet.Cell(2, 13).Value = "N";
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+        await AddAntiforgeryToken(client);
+        using var form = new MultipartFormDataContent
+        {
+            { new StreamContent(stream), "file", "mtm-manifest.xlsx" }
+        };
+
+        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+
+        response.EnsureSuccessStatusCode();
+        var preview = await response.Content.ReadFromJsonAsync<PreviewResponse>();
+        Assert.NotNull(preview);
+        var row = Assert.Single(preview.Rows);
+        Assert.Equal("EXCEL100A", row.TripNumber);
+        Assert.Equal("Ready", row.Disposition);
+
+        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
+        apply.EnsureSuccessStatusCode();
+        var serviceDay = await client.GetFromJsonAsync<List<ServiceDayTrip>>(
+            "/api/service-days/2026-09-15/trips");
+        var trip = Assert.Single(serviceDay!);
+        Assert.Equal("EXCEL100A", trip.TripNumber);
+        Assert.Equal(new TimeOnly(9, 15), trip.AppointmentTime);
+    }
+
+    [Fact]
+    public async Task Manifest_preview_rejects_legacy_or_invalid_excel_files_with_actionable_errors()
+    {
+        using var client = application.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
+        await AddAntiforgeryToken(client);
+
+        using var legacyForm = new MultipartFormDataContent
+        {
+            { new StringContent("not an excel workbook"), "file", "mtm-manifest.xls" }
+        };
+        using var legacyResponse = await client.PostAsync("/api/manifest-imports/preview", legacyForm);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, legacyResponse.StatusCode);
+        Assert.Contains(".xlsx", await legacyResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
+        using var invalidForm = new MultipartFormDataContent
+        {
+            { new StringContent("not an excel workbook"), "file", "mtm-manifest.xlsx" }
+        };
+        using var invalidResponse = await client.PostAsync("/api/manifest-imports/preview", invalidForm);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, invalidResponse.StatusCode);
+        Assert.Contains("could not be read", await invalidResponse.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

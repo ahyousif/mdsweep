@@ -57,8 +57,8 @@
         <p>{{ text.uploadHelp }}</p>
       </div>
       <label class="file-button">
-        {{ text.chooseCsv }}
-        <input type="file" accept=".csv,text/csv" (change)="chooseFile($event)" [disabled]="busy()" />
+        {{ text.chooseManifest }}
+        <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="chooseFile($event)" [disabled]="busy()" />
       </label>
     </section>
 

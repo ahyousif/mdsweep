@@ -24,6 +24,13 @@ public static class IdentityEndpoints
         endpoints.MapGet("/api/auth/antiforgery", (IAntiforgery antiforgery, HttpContext httpContext) =>
         {
             var tokens = antiforgery.GetAndStoreTokens(httpContext);
+            httpContext.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
+            {
+                HttpOnly = false,
+                SameSite = SameSiteMode.Strict,
+                Secure = httpContext.Request.IsHttps,
+                Path = "/",
+            });
             return Results.Ok(new { token = tokens.RequestToken });
         }).RequireAuthorization();
         endpoints.MapPost("/api/auth/logout", () => Results.SignOut(

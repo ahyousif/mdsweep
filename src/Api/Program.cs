@@ -78,8 +78,8 @@ builder.Services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdminist
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.Name = "XSRF-TOKEN";
-    options.Cookie.HttpOnly = false;
+    options.Cookie.Name = ".Mdsweep.Antiforgery";
+    options.Cookie.HttpOnly = true;
 });
 
 builder.Services.ConfigureHttpJsonOptions(options =>

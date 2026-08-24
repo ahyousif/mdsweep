@@ -26,14 +26,19 @@ public static class ManifestImportEndpoints
         var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
         if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher")) return Results.Forbid();
         if (file is null || file.Length == 0)
-            return Results.BadRequest(new { message = "Choose a non-empty MTM CSV file." });
-        if (!Path.GetExtension(file.FileName).Equals(".csv", StringComparison.OrdinalIgnoreCase))
-            return Results.BadRequest(new { message = "Upload an MTM CSV file. Other spreadsheet formats are not supported yet." });
+            return Results.BadRequest(new { message = "Choose a non-empty MTM CSV or Excel file." });
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!extension.Equals(".csv", StringComparison.OrdinalIgnoreCase) &&
+            !extension.Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new { message = "Upload an MTM CSV or Excel (.xlsx) file." });
 
         try
         {
             await using var stream = file.OpenReadStream();
-            var parsedRows = await ManifestCsv.Preview(stream, cancellationToken);
+            var parsedRows = extension.Equals(".csv", StringComparison.OrdinalIgnoreCase)
+                ? await ManifestCsv.Preview(stream, cancellationToken)
+                : ManifestXlsx.Preview(stream);
             var rows = await IdentifyBrokerChanges(parsedRows, context.ProviderId, db, cancellationToken);
             var preview = new ManifestPreview
             {
