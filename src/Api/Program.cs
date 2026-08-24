@@ -132,9 +132,9 @@ app.MapDefaultEndpoints();
 //
 if (!app.Environment.IsDevelopment())
 {
+    app.Map("/api/{**path}", () => Results.NotFound());
     app.MapFallbackToFile("index.html");
 }
-
 await app.RunAsync();
 
 public partial class Program;

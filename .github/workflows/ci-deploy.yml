@@ -9,14 +9,11 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: production-deployment
-  cancel-in-progress: false
-
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
 
@@ -58,10 +55,17 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 60
+
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+
     environment: production
+
     permissions:
       contents: read
       id-token: write
+
     env:
       Azure__SubscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       Azure__Location: ${{ vars.AZURE_LOCATION }}
@@ -70,6 +74,7 @@ jobs:
       Parameters__postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
       Parameters__oidc_client_secret: ${{ secrets.OIDC_CLIENT_SECRET }}
       Parameters__administration_client_secret: ${{ secrets.KEYCLOAK_ADMINISTRATION_CLIENT_SECRET }}
+
     steps:
       - uses: actions/checkout@v4
 
