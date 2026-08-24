@@ -6,7 +6,7 @@ Build a modular monolith with a slim vertical-slice structure. The deployed prod
 
 ### Delivery state
 
-The system is currently local-only and uses synthetic data. The checked-in EF Core migration is the schema baseline for a fresh local database; no deployed database exists to upgrade. A deployment-readiness decision is required before introducing a shared environment or non-synthetic data. That decision must define the target environment, migration procedure, backups and restore test, Keycloak realm administration, and data-safety approval.
+The system has a shared Azure production-shaped environment for deployment validation, but it is not approved for patient-linked data. Local and deployed data remain synthetic. The checked-in EF Core migration is the schema baseline for a fresh database. A deployment-readiness decision is required before non-synthetic data is introduced; it must define the migration procedure, backups and restore test, Keycloak realm administration, and data-safety approval.
 
 The application replaces the provider's legacy operations site. MTM integration at both ends is file-based for the MVP:
 
