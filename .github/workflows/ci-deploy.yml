@@ -1,0 +1,115 @@
+name: CI and production deployment
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+          cache-dependency-path: src/Web/package-lock.json
+
+      - name: Restore .NET dependencies
+        run: dotnet restore Mdsweep.slnx
+
+      - name: Restore web dependencies
+        working-directory: src/Web
+        run: npm ci
+
+      - name: Build
+        run: dotnet build Mdsweep.slnx --configuration Release --no-restore
+
+      - name: Build web
+        working-directory: src/Web
+        run: npm run build
+
+      - name: Test .NET
+        run: dotnet test Mdsweep.slnx --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+
+      - name: Test web
+        working-directory: src/Web
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+
+    environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      Azure__SubscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      Azure__Location: ${{ vars.AZURE_LOCATION }}
+      Azure__ResourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
+      Parameters__postgres_username: ${{ secrets.POSTGRES_USERNAME }}
+      Parameters__postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
+      Parameters__oidc_client_secret: ${{ secrets.OIDC_CLIENT_SECRET }}
+      Parameters__administration_client_secret: ${{ secrets.KEYCLOAK_ADMINISTRATION_CLIENT_SECRET }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+          cache-dependency-path: src/Web/package-lock.json
+
+      - name: Install Aspire CLI 13.5.2
+        run: dotnet tool install --global Aspire.Cli --version 13.5.2
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore Mdsweep.slnx
+          npm ci --prefix src/Web
+
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Inspect deployment plan
+        run: |
+          aspire ls
+          aspire publish --list-steps --non-interactive
+          aspire deploy --list-steps --non-interactive
+
+      - name: Deploy with Aspire
+        run: aspire deploy --apphost src/AppHost/Mdsweep.AppHost.csproj --environment Production --non-interactive

@@ -6,11 +6,11 @@ Favor delivery over ceremony. For this two-developer MVP, create only buildable 
 
 ## Current delivery state
 
-The repository is **local-only and pre-deployment**. There is no shared development, staging, pilot, or production environment, and all local data must remain synthetic.
+The repository has a shared Azure production-shaped environment in `rg-mdsweep-prod`, but it is not approved for patient-linked data. Local and deployed data must remain synthetic until deployment readiness is completed.
 
 - Treat the current EF Core migration set as the baseline for a new database; do not add speculative legacy-data backfills or production-operational runbooks.
-- Before the first non-local deployment or any use of non-synthetic data, create a deployment-readiness issue that defines the target environment, database migration/backup/restore procedure, Keycloak realm administration, and data-safety approval.
-- Once any shared environment exists, update this section with its purpose and promote schema/data changes through an explicit tested upgrade path.
+- Before any use of non-synthetic data, complete a deployment-readiness issue that defines the database migration/backup/restore procedure, Keycloak realm administration, and data-safety approval.
+- Treat `rg-mdsweep-prod` as deployment infrastructure validation only until that issue is accepted. Promote later schema/data changes through an explicit tested upgrade path.
 
 ## Agent skills
 

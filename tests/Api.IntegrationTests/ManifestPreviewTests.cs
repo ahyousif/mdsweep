@@ -152,11 +152,11 @@ public sealed class ManifestPreviewTests : IAsyncLifetime
         using var client = application.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
         await AddAntiforgeryToken(client);
-        using var create = await client.PostAsJsonAsync("/api/drivers/access", new { email = "driver2@example.test", temporaryPassword = "Temporary-42!", displayName = "Driver Two", mtmDriverNumber = "DRV-2" });
+        using var create = await client.PostAsJsonAsync("/api/drivers/access", new { email = "driver2@example.test", temporaryPassword = "P@ssw0rd!", displayName = "Driver Two", mtmDriverNumber = "DRV-2" });
         create.EnsureSuccessStatusCode();
         var driver = await create.Content.ReadFromJsonAsync<DriverResponse>();
         Assert.NotNull(driver);
-        using var reset = await client.PostAsJsonAsync($"/api/drivers/{driver.Id}/reset-access", new { temporaryPassword = "Changed-42!" });
+        using var reset = await client.PostAsJsonAsync($"/api/drivers/{driver.Id}/reset-access", new { temporaryPassword = "P@ssw0rd!" });
         Assert.Equal(System.Net.HttpStatusCode.NoContent, reset.StatusCode);
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
