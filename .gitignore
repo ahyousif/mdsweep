@@ -13,3 +13,6 @@ obj/
 node_modules/
 TestResults/
 playwright-report/
+
+aspire-output/
+**/aspire-output/

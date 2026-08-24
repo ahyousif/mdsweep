@@ -52,7 +52,7 @@ public sealed class KeycloakRealmImportTests
 
         using var resetResponse = await client.PutAsJsonAsync(
             $"/admin/realms/mdsweep/users/{subject}/reset-password",
-            new { type = "password", value = "Temporary-test-password-42!", temporary = true });
+            new { type = "password", value = "P@ssw0rd!", temporary = true });
         Assert.Equal(HttpStatusCode.NoContent, resetResponse.StatusCode);
 
         using var membershipResponse = await client.PostAsJsonAsync(
