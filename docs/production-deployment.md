@@ -25,7 +25,7 @@ az identity federated-credential create \
   --identity-name mdsweep-github-deploy \
   --resource-group rg-mdsweep-prod \
   --issuer https://token.actions.githubusercontent.com \
-  --subject repo:ahyousif/mdsweep:environment:production \
+  --subject repo:ahyousif@112917886/mdsweep@1330451816:environment:production\
   --audiences api://AzureADTokenExchange
 ```
 
