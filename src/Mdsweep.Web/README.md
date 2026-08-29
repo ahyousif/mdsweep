@@ -1,59 +1,60 @@
-# Web
+# MDSweep Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.33.
+This project is the Angular 22 PWA for MDSweep's Dispatcher and Driver workflows. The preferred
+development entry point is the repository's Aspire AppHost, which starts this project after the
+API, PostgreSQL, and Keycloak are ready. See the [root README](../../README.md) for complete setup,
+credentials, and troubleshooting.
 
-## Development server
+## Run with the application
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+From the repository root in the Dev Container:
 
 ```bash
-ng generate component component-name
+npm ci --prefix src/Mdsweep.Web
+aspire run
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open <http://localhost:4200>. Aspire injects the API endpoints and exposes the API on
+<http://localhost:5080>.
+
+## Run the Web project alone
+
+Use this only when the API and its PostgreSQL and Keycloak dependencies are already running:
 
 ```bash
-ng generate --help
+cd src/Mdsweep.Web
+npm ci
+npm start
 ```
 
-## Building
+The Angular development server uses `proxy.conf.json` to proxy `/api` and `/signin-oidc` to
+`http://localhost:5080`.
 
-To build the project run:
+## Build and test
 
 ```bash
-ng build
+cd src/Mdsweep.Web
+npm run build
+npm test -- --watch=false
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Tests use Angular's unit-test builder with Vitest. The production build emits the PWA to
+`dist/web/browser`; the AppHost publishes those files with the API for deployment.
 
-## Running unit tests
+## Structure
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
+```text
+src/app/
+  core/                     Authentication session and shared API behavior
+  features/dispatch/        Dispatcher board and management workflows
+  features/manifest-import/ Manifest data access
+  features/driver-work/     Driver UI and durable offline action queue
+  shared/ui/                Minimal generated Spartan primitives
 ```
 
-## Running end-to-end tests
+TanStack Query owns non-persisted server state and invalidation. TanStack Table powers the dense
+Manifest and service-day tables. The Driver action queue remains a separate durable browser
+workflow and must not be replaced by or persisted through the general query cache.
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Authentication remains server-owned: Angular calls same-origin endpoints with the ASP.NET Core
+session cookie and antiforgery token. It does not receive, store, or refresh Keycloak tokens.

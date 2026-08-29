@@ -52,7 +52,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 
 - Use .NET 10, .NET Aspire, ASP.NET Core, Angular, EF Core, and PostgreSQL.
 - Build a modular monolith using slim vertical slices for Manifest Import, Dispatch, Driver Work, Billing Export, and Identity.
-- Use Keycloak as the OpenID Connect identity provider. The Angular PWA uses authorization code flow with PKCE; the API validates bearer tokens and authorizes the `Dispatcher` and `Driver` roles.
+- Use Keycloak as the OpenID Connect identity provider. ASP.NET Core is the confidential OpenID Connect client and backend-for-frontend: it completes the authorization-code flow, establishes an HttpOnly application cookie, resolves the active Provider context, and authorizes the `Dispatcher` and `Driver` roles. The Angular PWA calls same-origin application endpoints and never receives or stores Keycloak access or refresh tokens.
 - Model one Provider in the MVP. Users belong to that Provider, but tenant resolution and tenant administration are deferred.
 - Manifest Import owns parsing, normalization, validation, Trip identity, repeat-import comparison, broker-status handling, and Journey grouping.
 - Broker-original facts, Provider overrides, and append-only Operational History remain distinct.
