@@ -14,7 +14,7 @@ The application replaces the provider's legacy operations site. MTM integration 
 MTM manifest → import → dispatch → driver completion → billing export → MTM portal
 ```
 
-The user downloads the manifest and uploads the billing file manually. Browser automation, Wolverine messaging, and an automation worker enter the architecture only when an authorized durable automation workflow exists.
+The user downloads the manifest and uploads the billing file manually. Wolverine is used only as an in-process command/query dispatcher, HTTP endpoint model, and lightweight EF Core unit of work. Durable queues, inboxes, outboxes, scheduled jobs, browser automation, and an automation worker enter the architecture only when an authorized durable workflow exists.
 
 ## Modules
 
@@ -68,7 +68,13 @@ Avoid seams for EF Core persistence. Each slice uses the application's DbContext
 
 ## Persistence
 
-PostgreSQL is the single durable store. Use EF Core mappings near the owning feature. Preserve broker-original data separately from operational overrides and retain append-only history for imports, assignments, driver events, corrections, and closure.
+PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep continues to use checked-in EF Core migrations; Wolverine does not own schema creation or add messaging tables. Use EF Core mappings near the owning feature. Preserve broker-original data separately from operational overrides and retain append-only history for imports, assignments, driver events, corrections, and closure.
+
+Mutating Wolverine handlers opt into the lightweight EF Core transaction middleware explicitly. It calls one `SaveChangesAsync` at the end of a successful handler and relies on EF Core's transaction for that save. Read handlers do not open write transactions. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
+
+## Web application
+
+Angular is organized as a small authenticated shell with lazy Dispatcher and Driver routes. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Manifest review and service-day tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
 
 The pilot may colocate PostgreSQL with the application on one small Linux host when the chosen BAA-covered environment and backup design permit it. Encrypted off-machine backups and a tested restore are required before real data is used.
 
@@ -76,22 +82,25 @@ The pilot may colocate PostgreSQL with the application on one small Linux host w
 
 ```text
 src/
-  AppHost/
-  Api/
+  Mdsweep.Api/
     Features/
       ManifestImports/
       Dispatch/
       DriverWork/
       BillingExports/
       Identity/
-    Infrastructure/
-  Web/
+  Mdsweep.Application/
+  Mdsweep.Domain/
+  Mdsweep.Infrastructure/
+  Mdsweep.AppHost/
+  Mdsweep.ServiceDefaults/
+  Mdsweep.Web/
 tests/
-  Api.IntegrationTests/
-  Web.E2ETests/
+  Mdsweep.Api.IntegrationTests/
+  Mdsweep.Web.E2ETests/
 ```
 
-Organize endpoints, commands, validation, mappings, and tests by behavior inside each feature. Shared code must represent a stable cross-feature concept; proximity alone is not a reason to create a shared abstraction.
+HTTP endpoints remain in `Mdsweep.Api`, command/query contracts in `Mdsweep.Application`, domain state and rules in `Mdsweep.Domain`, and EF/file/Keycloak handlers and adapters in `Mdsweep.Infrastructure`. Organize each project vertically by behavior. Shared code must represent a stable cross-feature concept; proximity alone is not a reason to create a shared abstraction.
 
 ## Verification
 

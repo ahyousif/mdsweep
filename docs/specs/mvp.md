@@ -66,7 +66,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 - EF Core accesses PostgreSQL directly inside the owning feature; there is no generic repository layer.
 - MTM input and billing output remain user-initiated file workflows.
 - Billing Export remains behaviorally blocked until the authoritative MTM bulk-upload template and training establish required fields, evidence, validation, duplicate handling, and rejection behavior.
-- Wolverine PostgreSQL transport, a separate automation worker, and MTM-specific Playwright automation are deferred until an authorized durable automation workflow exists.
+- Wolverine PostgreSQL persistence/transport, durable queues, a separate automation worker, and MTM-specific Playwright automation are deferred until an authorized durable automation workflow exists. In-process Wolverine HTTP dispatch and EF Core unit-of-work handling do not change this deferral.
 - Development, tests, issues, logs, and screenshots use synthetic patient data.
 - Production hosting targets a small BAA-covered Linux deployment with encrypted off-machine backups and a tested restore, under an initial infrastructure target of $75 per month.
 - English is the MVP language. Store controlled UI text and status codes in a localization-ready form so future Arabic support does not require rewriting domain state.

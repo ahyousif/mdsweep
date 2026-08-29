@@ -67,7 +67,7 @@ After submission, packet feedback includes success and failure counts plus requi
 
 ## Mapping to the current repository
 
-This comparison reflects the current Manifest Import model in `src/Api/Features/ManifestImports/ManifestModels.cs` and the synthetic manifest shape in `tests/Api.IntegrationTests/Fixtures/mtm-manifest.csv`.
+This comparison reflects the current Manifest Import model in `src/Mdsweep.Domain/ManifestImports/ManifestModels.cs` and the synthetic manifest shape in `tests/Mdsweep.Api.IntegrationTests/Fixtures/mtm-manifest.csv`.
 
 | MTM export field | Current source | Gap / decision |
 |---|---|---|

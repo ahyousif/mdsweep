@@ -27,28 +27,28 @@ jobs:
         with:
           node-version: 24.x
           cache: npm
-          cache-dependency-path: src/Web/package-lock.json
+          cache-dependency-path: src/Mdsweep.Web/package-lock.json
 
       - name: Restore .NET dependencies
         run: dotnet restore Mdsweep.slnx
 
       - name: Restore web dependencies
-        working-directory: src/Web
+        working-directory: src/Mdsweep.Web
         run: npm ci
 
       - name: Build
         run: dotnet build Mdsweep.slnx --configuration Release --no-restore
 
       - name: Build web
-        working-directory: src/Web
+        working-directory: src/Mdsweep.Web
         run: npm run build
 
       - name: Test .NET
         run: dotnet test Mdsweep.slnx --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
 
       - name: Test web
-        working-directory: src/Web
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+        working-directory: src/Mdsweep.Web
+        run: npm test -- --watch=false
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -89,7 +89,7 @@ jobs:
         with:
           node-version: 24.x
           cache: npm
-          cache-dependency-path: src/Web/package-lock.json
+          cache-dependency-path: src/Mdsweep.Web/package-lock.json
 
       - name: Install Aspire CLI 13.5.2
         run: dotnet tool install --global Aspire.Cli --version 13.5.2
@@ -97,7 +97,7 @@ jobs:
       - name: Restore dependencies
         run: |
           dotnet restore Mdsweep.slnx
-          npm ci --prefix src/Web
+          npm ci --prefix src/Mdsweep.Web
 
       - name: Azure login with OIDC
         uses: azure/login@v3
@@ -113,4 +113,4 @@ jobs:
           aspire deploy --list-steps --non-interactive
 
       - name: Deploy with Aspire
-        run: aspire deploy --apphost src/AppHost/Mdsweep.AppHost.csproj --environment Production --non-interactive
+        run: aspire deploy --apphost src/Mdsweep.AppHost/Mdsweep.AppHost.csproj --environment Production --non-interactive
