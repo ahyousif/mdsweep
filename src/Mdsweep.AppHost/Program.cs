@@ -2,12 +2,17 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddAzureContainerAppEnvironment("azure");
 
-var keyVault = builder.AddAzureKeyVault("mdsweep-kv");
+var postgres = builder.AddAzurePostgresFlexibleServer("postgres");
 
-var postgres = builder
-    .AddAzurePostgresFlexibleServer("postgres")
-    .WithPasswordAuthentication(keyVault)
-    .RunAsContainer();
+if (builder.ExecutionContext.IsRunMode)
+{
+    postgres.WithPasswordAuthentication().RunAsContainer();
+}
+else
+{
+    var keyVault = builder.AddAzureKeyVault("mdsweep-kv");
+    postgres.WithPasswordAuthentication(keyVault);
+}
 
 var database = postgres.AddDatabase("mdsweep");
 
