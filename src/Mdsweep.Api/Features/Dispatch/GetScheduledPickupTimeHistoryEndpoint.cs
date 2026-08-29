@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.Dispatch;
+using Mdsweep.Infrastructure.Persistence;
 using Wolverine;
 using Wolverine.Http;
 
@@ -8,15 +9,16 @@ namespace Mdsweep.Api.Features.Dispatch;
 
 public static class GetScheduledPickupTimeHistoryEndpoint
 {
-    [WolverineGet(DispatchRoutes.ScheduledPickupTimeHistory)]
+    [WolverineGet("/api/trips/{tripNumber}/scheduled-pickup-time/history")]
     public static async Task<IResult> Get(
         string tripNumber,
         ClaimsPrincipal user,
+        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, bus, cancellationToken);
+        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
         if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher"))
         {
             return Results.Forbid();

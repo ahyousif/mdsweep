@@ -1,60 +1,59 @@
-# MDSweep Web
+# Web
 
-This project is the Angular 22 PWA for MDSweep's Dispatcher and Driver workflows. The preferred
-development entry point is the repository's Aspire AppHost, which starts this project after the
-API, PostgreSQL, and Keycloak are ready. See the [root README](../../README.md) for complete setup,
-credentials, and troubleshooting.
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.33.
 
-## Run with the application
+## Development server
 
-From the repository root in the Dev Container:
+To start a local development server, run:
 
 ```bash
-npm ci --prefix src/Mdsweep.Web
-aspire run
+ng serve
 ```
 
-Open <http://localhost:4200>. Aspire injects the API endpoints and exposes the API on
-<http://localhost:5080>.
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
-## Run the Web project alone
+## Code scaffolding
 
-Use this only when the API and its PostgreSQL and Keycloak dependencies are already running:
+Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
 ```bash
-cd src/Mdsweep.Web
-npm ci
-npm start
+ng generate component component-name
 ```
 
-The Angular development server uses `proxy.conf.json` to proxy `/api` and `/signin-oidc` to
-`http://localhost:5080`.
-
-## Build and test
+For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
 
 ```bash
-cd src/Mdsweep.Web
-npm run build
-npm test -- --watch=false
+ng generate --help
 ```
 
-Tests use Angular's unit-test builder with Vitest. The production build emits the PWA to
-`dist/web/browser`; the AppHost publishes those files with the API for deployment.
+## Building
 
-## Structure
+To build the project run:
 
-```text
-src/app/
-  core/                     Authentication session and shared API behavior
-  features/dispatch/        Dispatcher board and management workflows
-  features/manifest-import/ Manifest data access
-  features/driver-work/     Driver UI and durable offline action queue
-  shared/ui/                Minimal generated Spartan primitives
+```bash
+ng build
 ```
 
-TanStack Query owns non-persisted server state and invalidation. TanStack Table powers the dense
-Manifest and service-day tables. The Driver action queue remains a separate durable browser
-workflow and must not be replaced by or persisted through the general query cache.
+This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
-Authentication remains server-owned: Angular calls same-origin endpoints with the ASP.NET Core
-session cookie and antiforgery token. It does not receive, store, or refresh Keycloak tokens.
+## Running unit tests
+
+To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+
+```bash
+ng test
+```
+
+## Running end-to-end tests
+
+For end-to-end (e2e) testing, run:
+
+```bash
+ng e2e
+```
+
+Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+
+## Additional Resources
+
+For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
