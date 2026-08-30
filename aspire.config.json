@@ -1,5 +1,5 @@
 {
   "appHost": {
-    "path": "src/AppHost/Mdsweep.AppHost.csproj"
+    "path": "src/Mdsweep.AppHost/Mdsweep.AppHost.csproj"
   }
 }

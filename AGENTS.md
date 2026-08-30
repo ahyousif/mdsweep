@@ -36,7 +36,7 @@ This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See
 
 ## Working rules
 
-- Organize application code by vertical feature under `src/Api/Features`; keep rules, persistence mapping, validation, and endpoints close to the behavior they implement.
+- Organize HTTP boundaries by vertical feature under `src/Mdsweep.Api/Features`; keep domain rules in `Mdsweep.Domain`, contracts in `Mdsweep.Application`, and EF/file handlers close to the behavior under `Mdsweep.Infrastructure`.
 - Use EF Core directly inside a feature. Introduce a seam when multiple adapters are real, including a production adapter and a materially different deterministic test adapter.
 - Test through the feature's interface and observable database or HTTP outcomes. Use PostgreSQL for persistence integration tests.
 - Preserve broker-original Trip facts, provider overrides, and append-only operational history as distinct data.

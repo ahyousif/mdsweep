@@ -52,7 +52,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 
 - Use .NET 10, .NET Aspire, ASP.NET Core, Angular, EF Core, and PostgreSQL.
 - Build a modular monolith using slim vertical slices for Manifest Import, Dispatch, Driver Work, Billing Export, and Identity.
-- Use Keycloak as the OpenID Connect identity provider. The Angular PWA uses authorization code flow with PKCE; the API validates bearer tokens and authorizes the `Dispatcher` and `Driver` roles.
+- Use Keycloak as the OpenID Connect identity provider. ASP.NET Core is the confidential OpenID Connect client and backend-for-frontend: it completes the authorization-code flow, establishes an HttpOnly application cookie, resolves the active Provider context, and authorizes the `Dispatcher` and `Driver` roles. The Angular PWA calls same-origin application endpoints and never receives or stores Keycloak access or refresh tokens.
 - Model one Provider in the MVP. Users belong to that Provider, but tenant resolution and tenant administration are deferred.
 - Manifest Import owns parsing, normalization, validation, Trip identity, repeat-import comparison, broker-status handling, and Journey grouping.
 - Broker-original facts, Provider overrides, and append-only Operational History remain distinct.
@@ -66,7 +66,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 - EF Core accesses PostgreSQL directly inside the owning feature; there is no generic repository layer.
 - MTM input and billing output remain user-initiated file workflows.
 - Billing Export remains behaviorally blocked until the authoritative MTM bulk-upload template and training establish required fields, evidence, validation, duplicate handling, and rejection behavior.
-- Wolverine PostgreSQL transport, a separate automation worker, and MTM-specific Playwright automation are deferred until an authorized durable automation workflow exists.
+- Wolverine PostgreSQL persistence/transport, durable queues, a separate automation worker, and MTM-specific Playwright automation are deferred until an authorized durable automation workflow exists. In-process Wolverine HTTP dispatch and EF Core unit-of-work handling do not change this deferral.
 - Development, tests, issues, logs, and screenshots use synthetic patient data.
 - Production hosting targets a small BAA-covered Linux deployment with encrypted off-machine backups and a tested restore, under an initial infrastructure target of $75 per month.
 - English is the MVP language. Store controlled UI text and status codes in a localization-ready form so future Arabic support does not require rewriting domain state.
