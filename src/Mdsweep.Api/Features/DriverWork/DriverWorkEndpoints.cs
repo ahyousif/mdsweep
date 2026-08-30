@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
-using Mdsweep.Infrastructure.Persistence;
+using Mdsweep.Application.Identity;
 using Wolverine;
 using Wolverine.Http;
 
@@ -12,12 +12,11 @@ public static class DriverWorkEndpoints
     [WolverineGet("/api/driver-work/trips")]
     public static async Task<IResult> ListTrips(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", bus, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
@@ -34,12 +33,11 @@ public static class DriverWorkEndpoints
     public static async Task<IResult> TripHistory(
         string tripNumber,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", bus, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
@@ -62,12 +60,11 @@ public static class DriverWorkEndpoints
         string tripNumber,
         RecordDriverTripEventRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", bus, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
@@ -82,12 +79,11 @@ public static class DriverWorkEndpoints
     public static async Task<IResult> SynchronizeEvent(
         SynchronizeDriverTripEventRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", bus, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
@@ -101,12 +97,11 @@ public static class DriverWorkEndpoints
     [WolverineGet("/api/driver-work/conflicts")]
     public static async Task<IResult> ListConflicts(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Dispatcher", db, cancellationToken);
+        var context = await Resolve(user, "Dispatcher", bus, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
@@ -123,12 +118,11 @@ public static class DriverWorkEndpoints
         Guid eventId,
         CorrectDriverTripEventRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", bus, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
@@ -168,11 +162,11 @@ public static class DriverWorkEndpoints
     private static async Task<ProviderContext?> Resolve(
         ClaimsPrincipal user,
         string role,
-        ApplicationDbContext db,
+        IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
+        var context = await ProviderContextResolver.ResolveActive(user, bus, cancellationToken);
         return ProviderContextResolver.HasRole(context, role) ? context : null;
     }
 }

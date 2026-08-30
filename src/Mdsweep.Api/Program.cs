@@ -1,6 +1,4 @@
 using System.Text.Json.Serialization;
-using Mdsweep.Api.Features.Dispatch;
-using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.ManifestImports;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Identity;
@@ -134,7 +132,6 @@ app.MapWolverineEndpoints(options =>
     options.RequireAuthorizeOnAll();
     options.AutoAntiforgeryOnFormEndpoints();
 });
-app.MapIdentity();
 
 app.MapDefaultEndpoints();
 

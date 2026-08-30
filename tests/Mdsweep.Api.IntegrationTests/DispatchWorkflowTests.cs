@@ -140,9 +140,10 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
                 mtmDriverNumber = "DRV-2",
             }
         );
-        create.EnsureSuccessStatusCode();
+        Assert.Equal(System.Net.HttpStatusCode.Created, create.StatusCode);
         var driver = await create.Content.ReadFromJsonAsync<DriverResponse>();
         Assert.NotNull(driver);
+        Assert.Equal($"/api/drivers/{driver.Id}", create.Headers.Location?.OriginalString);
         using var reset = await client.PostAsJsonAsync(
             $"/api/drivers/{driver.Id}/reset-access",
             new { temporaryPassword = "P@ssw0rd!" }

@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.Dispatch;
-using Mdsweep.Infrastructure.Persistence;
 using Wolverine;
 using Wolverine.Http;
 
@@ -9,17 +8,16 @@ namespace Mdsweep.Api.Features.Dispatch;
 
 public static class SetScheduledPickupTimeEndpoint
 {
-    [WolverinePut("/api/trips/{tripNumber}/scheduled-pickup-time")]
+    [WolverinePut(DispatchRoutes.ScheduledPickupTime)]
     public static async Task<IResult> Put(
         string tripNumber,
         SetScheduledPickupTimeRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
+        var context = await ProviderContextResolver.ResolveActive(user, bus, cancellationToken);
         if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher"))
         {
             return Results.Forbid();

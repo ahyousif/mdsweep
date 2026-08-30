@@ -1,10 +1,8 @@
 using System.Security.Claims;
-using Mdsweep.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using Mdsweep.Application.Identity;
+using Wolverine;
 
 namespace Mdsweep.Api.Features.Identity;
-
-public sealed record ProviderContext(Guid ProviderId, Guid AppUserId, string Role);
 
 public static class ProviderContextResolver
 {
@@ -15,7 +13,7 @@ public static class ProviderContextResolver
 
     public static async Task<IReadOnlyList<ProviderContext>> ResolveAll(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
@@ -23,25 +21,28 @@ public static class ProviderContextResolver
         if (string.IsNullOrWhiteSpace(subject))
             return [];
 
-        return await (
-            from appUser in db.AppUsers
-            join membership in db.ProviderMemberships on appUser.Id equals membership.AppUserId
-            where appUser.KeycloakSubject == subject
-            select new ProviderContext(membership.ProviderId, appUser.Id, membership.Role)
-        ).ToListAsync(cancellationToken);
+        return await bus.InvokeAsync<List<ProviderContext>>(
+            new GetProviderContexts(subject),
+            cancellationToken
+        );
     }
 
     public static async Task<ProviderContext?> ResolveActive(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
+        var subject = user.FindFirstValue("sub");
         var providerId = user.FindFirstValue(ActiveProviderIdClaim);
-        return Guid.TryParse(providerId, out var id)
-            ? (await ResolveAll(user, db, cancellationToken)).SingleOrDefault(x =>
-                x.ProviderId == id
+        if (string.IsNullOrWhiteSpace(subject) || !Guid.TryParse(providerId, out var id))
+            return null;
+
+        return (
+            await bus.InvokeAsync<List<ProviderContext>>(
+                new GetProviderContexts(subject, id),
+                cancellationToken
             )
-            : null;
+        ).SingleOrDefault();
     }
 }
