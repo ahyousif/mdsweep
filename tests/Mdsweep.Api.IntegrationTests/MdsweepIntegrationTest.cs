@@ -132,19 +132,19 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var appUser = new AppUser { KeycloakSubject = $"driver-{Guid.NewGuid()}" };
+        var appUser = new AppUser { KeycloakSubject = $"driver-{Guid.CreateVersion7()}" };
         var driver = new Driver
         {
             ProviderId = providerId,
             AppUserId = appUser.Id,
             DisplayName = "Synthetic Driver",
-            MtmDriverNumber = $"DRV-{Guid.NewGuid():N}",
+            MtmDriverNumber = $"DRV-{Guid.CreateVersion7():N}",
         };
         var vehicle = new Vehicle
         {
             ProviderId = providerId,
             DisplayName = "Van",
-            Vin = $"VIN{Guid.NewGuid():N}"[..17],
+            Vin = $"VIN{Guid.CreateVersion7():N}"[..17],
         };
         db.AppUsers.Add(appUser);
         db.ProviderMemberships.Add(

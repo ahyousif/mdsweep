@@ -2,6 +2,7 @@ using Mdsweep.Domain.Dispatch;
 using Mdsweep.Domain.DriverWork;
 using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
+using Mdsweep.Domain.Passengers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mdsweep.Infrastructure.Persistence;
@@ -25,6 +26,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Provider> Providers => Set<Provider>();
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<ProviderMembership> ProviderMemberships => Set<ProviderMembership>();
+    public DbSet<PassengerAggregate> Passengers => Set<PassengerAggregate>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

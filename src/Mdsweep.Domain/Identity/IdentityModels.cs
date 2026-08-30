@@ -2,14 +2,14 @@ namespace Mdsweep.Domain.Identity;
 
 public sealed class Provider
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public required string Name { get; init; }
     public required string KeycloakOrganizationId { get; init; }
 }
 
 public sealed class AppUser
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public required string KeycloakSubject { get; init; }
 }
 

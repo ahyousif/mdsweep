@@ -1,9 +1,9 @@
 # MDSweep
 
 MDSweep replaces manual MTM Manifest processing with one synthetic-data workflow for
-Manifest import, dispatch, Driver completion, Operational History, and manual billing-file
-exchange. It is a .NET 10 modular monolith with an Angular 22 PWA, PostgreSQL, Keycloak,
-Wolverine HTTP endpoints, and .NET Aspire orchestration.
+maintaining Passengers and Trips from Manifest receipt through planning, performance, review,
+and manual billing-file exchange. It is a .NET 10 modular monolith with an Angular 22 PWA,
+PostgreSQL, Keycloak, Wolverine HTTP endpoints, and .NET Aspire orchestration.
 
 > **Data safety:** local development, deployed validation environments, tests, logs,
 > screenshots, issues, and pull requests must use synthetic data. The current environment is

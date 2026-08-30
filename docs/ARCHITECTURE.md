@@ -11,70 +11,66 @@ The system has a shared Azure production-shaped environment for deployment valid
 The application replaces the provider's legacy operations site. MTM integration at both ends is file-based for the MVP:
 
 ```text
-MTM manifest → import → dispatch → driver completion → billing export → MTM portal
+MTM manifest → Trips → billing file → MTM portal
 ```
 
 The user downloads the manifest and uploads the billing file manually. Wolverine is used only as an in-process command/query dispatcher, HTTP endpoint model, and lightweight EF Core unit of work. Durable queues, inboxes, outboxes, scheduled jobs, browser automation, and an automation worker enter the architecture only when an authorized durable workflow exists.
 
 ## Modules
 
-Each module owns a workflow and presents a small interface through its HTTP endpoints and application commands. Business rules, persistence, validation, and audit recording remain local to the slice that owns the behavior.
+Each module presents a small interface through its HTTP endpoints and application commands. Business rules, persistence, validation, and history remain local to the module that owns the behavior.
 
-### Manifest Import
+### Passengers
 
-**Interface:** upload a manifest, inspect its validation summary, and apply the accepted import.
+**Interface:** create, find, maintain, and inspect a Passenger's Trip history.
 
-The implementation hides CSV/XLSX parsing, normalization, duplicate detection, A/B Journey grouping, broker-status handling, repeat-import comparison, and preservation of operational overrides. Applying the same source data repeatedly must not duplicate Trips or erase provider-owned changes.
+Passengers owns Provider-scoped Passenger identity, contact details, operational notes, and broker-specific member identifiers. A Passenger may exist before any Manifest or Trip. Trips references a Passenger; it does not own Passenger identity. Manifest adapters reconcile broker-provided Passenger details through this module without overwriting Provider-owned information.
 
-### Dispatch
+### Trips
 
-**Interface:** view a service day, apply pickup-time suggestions, and assign a Driver to a Journey or Trip.
+**Interface:** review and accept a Manifest, plan and assign Trips, record Trip outcomes and actual timestamps, review and close Trips, and prepare a billing file.
 
-The implementation hides bulk suggestion policy, exception classification, Journey-wide assignment, individual-leg reassignment, conflict warnings, and assignment history. Driver assignment remains a human decision.
+Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Provider planning decisions, Assignment history, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
 
-### Driver Work
+CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Provider-owned changes, or discard earlier broker-provided details.
 
-**Interface:** load the authenticated Driver's assigned Trips and record a Trip Outcome or actual timestamp.
+The Dispatcher and Driver experiences are separate HTTP and web adapters over Trips. Driver-facing queries disclose only assigned Trips, and Driver actions remain authorized against the active Assignment. Vehicle management and Vehicle Assignment are outside the MVP.
 
-The implementation hides authorization, valid event order, offline idempotency, correction windows, conflict detection, and audit history. Device capture time and server receipt time remain distinct facts.
+Billing-file writers translate billing-ready Trip data into the MTM workbook and retain the generated Billing Batch. The Dispatcher continues the manual MTM Link review and submission workflow.
 
-### Billing Export
+The exact file implementation generates the ten-column `.xlsx` Claims Sheet documented in `docs/research/mtm-bulk-claim-upload.md`. Production compatibility remains gated on a bounded synthetic portal trial for the unresolved validation, duplicate, correction, signature-document, and partial-failure behavior recorded in the research note.
 
-**Interface:** validate Closed Trips and generate one MTM-compatible billing file.
+### Access
 
-The implementation generates the exact ten-column `.xlsx` Claims Sheet documented in `docs/research/mtm-bulk-claim-upload.md`, validates claim readiness before export, and records the export and included Trips in Operational History. The Dispatcher continues the manual MTM Link review and submission workflow.
+Access owns Users, Provider Memberships, and role authorization. Keycloak owns external identities, credentials, and sessions. One MDSweep Keycloak realm serves each production environment; a Provider maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
 
-The file shape is established, but production compatibility remains gated on a bounded synthetic portal trial for the unresolved validation, duplicate, correction, signature-document, and partial-failure behavior recorded in the research note.
-
-### Identity
-
-Keycloak owns user identities, credentials, sessions, and coarse membership roles. One MDSweep Keycloak realm serves each production environment; a Provider maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
-
-ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API resolves an App User and allowed Provider context server-side, maps Keycloak's immutable `sub` to the local App User ID, and enforces Provider/resource authorization itself. Every Provider-owned entity stores the local `ProviderId`; the application stores the ProviderId-to-Keycloak-Organization mapping and never trusts a client-supplied ProviderId without membership verification.
+ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API resolves a User and allowed Provider context server-side, maps Keycloak's immutable `sub` to the local User ID, and enforces Provider/resource authorization itself. Every Provider-owned entity stores the local `ProviderId`; the application stores the ProviderId-to-Keycloak-Organization mapping and never trusts a client-supplied ProviderId without membership verification.
 
 ## Seams and adapters
 
 ### Travel-time estimation
 
-Dispatch owns a narrow travel-time interface: estimate travel duration for a pickup, destination, and relevant departure context. Its first production adapter uses configured route or city presets. A future mapping adapter may replace it after contractual and privacy review. Tests use a deterministic adapter.
+Trips owns a narrow travel-time interface: estimate travel duration for a pickup, destination, and relevant departure context. Its first production adapter uses configured route or city presets. A future mapping adapter may replace it after contractual and privacy review. Tests use a deterministic adapter.
 
-The interface returns an estimate or an actionable failure. It does not assign Drivers or decide the Scheduled Pickup Time; Dispatch combines the estimate with configured arrival and loading buffers.
+The interface returns an estimate or an actionable failure. It does not assign Drivers or decide the Scheduled Pickup Time; Trips combines the estimate with configured arrival and loading buffers.
 
 ### Time
 
-Timestamp-sensitive Driver Work behavior receives time from an injected clock. Production uses system time and tests use a controlled clock so correction windows and event ordering are deterministic.
+Timestamp-sensitive Trips behavior receives time from an injected clock. Production uses system time and tests use a controlled clock so offline receipt and event ordering are deterministic. Correction authorization and timing remain unresolved product policy.
 
 Avoid seams for EF Core persistence. Each slice uses the application's DbContext directly; test observable workflow behavior against PostgreSQL rather than wrapping it in a generic repository.
 
 ## Persistence
 
-PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep continues to use checked-in EF Core migrations; Wolverine does not own schema creation or add messaging tables. Use EF Core mappings near the owning feature. Preserve broker-original data separately from operational overrides and retain append-only history for imports, assignments, driver events, corrections, and closure.
+PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep continues to use checked-in EF Core migrations; Wolverine does not own schema creation or add messaging tables. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Provider-owned changes and retain append-only history for Manifest receipts, Assignments, actual timestamps, outcomes, corrections, and closure.
+
+New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Provider IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
 
 Mutating Wolverine handlers opt into the lightweight EF Core transaction middleware explicitly. It calls one `SaveChangesAsync` at the end of a successful handler and relies on EF Core's transaction for that save. Read handlers do not open write transactions. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
 
 ## Web application
 
-Angular is organized as a small authenticated shell with lazy Dispatcher and Driver routes. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Manifest review and service-day tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
+Angular is organized as a small authenticated shell with lazy Dispatcher and Driver routes. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Manifest review and daily Trips tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local Trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
 
 The pilot may colocate PostgreSQL with the application on one small Linux host when the chosen BAA-covered environment and backup design permit it. Encrypted off-machine backups and a tested restore are required before real data is used.
 
@@ -84,11 +80,8 @@ The pilot may colocate PostgreSQL with the application on one small Linux host w
 src/
   Mdsweep.Api/
     Features/
-      ManifestImports/
-      Dispatch/
-      DriverWork/
-      BillingExports/
-      Identity/
+      Trips/
+      Access/
   Mdsweep.Application/
   Mdsweep.Domain/
   Mdsweep.Infrastructure/

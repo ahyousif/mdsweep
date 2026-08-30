@@ -11,7 +11,7 @@ public enum DriverTripEventType
 
 public sealed class DriverTripEvent
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid TripId { get; init; }
     public Guid DriverId { get; init; }
     public DriverTripEventType Type { get; init; }
@@ -24,7 +24,7 @@ public sealed class DriverTripEvent
 
 public sealed class DriverTripEventCorrection
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid DriverTripEventId { get; init; }
     public Guid CorrectedByDriverId { get; init; }
     public DateTimeOffset CorrectedDeviceCapturedAt { get; init; }
@@ -34,7 +34,7 @@ public sealed class DriverTripEventCorrection
 
 public sealed class DriverTripSyncConflict
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid ActionId { get; init; }
     public Guid ProviderId { get; init; }
     public Guid DriverId { get; init; }

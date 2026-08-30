@@ -8,7 +8,7 @@ public sealed class TripSchedule
 
 public sealed class ScheduledPickupTimeChange
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public long Sequence { get; init; }
     public Guid TripId { get; init; }
     public TimeOnly ScheduledPickupTime { get; init; }
@@ -18,7 +18,7 @@ public sealed class ScheduledPickupTimeChange
 
 public sealed class Driver
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid ProviderId { get; init; }
     public Guid AppUserId { get; init; }
     public required string DisplayName { get; set; }
@@ -28,7 +28,7 @@ public sealed class Driver
 
 public sealed class Vehicle
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid ProviderId { get; init; }
     public required string DisplayName { get; set; }
     public required string Vin { get; set; }
@@ -37,7 +37,7 @@ public sealed class Vehicle
 
 public sealed class TripAssignment
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid TripId { get; init; }
     public Guid DriverId { get; init; }
     public Guid VehicleId { get; init; }

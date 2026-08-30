@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Ardalis.Result" />
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Mdsweep.Domain\Mdsweep.Domain.csproj" />
   </ItemGroup>
 </Project>

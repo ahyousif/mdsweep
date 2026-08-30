@@ -2,9 +2,6 @@ using Mdsweep.Application.DriverWork;
 using Mdsweep.Infrastructure.DriverWork;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Mdsweep.Infrastructure;
 
@@ -15,10 +12,14 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
+        var connectionString = configuration.GetConnectionString("mdsweep");
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("mdsweep"),
-                npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+                connectionString,
+                npgsql =>
+                    npgsql
+                        .MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+                        .UseNodaTime()
             )
         );
 

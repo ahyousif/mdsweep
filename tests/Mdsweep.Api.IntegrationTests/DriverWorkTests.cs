@@ -213,7 +213,7 @@ public sealed class DriverWorkTests : MdsweepIntegrationTest
             await db.SaveChangesAsync();
         }
 
-        var actionId = Guid.NewGuid();
+        var actionId = Guid.CreateVersion7();
         var queued = new
         {
             actionId,

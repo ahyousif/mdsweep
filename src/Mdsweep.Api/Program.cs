@@ -9,6 +9,8 @@ using Mdsweep.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Http;
@@ -94,8 +96,10 @@ builder.Services.AddAntiforgery(options =>
 });
 
 builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter())
-);
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
+});
 
 var app = builder.Build();
 
@@ -133,6 +137,8 @@ app.MapWolverineEndpoints(options =>
 {
     options.RequireAuthorizeOnAll();
     options.AutoAntiforgeryOnFormEndpoints();
+    options.TenantId.IsClaimTypeNamed(ProviderContextResolver.ActiveProviderIdClaim);
+    options.TenantId.AssertExists();
 });
 app.MapIdentity();
 
