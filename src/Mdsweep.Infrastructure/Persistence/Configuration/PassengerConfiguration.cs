@@ -1,5 +1,7 @@
 using Mdsweep.Domain.Passengers;
 
+namespace Mdsweep.Infrastructure.Persistence.Configuration;
+
 public sealed class PassengerConfiguration : IEntityTypeConfiguration<PassengerAggregate>
 {
     public void Configure(EntityTypeBuilder<PassengerAggregate> builder)
