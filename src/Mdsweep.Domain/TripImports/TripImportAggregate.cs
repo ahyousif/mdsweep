@@ -88,7 +88,7 @@ public sealed class TripImportRow
         BrokerStatus = brokerStatus;
         IsWillCall = isWillCall;
         Disposition = disposition;
-        MessagesJson = System.Text.Json.JsonSerializer.Serialize(messages);
+        Messages = [.. messages];
     }
 
     public Guid Id { get; private set; }
@@ -107,11 +107,8 @@ public sealed class TripImportRow
     public string? BrokerStatus { get; private set; }
     public bool IsWillCall { get; private set; }
     public TripImportRowDisposition Disposition { get; private set; }
-    public string MessagesJson { get; private set; } = "[]";
+    public List<string> Messages { get; private set; } = [];
     public Guid? AppliedTripId { get; private set; }
-
-    public IReadOnlyList<string> Messages =>
-        System.Text.Json.JsonSerializer.Deserialize<string[]>(MessagesJson) ?? [];
 
     public void MarkApplied(Guid tripId) => AppliedTripId = tripId;
 }

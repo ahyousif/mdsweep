@@ -38,6 +38,10 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public void ReconcileBrokerFacts(BrokerTripFacts brokerFacts)
     {
         Guard.Against.Null(brokerFacts, nameof(brokerFacts));
+        if (BrokerFacts == brokerFacts)
+        {
+            return;
+        }
         BrokerFacts = brokerFacts;
         AddDomainEvent(new TripBrokerFactsReconciledDomainEvent(Id, BrokerTripNumber));
     }

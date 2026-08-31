@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Trips;
+using Mdsweep.Domain.Passengers;
 
 namespace Mdsweep.Infrastructure.Persistence.Configuration;
 
@@ -11,6 +12,10 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
         builder.Property(trip => trip.TenantId).HasColumnName("tenant_id").HasMaxLength(14).IsRequired();
         builder.Property(trip => trip.BrokerTripNumber).HasMaxLength(100).IsRequired();
         builder.HasIndex(trip => new { trip.TenantId, trip.BrokerTripNumber }).IsUnique();
+        builder.HasOne<PassengerAggregate>()
+            .WithMany()
+            .HasForeignKey(trip => trip.PassengerId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.Property(trip => trip.ScheduledPickupTime).HasColumnType("time");
         builder.OwnsOne(trip => trip.BrokerFacts, facts =>
         {

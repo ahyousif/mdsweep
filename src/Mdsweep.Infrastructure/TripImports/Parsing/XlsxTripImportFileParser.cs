@@ -16,8 +16,11 @@ public sealed class XlsxTripImportFileParser : ITripImportFileParser
             using var workbook = new XLWorkbook(stream);
             var worksheet = workbook.Worksheets.FirstOrDefault()
                 ?? throw new TripImportParseException("The XLSX file does not contain a worksheet.");
+            var lastColumn = worksheet.FirstRowUsed()?.LastCellUsed()?.Address.ColumnNumber
+                ?? throw new TripImportParseException("The XLSX file is empty.");
             var rows = worksheet.RowsUsed()
-                .Select(row => (IReadOnlyList<string>)row.CellsUsed().Select(cell => cell.GetFormattedString()).ToList())
+                .Select(row => (IReadOnlyList<string>)Enumerable.Range(1, lastColumn)
+                    .Select(column => worksheet.Cell(row.RowNumber(), column).GetFormattedString()).ToList())
                 .ToList();
             return Task.FromResult(TripImportTabularRows.Read(rows));
         }

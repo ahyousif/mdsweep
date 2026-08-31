@@ -17,7 +17,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IRepository>(serviceProvider => serviceProvider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ITenantAccess, TenantAccess>();
-        services.AddScoped<ITripImportWorkflowStore, EfTripImportWorkflowStore>();
+        services.AddScoped<ITripImportLookup, EfTripImportLookup>();
         services.AddSingleton<ITripImportFileParser, CsvTripImportFileParser>();
         services.AddSingleton<ITripImportFileParser, XlsxTripImportFileParser>();
 

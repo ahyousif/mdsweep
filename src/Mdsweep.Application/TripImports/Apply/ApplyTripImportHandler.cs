@@ -2,24 +2,33 @@ using Mdsweep.Application.TripImports.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.TripImports;
 using Mdsweep.Domain.Trips;
+using Mdsweep.Domain.Common.Abstractions;
 
 namespace Mdsweep.Application.TripImports.Apply;
 
-public sealed class ApplyTripImportHandler(ITripImportWorkflowStore store, IClock clock)
+public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository repository, IClock clock)
 {
     public async Task<Result<TripImportModel>> Handle(ApplyTripImportCommand command, CancellationToken ct)
     {
-        var tripImport = await store.FindImportAsync(command.Id, ct);
+        var tripImport = await lookup.FindImportAsync(command.Id, ct);
         if (tripImport is null) return Result.NotFound();
         if (tripImport.Status is TripImportStatus.Applied) return Result.Conflict("This trip import has already been applied.");
 
-        foreach (var row in tripImport.Rows.Where(row => row.Disposition is not TripImportRowDisposition.Blocked))
+        var rows = tripImport.Rows.Where(row => row.Disposition is not TripImportRowDisposition.Blocked).ToList();
+        var passengers = (await lookup.FindPassengersAsync(
+            rows.Select(row => row.BrokerMemberId!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+        )).ToDictionary(passenger => passenger.BrokerMemberId!, StringComparer.OrdinalIgnoreCase);
+        var trips = (await lookup.FindTripsAsync(
+            rows.Select(row => row.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+        )).ToDictionary(trip => trip.BrokerTripNumber, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in rows)
         {
-            var passenger = await store.FindPassengerByBrokerMemberIdAsync(row.BrokerMemberId!, ct);
-            if (passenger is null)
+            if (!passengers.TryGetValue(row.BrokerMemberId!, out var passenger))
             {
                 passenger = PassengerAggregate.Create(row.BrokerMemberId, row.FirstName!, row.LastName!);
-                await store.AddPassengerAsync(passenger, ct);
+                await repository.AddAsync(passenger, ct);
+                passengers.Add(row.BrokerMemberId!, passenger);
             }
 
             var brokerFacts = new BrokerTripFacts(
@@ -28,11 +37,11 @@ public sealed class ApplyTripImportHandler(ITripImportWorkflowStore store, ICloc
                 row.DropoffAddress ?? string.Empty, row.DropoffCity ?? string.Empty,
                 row.BrokerStatus, row.IsWillCall
             );
-            var trip = await store.FindTripByBrokerTripNumberAsync(row.TripNumber!, ct);
-            if (trip is null)
+            if (!trips.TryGetValue(row.TripNumber!, out var trip))
             {
                 trip = TripAggregate.Create(passenger.Id, row.TripNumber!, brokerFacts);
-                await store.AddTripAsync(trip, ct);
+                await repository.AddAsync(trip, ct);
+                trips.Add(row.TripNumber!, trip);
             }
             else
             {

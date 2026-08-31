@@ -1,12 +1,13 @@
 using System.Security.Cryptography;
 using Mdsweep.Application.TripImports.Abstractions;
 using Mdsweep.Domain.TripImports;
+using Mdsweep.Domain.Common.Abstractions;
 
 namespace Mdsweep.Application.TripImports.Preview;
 
 public sealed class PreviewTripImportHandler(
     IEnumerable<ITripImportFileParser> parsers,
-    ITripImportWorkflowStore store
+    IRepository repository
 )
 {
     public async Task<Result<Guid>> Handle(PreviewTripImportCommand command, CancellationToken ct)
@@ -23,10 +24,6 @@ public sealed class PreviewTripImportHandler(
         }
 
         var fingerprint = Convert.ToHexString(SHA256.HashData(command.Content));
-        if (await store.HasContentFingerprintAsync(fingerprint, ct))
-        {
-            return Result.Conflict("This file has already been imported for this tenant.");
-        }
 
         IReadOnlyList<ParsedTripImportRow> parsedRows;
         try
@@ -38,16 +35,22 @@ public sealed class PreviewTripImportHandler(
             return Result.Invalid(new ValidationError { Identifier = "file", ErrorMessage = exception.Message });
         }
 
+        var duplicateTripNumbers = parsedRows
+            .Where(row => !string.IsNullOrWhiteSpace(row.TripNumber))
+            .GroupBy(row => row.TripNumber!, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var import = TripImportAggregate.Create(
             command.FileName,
             fingerprint,
-            parsedRows.Select(ToImportRow)
+            parsedRows.Select(row => ToImportRow(row, duplicateTripNumbers.Contains(row.TripNumber ?? string.Empty)))
         );
-        await store.AddAsync(import, ct);
+        await repository.AddAsync(import, ct);
         return Result.Success(import.Id);
     }
 
-    private static TripImportRow ToImportRow(ParsedTripImportRow row)
+    private static TripImportRow ToImportRow(ParsedTripImportRow row, bool hasDuplicateTripNumber)
     {
         var messages = new List<string>();
         if (string.IsNullOrWhiteSpace(row.TripNumber)) messages.Add("Trip Number is required.");
@@ -55,6 +58,7 @@ public sealed class PreviewTripImportHandler(
         if (row.ServiceDate is null) messages.Add("Appointment Date is required.");
         if (string.IsNullOrWhiteSpace(row.FirstName)) messages.Add("Member's First Name is required.");
         if (string.IsNullOrWhiteSpace(row.LastName)) messages.Add("Member's Last Name is required.");
+        if (hasDuplicateTripNumber) messages.Add("Trip Number occurs more than once in this import.");
 
         var disposition = messages.Count > 0
             ? TripImportRowDisposition.Blocked

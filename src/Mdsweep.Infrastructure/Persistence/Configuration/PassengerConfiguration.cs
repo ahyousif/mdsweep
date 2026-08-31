@@ -8,7 +8,7 @@ public sealed class PassengerConfiguration : IEntityTypeConfiguration<PassengerA
     {
         builder.ToTable("Passengers");
         builder.HasKey(passenger => passenger.Id);
-        builder.Property(passenger => passenger.TenantId).HasColumnName("tenant_id");
+        builder.Property(passenger => passenger.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(passenger => passenger.BrokerMemberId).HasMaxLength(100);
         builder.Property(passenger => passenger.FirstName).HasMaxLength(200);
         builder.Property(passenger => passenger.LastName).HasMaxLength(200);

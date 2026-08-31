@@ -44,6 +44,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<string>("TenantId")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("tenant_id");
 
@@ -171,6 +172,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PassengerId");
+
                     b.HasIndex("TenantId", "BrokerTripNumber")
                         .IsUnique();
 
@@ -267,9 +270,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)");
 
-                            b1.Property<string>("MessagesJson")
+                            b1.Property<string[]>("Messages")
                                 .IsRequired()
-                                .HasColumnType("jsonb");
+                                .HasColumnType("text[]");
 
                             b1.Property<string>("PickupAddress")
                                 .HasMaxLength(500)
@@ -307,6 +310,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
                 {
+                    b.HasOne("Mdsweep.Domain.Passengers.PassengerAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("PassengerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.OwnsOne("Mdsweep.Domain.Trips.BrokerTripFacts", "BrokerFacts", b1 =>
                         {
                             b1.Property<Guid>("TripAggregateId")

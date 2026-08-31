@@ -30,7 +30,12 @@ public sealed class TripImportConfiguration : IEntityTypeConfiguration<TripImpor
             rows.Property(row => row.DropoffCity).HasMaxLength(200);
             rows.Property(row => row.BrokerStatus).HasMaxLength(100);
             rows.Property(row => row.Disposition).HasConversion<string>().HasMaxLength(30);
-            rows.Property(row => row.MessagesJson).HasColumnType("jsonb");
+            rows.Property(row => row.Messages)
+                .HasColumnType("text[]")
+                .HasConversion(
+                    messages => messages.ToArray(),
+                    messages => messages.ToList()
+                );
         });
     }
 }
