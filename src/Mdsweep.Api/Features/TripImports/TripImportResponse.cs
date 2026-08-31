@@ -8,23 +8,23 @@ public sealed record TripImportResponse(
     string FileName,
     TripImportStatus Status,
     Instant? AppliedAt,
-    IReadOnlyList<TripImportRowResponse> Rows
+    IReadOnlyList<TripImportItemResponse> Items
 )
 {
     public static TripImportResponse FromModel(TripImportModel model) =>
-        new(model.Id, model.FileName, model.Status, model.AppliedAt, model.Rows.Select(TripImportRowResponse.FromModel).ToList());
+        new(model.Id, model.FileName, model.Status, model.AppliedAt, model.Items.Select(TripImportItemResponse.FromModel).ToList());
 }
 
-public sealed record TripImportRowResponse(
+public sealed record TripImportItemResponse(
     int RowNumber,
     string? TripNumber,
     string? BrokerMemberId,
-    TripImportRowDisposition Disposition,
+    TripImportItemDisposition Disposition,
     IReadOnlyList<string> Messages,
     DateOnly? ServiceDate,
     LocalTime? AppointmentTime
 )
 {
-    public static TripImportRowResponse FromModel(TripImportRowModel model) =>
+    public static TripImportItemResponse FromModel(TripImportItemModel model) =>
         new(model.RowNumber, model.TripNumber, model.BrokerMemberId, model.Disposition, model.Messages, model.ServiceDate, model.AppointmentTime);
 }

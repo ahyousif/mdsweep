@@ -19,8 +19,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
         Assert.Equal("Previewed", preview.Status);
-        Assert.Single(preview.Rows);
-        Assert.Equal("Ready", preview.Rows[0].Disposition);
+        Assert.Single(preview.Items);
+        Assert.Equal("Ready", preview.Items[0].Disposition);
 
         using var applyResponse = await client.PostAsync($"/api/trip-imports/{preview.Id}/apply", null);
         applyResponse.EnsureSuccessStatusCode();
@@ -50,7 +50,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         previewResponse.EnsureSuccessStatusCode();
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
-        Assert.Equal(2, preview.Rows.Count);
+        Assert.Equal(2, preview.Items.Count);
 
         using var applyResponse = await client.PostAsync($"/api/trip-imports/{preview.Id}/apply", null);
         applyResponse.EnsureSuccessStatusCode();
@@ -71,8 +71,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         invalidDate.EnsureSuccessStatusCode();
         var preview = await invalidDate.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
-        Assert.Contains("Appointment Date 'abc' is invalid.", preview.Rows[0].Messages);
-        Assert.Contains("Appointment Time 'not-a-time' is invalid.", preview.Rows[0].Messages);
+        Assert.Contains("Appointment Date 'abc' is invalid.", preview.Items[0].Messages);
+        Assert.Contains("Appointment Time 'not-a-time' is invalid.", preview.Items[0].Messages);
 
         using var malformed = await Upload(client, Csv("09/15/2026,\"unterminated,100 St,09:15,TRIP-104,MED-104,VALID,Test,Passenger,Phoenix,Mesa,N"));
         Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
@@ -88,7 +88,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         previewResponse.EnsureSuccessStatusCode();
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
-        Assert.Equal("Ready", preview.Rows[0].Disposition);
+        Assert.Equal("Ready", preview.Items[0].Disposition);
 
         using var applyResponse = await client.PostAsync($"/api/trip-imports/{preview.Id}/apply", null);
         applyResponse.EnsureSuccessStatusCode();
@@ -132,9 +132,9 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Equal(1, await verificationDb.Passengers.IgnoreQueryFilters().CountAsync());
         Assert.Equal(1, await verificationDb.Trips.IgnoreQueryFilters().CountAsync());
-        var import = await verificationDb.TripImports.IgnoreQueryFilters().Include(value => value.Rows).SingleAsync();
+        var import = await verificationDb.TripImports.IgnoreQueryFilters().Include(value => value.Items).SingleAsync();
         Assert.Equal("Previewed", import.Status.ToString());
-        Assert.All(import.Rows, row => Assert.Null(row.AppliedTripId));
+        Assert.All(import.Items, item => Assert.Null(item.AppliedTripId));
     }
 
     [Fact]
@@ -159,8 +159,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         previewResponse.EnsureSuccessStatusCode();
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
-        Assert.Equal("Blocked", preview.Rows[0].Disposition);
-        Assert.Contains("Trip TRIP-108 already belongs to a different passenger.", preview.Rows[0].Messages);
+        Assert.Equal("Blocked", preview.Items[0].Disposition);
+        Assert.Contains("Trip TRIP-108 already belongs to a different passenger.", preview.Items[0].Messages);
 
         using var applyResponse = await client.PostAsync($"/api/trip-imports/{preview.Id}/apply", null);
         Assert.Equal(HttpStatusCode.Conflict, applyResponse.StatusCode);
@@ -179,7 +179,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         duplicatePreviewResponse.EnsureSuccessStatusCode();
         var duplicatePreview = await duplicatePreviewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(duplicatePreview);
-        Assert.All(duplicatePreview.Rows, row => Assert.Equal("Blocked", row.Disposition));
+        Assert.All(duplicatePreview.Items, item => Assert.Equal("Blocked", item.Disposition));
 
         using var firstPreviewResponse = await Upload(client, Csv("09/15/2026,200 Way,100 St,09:15,TRIP-110,MED-111,VALID,Test,Passenger,Phoenix,Mesa,N"));
         using var secondPreviewResponse = await Upload(client, Csv("09/15/2026,200 Way,100 St,09:15,TRIP-110,MED-111,VALID,Test,Passenger,Phoenix,Mesa,N"));
@@ -221,6 +221,6 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         return stream.ToArray();
     }
 
-    private sealed record TripImportResponse(Guid Id, string Status, List<TripImportRowResponse> Rows);
-    private sealed record TripImportRowResponse(string Disposition, List<string> Messages);
+    private sealed record TripImportResponse(Guid Id, string Status, List<TripImportItemResponse> Items);
+    private sealed record TripImportItemResponse(string Disposition, List<string> Messages);
 }

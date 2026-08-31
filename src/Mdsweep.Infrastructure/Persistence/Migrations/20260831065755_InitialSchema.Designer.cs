@@ -231,7 +231,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Mdsweep.Domain.TripImports.TripImportAggregate", b =>
                 {
-                    b.OwnsMany("Mdsweep.Domain.TripImports.TripImportRow", "Rows", b1 =>
+                    b.OwnsMany("Mdsweep.Domain.TripImports.TripImportItem", "Items", b1 =>
                         {
                             b1.Property<Guid>("Id")
                                 .ValueGeneratedOnAdd()
@@ -305,13 +305,13 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                             b1.HasIndex("TripImportId");
 
-                            b1.ToTable("trip_import_rows", (string)null);
+                            b1.ToTable("trip_import_items", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("TripImportId");
                         });
 
-                    b.Navigation("Rows");
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>

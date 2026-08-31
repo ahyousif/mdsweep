@@ -11,7 +11,7 @@ public sealed class EfTripImportLookup(ApplicationDbContext db) : ITripImportLoo
     public Task<bool> HasAppliedImportAsync(string contentFingerprint, CancellationToken ct) =>
         db.TripImports.AnyAsync(import => import.ContentFingerprint == contentFingerprint && import.Status == TripImportStatus.Applied, ct);
     public Task<TripImportAggregate?> FindImportAsync(Guid tripImportId, CancellationToken ct) =>
-        db.TripImports.Include(import => import.Rows).SingleOrDefaultAsync(import => import.Id == tripImportId, ct);
+        db.TripImports.Include(import => import.Items).SingleOrDefaultAsync(import => import.Id == tripImportId, ct);
 
     public async Task<IReadOnlyList<PassengerAggregate>> FindPassengersAsync(
         IReadOnlyCollection<string> brokerMemberIds, CancellationToken ct

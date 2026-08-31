@@ -1,6 +1,6 @@
 namespace Mdsweep.Application.TripImports;
 
-public sealed record ParsedTripImportRow(
+public sealed record ParsedTripImportItem(
     int RowNumber,
     string? TripNumber,
     string? BrokerMemberId,

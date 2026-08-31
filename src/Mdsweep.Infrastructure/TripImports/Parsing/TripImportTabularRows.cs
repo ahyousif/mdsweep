@@ -12,7 +12,7 @@ internal static class TripImportTabularRows
         "Trip Number", "Medicaid Number", "Appointment Date", "Member's First Name", "Member's Last Name"
     ];
 
-    public static IReadOnlyList<ParsedTripImportRow> Read(IReadOnlyList<IReadOnlyList<string>> table)
+    public static IReadOnlyList<ParsedTripImportItem> Read(IReadOnlyList<IReadOnlyList<string>> table)
     {
         if (table.Count == 0) throw new TripImportParseException("The import file is empty.");
         var headers = table[0]
@@ -35,7 +35,7 @@ internal static class TripImportTabularRows
             var hasValidAppointmentTime = TimeOnly.TryParseExact(
                 time, AppointmentTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var appointmentTime
             );
-            return new ParsedTripImportRow(
+            return new ParsedTripImportItem(
                 offset + 2, Cell(row, "Trip Number"), Cell(row, "Medicaid Number"),
                 Cell(row, "Member's First Name"), Cell(row, "Member's Last Name"),
                 hasValidAppointmentDate ? serviceDate : null,

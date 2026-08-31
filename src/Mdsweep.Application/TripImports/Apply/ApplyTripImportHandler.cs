@@ -16,60 +16,60 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
         if (await lookup.HasAppliedImportAsync(tripImport.ContentFingerprint, ct))
             return Result.Conflict("An identical trip import has already been applied.");
 
-        var rows = tripImport.Rows.Where(row => row.Disposition is not TripImportRowDisposition.Blocked).ToList();
+        var items = tripImport.Items.Where(item => item.Disposition is not TripImportItemDisposition.Blocked).ToList();
         var passengers = (await lookup.FindPassengersAsync(
-            rows.Select(row => row.BrokerMemberId!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+            items.Select(item => item.BrokerMemberId!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
         )).ToDictionary(passenger => passenger.BrokerMemberId!, StringComparer.OrdinalIgnoreCase);
         var trips = (await lookup.FindTripsAsync(
-            rows.Select(row => row.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+            items.Select(item => item.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
         )).ToDictionary(trip => trip.BrokerTripNumber, StringComparer.OrdinalIgnoreCase);
 
         // Phase 1: inspect every applicable row before touching an aggregate. Wolverine
         // saves tracked changes after a successful result, including a Result.Conflict.
-        foreach (var row in rows)
+        foreach (var item in items)
         {
-            if (row.TripNumber is null || row.BrokerMemberId is null || row.FirstName is null || row.LastName is null || row.ServiceDate is null)
-                return Result.Invalid(new ValidationError { Identifier = "tripImport", ErrorMessage = $"Row {row.RowNumber} is incomplete and cannot be applied." });
+            if (item.TripNumber is null || item.BrokerMemberId is null || item.FirstName is null || item.LastName is null || item.ServiceDate is null)
+                return Result.Invalid(new ValidationError { Identifier = "tripImport", ErrorMessage = $"Item {item.RowNumber} is incomplete and cannot be applied." });
         }
 
         // Re-check ownership even when Preview displayed the row as blocked. The
         // preview is feedback; this is the persisted-data invariant.
-        foreach (var row in tripImport.Rows.Where(row => row.TripNumber is not null && row.BrokerMemberId is not null))
+        foreach (var item in tripImport.Items.Where(item => item.TripNumber is not null && item.BrokerMemberId is not null))
         {
-            if (trips.TryGetValue(row.TripNumber, out var trip)
-                && (!passengers.TryGetValue(row.BrokerMemberId, out var passenger) || trip.PassengerId != passenger.Id))
+            if (trips.TryGetValue(item.TripNumber, out var trip)
+                && (!passengers.TryGetValue(item.BrokerMemberId, out var passenger) || trip.PassengerId != passenger.Id))
             {
-                return Result.Conflict($"Trip {row.TripNumber} already belongs to a different passenger.");
+                return Result.Conflict($"Trip {item.TripNumber} already belongs to a different passenger.");
             }
         }
 
         // Phase 2: validation is complete, so aggregate changes are safe to track.
-        foreach (var row in rows)
+        foreach (var item in items)
         {
-            if (!passengers.TryGetValue(row.BrokerMemberId!, out var passenger))
+            if (!passengers.TryGetValue(item.BrokerMemberId!, out var passenger))
             {
-                passenger = PassengerAggregate.Create(row.BrokerMemberId, row.FirstName!, row.LastName!);
+                passenger = PassengerAggregate.Create(item.BrokerMemberId, item.FirstName!, item.LastName!);
                 await repository.AddAsync(passenger, ct);
-                passengers.Add(row.BrokerMemberId!, passenger);
+                passengers.Add(item.BrokerMemberId!, passenger);
             }
 
             var brokerFacts = new BrokerTripFacts(
-                row.ServiceDate!.Value, row.AppointmentTime,
-                row.PickupAddress ?? string.Empty, row.PickupCity ?? string.Empty,
-                row.DropoffAddress ?? string.Empty, row.DropoffCity ?? string.Empty,
-                row.BrokerStatus, row.IsWillCall
+                item.ServiceDate!.Value, item.AppointmentTime,
+                item.PickupAddress ?? string.Empty, item.PickupCity ?? string.Empty,
+                item.DropoffAddress ?? string.Empty, item.DropoffCity ?? string.Empty,
+                item.BrokerStatus, item.IsWillCall
             );
-            if (!trips.TryGetValue(row.TripNumber!, out var trip))
+            if (!trips.TryGetValue(item.TripNumber!, out var trip))
             {
-                trip = TripAggregate.Create(passenger.Id, row.TripNumber!, brokerFacts);
+                trip = TripAggregate.Create(passenger.Id, item.TripNumber!, brokerFacts);
                 await repository.AddAsync(trip, ct);
-                trips.Add(row.TripNumber!, trip);
+                trips.Add(item.TripNumber!, trip);
             }
             else
             {
                 trip.ReconcileBrokerFacts(brokerFacts);
             }
-            row.MarkApplied(trip.Id);
+            item.MarkApplied(trip.Id);
         }
 
         tripImport.MarkApplied(clock.GetCurrentInstant());

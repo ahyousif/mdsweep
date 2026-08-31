@@ -8,7 +8,7 @@ public sealed class CsvTripImportFileParser : ITripImportFileParser
 {
     public bool CanParse(string fileName, string? contentType) => fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
 
-    public Task<IReadOnlyList<ParsedTripImportRow>> ParseAsync(ReadOnlyMemory<byte> content, CancellationToken ct)
+    public Task<IReadOnlyList<ParsedTripImportItem>> ParseAsync(ReadOnlyMemory<byte> content, CancellationToken ct)
     {
         try
         {

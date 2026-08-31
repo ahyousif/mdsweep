@@ -4,7 +4,7 @@ public interface ITripImportFileParser
 {
     bool CanParse(string fileName, string? contentType);
 
-    Task<IReadOnlyList<ParsedTripImportRow>> ParseAsync(
+    Task<IReadOnlyList<ParsedTripImportItem>> ParseAsync(
         ReadOnlyMemory<byte> content,
         CancellationToken ct
     );

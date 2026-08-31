@@ -100,7 +100,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "trip_import_rows",
+                name: "trip_import_items",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -124,9 +124,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trip_import_rows", x => x.id);
+                    table.PrimaryKey("PK_trip_import_items", x => x.id);
                     table.ForeignKey(
-                        name: "FK_trip_import_rows_trip_imports_trip_import_id",
+                        name: "FK_trip_import_items_trip_imports_trip_import_id",
                         column: x => x.trip_import_id,
                         principalTable: "trip_imports",
                         principalColumn: "id",
@@ -183,8 +183,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_trip_import_rows_trip_import_id",
-                table: "trip_import_rows",
+                name: "IX_trip_import_items_trip_import_id",
+                table: "trip_import_items",
                 column: "trip_import_id");
 
             migrationBuilder.CreateIndex(
@@ -219,7 +219,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "tenant_memberships");
 
             migrationBuilder.DropTable(
-                name: "trip_import_rows");
+                name: "trip_import_items");
 
             migrationBuilder.DropTable(
                 name: "trips");

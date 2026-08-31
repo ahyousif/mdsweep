@@ -6,7 +6,7 @@ namespace Mdsweep.Domain.TripImports;
 
 public sealed class TripImportAggregate : AggregateRoot<Guid>, ITenanted
 {
-    private readonly List<TripImportRow> _rows = [];
+    private readonly List<TripImportItem> _items = [];
 
     private TripImportAggregate()
         : base(default) { }
@@ -24,20 +24,20 @@ public sealed class TripImportAggregate : AggregateRoot<Guid>, ITenanted
     public string ContentFingerprint { get; private set; } = null!;
     public TripImportStatus Status { get; private set; } = TripImportStatus.Previewed;
     public Instant? AppliedAt { get; private set; }
-    public IReadOnlyCollection<TripImportRow> Rows => _rows;
+    public IReadOnlyCollection<TripImportItem> Items => _items;
 
     public static TripImportAggregate Create(
         string fileName,
         string contentFingerprint,
-        IEnumerable<TripImportRow> rows
+        IEnumerable<TripImportItem> items
     )
     {
         Guard.Against.NullOrWhiteSpace(fileName, nameof(fileName));
         Guard.Against.NullOrWhiteSpace(contentFingerprint, nameof(contentFingerprint));
-        Guard.Against.Null(rows, nameof(rows));
+        Guard.Against.Null(items, nameof(items));
 
         var import = new TripImportAggregate(Guid.CreateVersion7(), fileName, contentFingerprint);
-        import._rows.AddRange(rows);
+        import._items.AddRange(items);
         import.AddDomainEvent(new TripImportPreviewedDomainEvent(import.Id));
         return import;
     }
@@ -51,12 +51,12 @@ public sealed class TripImportAggregate : AggregateRoot<Guid>, ITenanted
     }
 }
 
-public sealed class TripImportRow
+public sealed class TripImportItem
 {
     private readonly List<string> _messages = [];
-    private TripImportRow() { }
+    private TripImportItem() { }
 
-    public TripImportRow(
+    public TripImportItem(
         int rowNumber,
         string? tripNumber,
         string? brokerMemberId,
@@ -70,7 +70,7 @@ public sealed class TripImportRow
         string? dropoffCity,
         string? brokerStatus,
         bool isWillCall,
-        TripImportRowDisposition disposition,
+        TripImportItemDisposition disposition,
         IReadOnlyList<string> messages
     )
     {
@@ -107,18 +107,18 @@ public sealed class TripImportRow
     public string? DropoffCity { get; private set; }
     public string? BrokerStatus { get; private set; }
     public bool IsWillCall { get; private set; }
-    public TripImportRowDisposition Disposition { get; private set; }
+    public TripImportItemDisposition Disposition { get; private set; }
     public IReadOnlyList<string> Messages => _messages;
     public Guid? AppliedTripId { get; private set; }
 
     public void Block(string message)
     {
         _messages.Add(message);
-        Disposition = TripImportRowDisposition.Blocked;
+        Disposition = TripImportItemDisposition.Blocked;
     }
 
     public void MarkApplied(Guid tripId) => AppliedTripId = tripId;
 }
 
 public enum TripImportStatus { Previewed, Applied }
-public enum TripImportRowDisposition { Ready, Warning, Blocked }
+public enum TripImportItemDisposition { Ready, Warning, Blocked }
