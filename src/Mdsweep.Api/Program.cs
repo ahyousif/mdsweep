@@ -1,8 +1,5 @@
 using System.Text.Json.Serialization;
 using Mdsweep.Api.Features.Identity;
-using Mdsweep.Application.TripImports;
-using Mdsweep.Application.TripImports.Preview;
-using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
@@ -14,33 +11,7 @@ builder.AddServiceDefaults();
 builder.Services.AddMdsweepInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IClock>(NodaTime.SystemClock.Instance);
 
-builder.Host.UseWolverine(options =>
-{
-    options.Discovery.IncludeAssembly(typeof(PreviewTripImportCommand).Assembly);
-    options.PersistMessagesWithPostgresql(builder.Configuration.GetConnectionString("mdsweep")!);
-    // Lightweight mode keeps EF Core as the unit of work without introducing
-    // Wolverine durable message storage, inboxes, or outboxes.
-    options
-        .UseEntityFrameworkCoreTransactions(TransactionMiddlewareMode.Lightweight)
-        .WithDbContextAbstraction<IRepository, ApplicationDbContext>();
-    options.Policies.AutoApplyTransactions();
-    options.PublishDomainEventsFromEntityFrameworkCore<IAggregateRoot, DomainEvent>(aggregate =>
-        aggregate.DequeueDomainEvents()
-    );
-    options.Services.AddDbContextWithWolverineManagedConjoinedTenancy<ApplicationDbContext>(
-        (DbContextOptionsBuilder<ApplicationDbContext> db, JasperFx.MultiTenancy.ConnectionString connectionString) =>
-        {
-            db.UseNpgsql(
-                    connectionString.Value,
-                    npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
-                )
-                // Wolverine adds runtime tenant query filters to the model. Those filters do not
-                // change the relational schema and are intentionally absent from the design-time
-                // migration snapshot, which remains the new-database schema baseline.
-                .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-        }
-    );
-});
+builder.Host.AddMdsweepMessaging(builder.Configuration, typeof(Program).Assembly);
 builder.Services.AddWolverineHttp();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -60,7 +31,7 @@ builder
     })
     .AddCookie(options =>
     {
-        options.Cookie.Name = ".Mdsweep.Auth";
+        options.Cookie.Name = AuthenticationConventions.CookieName;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
 
@@ -103,7 +74,7 @@ builder.Services.AddAuthorization(options =>
         policy =>
         {
             policy.RequireAuthenticatedUser();
-            policy.AddRequirements(new TenantRoleRequirement("Dispatcher"));
+            policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Dispatcher));
         }
     );
 });
@@ -111,8 +82,8 @@ builder.Services.AddScoped<IAuthorizationHandler, TenantRoleAuthorizationHandler
 
 builder.Services.AddAntiforgery(options =>
 {
-    options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.Name = ".Mdsweep.Antiforgery";
+    options.HeaderName = AuthenticationConventions.AntiforgeryHeaderName;
+    options.Cookie.Name = AuthenticationConventions.AntiforgeryCookieName;
     options.Cookie.HttpOnly = true;
 });
 
@@ -124,20 +95,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    await db.Database.MigrateAsync();
-
-    if (app.Environment.IsDevelopment())
-    {
-        await DevelopmentIdentitySeeder.SeedAsync(db);
-    }
-
-    var tenantIds = await db.Tenants.Select(tenant => tenant.Id).ToArrayAsync();
-    await app.AddWolverineManagedTenantsAsync<ApplicationDbContext>(tenantIds);
-}
+await app.InitializeMdsweepInfrastructureAsync();
 
 // Must run before authentication so OIDC generates HTTPS callback URLs
 // correctly when running behind Azure Container Apps ingress.

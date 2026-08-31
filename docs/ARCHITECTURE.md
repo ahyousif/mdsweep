@@ -56,7 +56,13 @@ Passenger is the reference vertical slice for new Tenant-owned behavior:
 HTTP endpoint → Dispatcher policy → IMessageBus.SendAsync → Application handler → aggregate → IRepository
 ```
 
-Wolverine HTTP derives the ambient Tenant from the authenticated active-Tenant claim. Endpoints do not accept or pass Tenant IDs, `ClaimsPrincipal`, or `ITenantAccess` merely to establish Tenant or role context; reusable ASP.NET Core policies perform that authorization. Commands and queries remain Tenant-free, while conjoined EF tenancy applies query filtering and Tenant stamping. Read handlers do not open write transactions; mutating aggregate handlers use `IRepository` with Wolverine's EF transaction middleware. Legacy Dispatch and DriverWork code is not a template for new slices.
+Wolverine HTTP derives the ambient Tenant from the authenticated active-Tenant claim. Endpoints do not accept or pass Tenant IDs, `ClaimsPrincipal`, or `ITenantAccess` merely to establish Tenant or role context; reusable ASP.NET Core policies perform that authorization. Commands and queries remain Tenant-free, while conjoined EF tenancy applies query filtering and Tenant stamping. Legacy Dispatch and DriverWork code is not a template for new slices.
+
+### CQRS and composition
+
+Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS intent. These markers do not control Wolverine transactions; Application handlers have no Wolverine transaction attributes. Aggregate mutation uses `IRepository`, and Wolverine's lightweight EF middleware with `AutoApplyTransactions()` owns successful-handler persistence. Projection-heavy reads may later use Dapper directly, without reader interfaces created solely to wrap SQL.
+
+`Program.cs` composes subsystems and HTTP pipeline behavior. Concrete persistence, external administration adapters, and startup initialization belong in Infrastructure; BFF authentication, authorization, antiforgery, JSON, routing, and middleware ordering remain API concerns. Runtime services bind typed Options rather than consuming raw `IConfiguration`.
 
 ## Seams and adapters
 
@@ -80,7 +86,7 @@ New domain and application code uses NodaTime: `Instant` for timeline events, `L
 
 Domain factories enforce preconditions with Ardalis Guard Clauses, including repository `GuardClauseExtensions` where they express the invariant. Factories do not silently trim, normalize, or otherwise rewrite supplied values: invalid input is rejected and valid input is preserved as supplied.
 
-Mutating Wolverine handlers opt into the lightweight EF Core transaction middleware explicitly. It calls one `SaveChangesAsync` at the end of a successful handler and relies on EF Core's transaction for that save. Read handlers do not open write transactions. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
+Wolverine's lightweight EF Core transaction middleware calls one `SaveChangesAsync` at the end of a successful EF-backed handler. `AutoApplyTransactions()` infers this from `IRepository`; commands and queries do not use Wolverine transaction attributes. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
 
 ## Web application
 
