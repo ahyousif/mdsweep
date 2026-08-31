@@ -28,14 +28,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     }
 
     public Task UpdateAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
-        where TAggregate : AggregateRoot<Guid>
+        where TAggregate : class, IAggregateRoot
     {
         Set<TAggregate>().Update(aggregate);
         return Task.CompletedTask;
     }
 
     public Task DeleteAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
-        where TAggregate : AggregateRoot<Guid>
+        where TAggregate : class, IAggregateRoot
     {
         Set<TAggregate>().Remove(aggregate);
         return Task.CompletedTask;

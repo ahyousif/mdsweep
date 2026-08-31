@@ -53,6 +53,7 @@ public sealed class TripImportAggregate : AggregateRoot<Guid>, ITenanted
 
 public sealed class TripImportRow
 {
+    private readonly List<string> _messages = [];
     private TripImportRow() { }
 
     public TripImportRow(
@@ -88,7 +89,7 @@ public sealed class TripImportRow
         BrokerStatus = brokerStatus;
         IsWillCall = isWillCall;
         Disposition = disposition;
-        Messages = [.. messages];
+        _messages.AddRange(messages);
     }
 
     public Guid Id { get; private set; }
@@ -107,8 +108,14 @@ public sealed class TripImportRow
     public string? BrokerStatus { get; private set; }
     public bool IsWillCall { get; private set; }
     public TripImportRowDisposition Disposition { get; private set; }
-    public List<string> Messages { get; private set; } = [];
+    public IReadOnlyList<string> Messages => _messages;
     public Guid? AppliedTripId { get; private set; }
+
+    public void Block(string message)
+    {
+        _messages.Add(message);
+        Disposition = TripImportRowDisposition.Blocked;
+    }
 
     public void MarkApplied(Guid tripId) => AppliedTripId = tripId;
 }

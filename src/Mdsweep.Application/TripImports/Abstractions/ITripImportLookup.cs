@@ -7,6 +7,7 @@ namespace Mdsweep.Application.TripImports.Abstractions;
 public interface ITripImportLookup
 {
     Task<TripImportAggregate?> FindImportAsync(Guid tripImportId, CancellationToken ct);
+    Task<bool> HasAppliedImportAsync(string contentFingerprint, CancellationToken ct);
     Task<IReadOnlyList<PassengerAggregate>> FindPassengersAsync(
         IReadOnlyCollection<string> brokerMemberIds,
         CancellationToken ct

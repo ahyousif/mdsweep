@@ -24,7 +24,7 @@ builder.Host.UseWolverine(options =>
         .UseEntityFrameworkCoreTransactions(TransactionMiddlewareMode.Lightweight)
         .WithDbContextAbstraction<IRepository, ApplicationDbContext>();
     options.Policies.AutoApplyTransactions();
-    options.PublishDomainEventsFromEntityFrameworkCore<AggregateRoot<Guid>, DomainEvent>(aggregate =>
+    options.PublishDomainEventsFromEntityFrameworkCore<IAggregateRoot, DomainEvent>(aggregate =>
         aggregate.DequeueDomainEvents()
     );
     options.Services.AddDbContextWithWolverineManagedConjoinedTenancy<ApplicationDbContext>(

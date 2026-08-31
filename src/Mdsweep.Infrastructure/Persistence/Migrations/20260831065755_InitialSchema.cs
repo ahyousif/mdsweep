@@ -119,8 +119,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     BrokerStatus = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     IsWillCall = table.Column<bool>(type: "boolean", nullable: false),
                     Disposition = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    Messages = table.Column<string[]>(type: "text[]", nullable: false),
-                    AppliedTripId = table.Column<Guid>(type: "uuid", nullable: true)
+                    AppliedTripId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Messages = table.Column<string[]>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -191,7 +191,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "IX_trip_imports_tenant_id_ContentFingerprint",
                 table: "trip_imports",
                 columns: new[] { "tenant_id", "ContentFingerprint" },
-                unique: true);
+                unique: true,
+                filter: "\"Status\" = 'Applied'");
 
             migrationBuilder.CreateIndex(
                 name: "IX_trips_PassengerId",

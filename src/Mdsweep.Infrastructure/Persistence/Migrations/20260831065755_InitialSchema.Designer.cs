@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Mdsweep.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260831053155_InitialSchema")]
+    [Migration("20260831065755_InitialSchema")]
     partial class InitialSchema
     {
         /// <inheritdoc />
@@ -145,7 +145,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "ContentFingerprint")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Applied'");
 
                     b.ToTable("trip_imports", (string)null);
                 });
@@ -273,10 +274,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)");
 
-                            b1.Property<string[]>("Messages")
-                                .IsRequired()
-                                .HasColumnType("text[]");
-
                             b1.Property<string>("PickupAddress")
                                 .HasMaxLength(500)
                                 .HasColumnType("character varying(500)");
@@ -297,6 +294,11 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                             b1.Property<string>("TripNumber")
                                 .HasMaxLength(100)
                                 .HasColumnType("character varying(100)");
+
+                            b1.Property<string[]>("_messages")
+                                .IsRequired()
+                                .HasColumnType("text[]")
+                                .HasColumnName("Messages");
 
                             b1.HasKey("Id");
 

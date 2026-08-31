@@ -13,6 +13,8 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
         var tripImport = await lookup.FindImportAsync(command.Id, ct);
         if (tripImport is null) return Result.NotFound();
         if (tripImport.Status is TripImportStatus.Applied) return Result.Conflict("This trip import has already been applied.");
+        if (await lookup.HasAppliedImportAsync(tripImport.ContentFingerprint, ct))
+            return Result.Conflict("An identical trip import has already been applied.");
 
         var rows = tripImport.Rows.Where(row => row.Disposition is not TripImportRowDisposition.Blocked).ToList();
         var passengers = (await lookup.FindPassengersAsync(
@@ -45,6 +47,8 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
             }
             else
             {
+                if (trip.PassengerId != passenger.Id)
+                    return Result.Conflict("A broker trip number cannot be moved to a different passenger.");
                 trip.ReconcileBrokerFacts(brokerFacts);
             }
             row.MarkApplied(trip.Id);

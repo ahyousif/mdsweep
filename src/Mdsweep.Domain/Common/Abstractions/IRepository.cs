@@ -7,11 +7,11 @@ public interface IRepository
         where TId : notnull;
 
     Task AddAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
-        where TAggregate : AggregateRoot<Guid>;
+        where TAggregate : class, IAggregateRoot;
 
     Task UpdateAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
-        where TAggregate : AggregateRoot<Guid>;
+        where TAggregate : class, IAggregateRoot;
 
     Task DeleteAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
-        where TAggregate : AggregateRoot<Guid>;
+        where TAggregate : class, IAggregateRoot;
 }
