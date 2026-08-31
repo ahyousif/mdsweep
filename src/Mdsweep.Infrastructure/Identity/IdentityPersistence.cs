@@ -1,6 +1,4 @@
 using Mdsweep.Domain.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mdsweep.Infrastructure.Identity;
 

@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace Mdsweep.Api.Features.Identity;
 

@@ -2,8 +2,6 @@ using Mdsweep.Application.ManifestImports;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Infrastructure.Dispatch;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Wolverine.Attributes;
 
 namespace Mdsweep.Infrastructure.ManifestImports;
 

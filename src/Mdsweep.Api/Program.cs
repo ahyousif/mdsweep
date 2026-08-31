@@ -1,20 +1,11 @@
 using System.Text.Json.Serialization;
-using Mdsweep.Api.Features.Dispatch;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.ManifestImports;
+using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.ManifestImports;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
-using NodaTime;
-using NodaTime.Serialization.SystemTextJson;
-using Wolverine;
-using Wolverine.EntityFrameworkCore;
-using Wolverine.Http;
-using Wolverine.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,9 +17,23 @@ builder.Host.UseWolverine(options =>
 {
     options.Discovery.IncludeAssembly(typeof(PreviewManifest).Assembly);
     options.Discovery.IncludeAssembly(typeof(PreviewManifestHandler).Assembly);
+    options.PersistMessagesWithPostgresql(builder.Configuration.GetConnectionString("mdsweep")!);
     // Lightweight mode keeps EF Core as the unit of work without introducing
     // Wolverine durable message storage, inboxes, or outboxes.
-    options.UseEntityFrameworkCoreTransactions(TransactionMiddlewareMode.Lightweight);
+    options
+        .UseEntityFrameworkCoreTransactions(TransactionMiddlewareMode.Lightweight)
+        .WithDbContextAbstraction<IRepository, ApplicationDbContext>();
+    options.Policies.AutoApplyTransactions();
+    options.PublishDomainEventsFromEntityFrameworkCore<AggregateRoot<Guid>, DomainEvent>(aggregate =>
+        aggregate.DequeueDomainEvents()
+    );
+    options.Services.AddDbContextWithWolverineManagedConjoinedTenancy<ApplicationDbContext>(
+        (db, connectionString) =>
+            db.UseNpgsql(
+                connectionString.Value,
+                npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
+            )
+    );
 });
 builder.Services.AddWolverineHttp();
 
@@ -70,8 +75,7 @@ builder
         options.MapInboundClaims = false;
 
         options.Authority =
-            builder.Configuration["Authentication:Authority"]
-            ?? "https://keycloak.invalid/realms/mdsweep";
+            builder.Configuration["Authentication:Authority"] ?? "https://keycloak.invalid/realms/mdsweep";
 
         options.ClientId = builder.Configuration["Authentication:ClientId"] ?? "mdsweep-server";
 
@@ -86,7 +90,18 @@ builder
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        TenantAuthorizationPolicies.Dispatcher,
+        policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.AddRequirements(new TenantRoleRequirement("Dispatcher"));
+        }
+    );
+});
+builder.Services.AddScoped<IAuthorizationHandler, TenantRoleAuthorizationHandler>();
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -113,6 +128,9 @@ using (var scope = app.Services.CreateScope())
     {
         await DevelopmentIdentitySeeder.SeedAsync(db);
     }
+
+    var tenantIds = await db.Tenants.Select(tenant => tenant.Id).ToArrayAsync();
+    await app.AddWolverineManagedTenantsAsync<ApplicationDbContext>(tenantIds);
 }
 
 // Must run before authentication so OIDC generates HTTPS callback URLs
@@ -137,7 +155,7 @@ app.MapWolverineEndpoints(options =>
 {
     options.RequireAuthorizeOnAll();
     options.AutoAntiforgeryOnFormEndpoints();
-    options.TenantId.IsClaimTypeNamed(ProviderContextResolver.ActiveProviderIdClaim);
+    options.TenantId.IsClaimTypeNamed(TenantClaimTypes.ActiveTenantId);
     options.TenantId.AssertExists();
 });
 app.MapIdentity();

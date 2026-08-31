@@ -1,9 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Mdsweep.Api.Features.Identity;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -23,6 +20,7 @@ public sealed class DispatcherAuthenticationHandler(
                     ProviderContextResolver.ActiveProviderIdClaim,
                     "11111111-1111-1111-1111-111111111111"
                 ),
+                new Claim(TenantClaimTypes.ActiveTenantId, "mdsw-eep2-3456"),
             ],
             Scheme.Name
         );

@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ClosedXML.Excel;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
 using Mdsweep.Domain.Dispatch;
@@ -10,13 +9,6 @@ using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Testcontainers.PostgreSql;
 
 namespace Mdsweep.Api.IntegrationTests;
 

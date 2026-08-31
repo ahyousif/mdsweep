@@ -15,6 +15,7 @@
     <PackageReference Include="NodaTime.Serialization.SystemTextJson" />
     <PackageReference Include="WolverineFx" />
     <PackageReference Include="WolverineFx.Http" />
+    <PackageReference Include="WolverineFx.Postgresql" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 </Project>

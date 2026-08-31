@@ -1,9 +1,5 @@
 using System.Security.Claims;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
 namespace Mdsweep.Api.Features.Identity;
 

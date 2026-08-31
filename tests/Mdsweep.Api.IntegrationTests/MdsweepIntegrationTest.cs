@@ -1,30 +1,22 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ClosedXML.Excel;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
 using Mdsweep.Domain.Dispatch;
 using Mdsweep.Domain.DriverWork;
 using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
+using Mdsweep.Domain.Tenants;
+using Mdsweep.Domain.Users;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Testcontainers.PostgreSql;
 
 namespace Mdsweep.Api.IntegrationTests;
 
 public abstract class MdsweepIntegrationTest : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer database = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
-        .Build();
+    private readonly PostgreSqlContainer database = new PostgreSqlBuilder().WithImage("postgres:17-alpine").Build();
     protected WebApplicationFactory<Program> Application = null!;
 
     public async Task InitializeAsync()
@@ -33,29 +25,18 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         Application = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.UseSetting("ConnectionStrings:mdsweep", database.GetConnectionString());
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
-                services.AddDbContext<ApplicationDbContext>(options =>
-                    options.UseNpgsql(database.GetConnectionString())
-                );
                 services.RemoveAll<IKeycloakUserAdministration>();
-                services.AddSingleton<
-                    IKeycloakUserAdministration,
-                    TestKeycloakUserAdministration
-                >();
+                services.AddSingleton<IKeycloakUserAdministration, TestKeycloakUserAdministration>();
                 services.RemoveAll<IDriverWorkClock>();
                 services.AddSingleton<IDriverWorkClock>(
-                    new TestDriverWorkClock(
-                        new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero)
-                    )
+                    new TestDriverWorkClock(new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero))
                 );
                 services
                     .AddAuthentication("Test")
-                    .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>(
-                        "Test",
-                        _ => { }
-                    );
+                    .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
             });
         });
         await using var scope = Application.Services.CreateAsyncScope();
@@ -79,7 +60,14 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
                 Role = "Dispatcher",
             }
         );
+        var tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant", "synthetic-tenant");
+        var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test");
+        db.Tenants.Add(tenant);
+        db.Users.Add(user);
+        db.TenantMemberships.Add(TenantMembership.Create(tenant.Id, user.Id, "Dispatcher"));
         await db.SaveChangesAsync();
+        var tenants = scope.ServiceProvider.GetRequiredService<IDynamicTenantSource<string>>();
+        await tenants.AddTenantAsync(tenant.Id, CancellationToken.None);
     }
 
     public async Task DisposeAsync()
@@ -88,17 +76,13 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         await database.DisposeAsync();
     }
 
-    protected static string FixturePath(string name) =>
-        Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
+    protected static string FixturePath(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
     protected static async Task<PreviewResponse> Preview(HttpClient client, string fixture)
     {
         await AddAntiforgeryToken(client);
         await using var file = File.OpenRead(FixturePath(fixture));
-        using var form = new MultipartFormDataContent
-        {
-            { new StreamContent(file), "file", fixture },
-        };
+        using var form = new MultipartFormDataContent { { new StreamContent(file), "file", fixture } };
         using var response = await client.PostAsync("/api/manifest-imports/preview", form);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PreviewResponse>())!;
@@ -111,10 +95,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
     )
     {
         await AddAntiforgeryToken(client);
-        using var form = new MultipartFormDataContent
-        {
-            { new StringContent(csv), "file", fileName },
-        };
+        using var form = new MultipartFormDataContent { { new StringContent(csv), "file", fileName } };
         using var response = await client.PostAsync("/api/manifest-imports/preview", form);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PreviewResponse>())!;
@@ -197,10 +178,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
                 Row($"{tripNumber}OTHER", "VALID", "1015", "300 Second St", "400 Oak St")
             )
         );
-        using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
-            null
-        );
+        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
         apply.EnsureSuccessStatusCode();
         using var assignment = await client.PostAsJsonAsync(
             $"/api/trips/{tripNumber}/assignments",
@@ -210,9 +188,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 
         await using var driverScope = Application.Services.CreateAsyncScope();
         var driverDb = driverScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var membership = await driverDb.ProviderMemberships.SingleAsync(x =>
-            x.ProviderId == providerId
-        );
+        var membership = await driverDb.ProviderMemberships.SingleAsync(x => x.ProviderId == providerId);
         driverDb.ProviderMemberships.Remove(membership);
         driverDb.ProviderMemberships.Add(
             new ProviderMembership
@@ -229,13 +205,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Passenger Type,Vehicle Type,Will Call Flag\n"
         + string.Join('\n', rows);
 
-    protected static string Row(
-        string tripNumber,
-        string status,
-        string time,
-        string pickup,
-        string delivery
-    ) =>
+    protected static string Row(string tripNumber, string status, string time, string pickup, string delivery) =>
         $"09/15/2026,{delivery},{pickup},{time},{tripNumber},{status},Test,Rider,Phoenix,Mesa,Ambulatory,Cab,N";
 
     protected sealed record PreviewResponse(
@@ -270,11 +240,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         bool IsActive
     );
 
-    protected sealed record ScheduledPickupChange(
-        long Sequence,
-        TimeOnly ScheduledPickupTime,
-        string ChangedBy
-    );
+    protected sealed record ScheduledPickupChange(long Sequence, TimeOnly ScheduledPickupTime, string ChangedBy);
 
     protected sealed record AssignmentResponse(
         Guid DriverId,
@@ -312,14 +278,10 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
             CancellationToken cancellationToken
         ) => Task.FromResult($"test-{email}");
 
-        public Task ResetPasswordAsync(
-            string subject,
-            string temporaryPassword,
-            CancellationToken cancellationToken
-        ) => Task.CompletedTask;
-
-        public Task DeleteUserAsync(string subject, CancellationToken cancellationToken) =>
+        public Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken) =>
             Task.CompletedTask;
+
+        public Task DeleteUserAsync(string subject, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     protected sealed class TestDriverWorkClock : IDriverWorkClock

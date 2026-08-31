@@ -1,4 +1,6 @@
 using Mdsweep.Application.DriverWork;
+using Mdsweep.Application.Common.Authorization;
+using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Infrastructure.DriverWork;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
@@ -12,16 +14,8 @@ public static class DependencyInjection
         IConfiguration configuration
     )
     {
-        var connectionString = configuration.GetConnectionString("mdsweep");
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(
-                connectionString,
-                npgsql =>
-                    npgsql
-                        .MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
-                        .UseNodaTime()
-            )
-        );
+        services.AddScoped<IRepository>(serviceProvider => serviceProvider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ITenantAccess, TenantAccess>();
 
         services.AddSingleton<IDriverWorkClock, SystemDriverWorkClock>();
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();

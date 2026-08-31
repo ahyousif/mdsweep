@@ -1,0 +1,16 @@
+global using ArdalisResult = Ardalis.Result;
+global using ResultStatus = Ardalis.Result.ResultStatus;
+global using ValidationError = Ardalis.Result.ValidationError;
+global using Microsoft.AspNetCore.Antiforgery;
+global using Microsoft.AspNetCore.Authentication;
+global using Microsoft.AspNetCore.Authentication.Cookies;
+global using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.HttpOverrides;
+global using Microsoft.EntityFrameworkCore;
+global using NodaTime.Serialization.SystemTextJson;
+global using Wolverine;
+global using Wolverine.EntityFrameworkCore;
+global using Wolverine.Http;
+global using Wolverine.Persistence;
+global using Wolverine.Postgresql;

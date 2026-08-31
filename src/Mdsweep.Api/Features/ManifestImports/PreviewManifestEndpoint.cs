@@ -3,8 +3,6 @@ using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.ManifestImports;
 using Mdsweep.Infrastructure.ManifestImports;
 using Mdsweep.Infrastructure.Persistence;
-using Wolverine;
-using Wolverine.Http;
 
 namespace Mdsweep.Api.Features.ManifestImports;
 

@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Domain.Users.Events;
 
 namespace Mdsweep.Domain.Users;
 
@@ -26,6 +27,8 @@ public sealed class UserAggregate : AggregateRoot<Guid>
         Guard.Against.Null(keycloakUserId, nameof(keycloakUserId));
 
         var user = new UserAggregate(Guid.CreateVersion7(), firstName, lastName, keycloakUserId);
+
+        user.AddDomainEvent(new UserCreatedDomainEvent(user.Id));
 
         return user;
     }

@@ -1,6 +1,4 @@
 using Mdsweep.Domain.ManifestImports;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mdsweep.Infrastructure.ManifestImports;
 

@@ -1,5 +1,4 @@
 using System.Globalization;
-using ClosedXML.Excel;
 using Mdsweep.Domain.ManifestImports;
 
 namespace Mdsweep.Infrastructure.ManifestImports;

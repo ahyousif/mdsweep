@@ -66,6 +66,8 @@ PostgreSQL hosts one MDSweep application database and the existing separate Keyc
 
 New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Provider IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
 
+Domain factories enforce preconditions with Ardalis Guard Clauses, including repository `GuardClauseExtensions` where they express the invariant. Factories do not silently trim, normalize, or otherwise rewrite supplied values: invalid input is rejected and valid input is preserved as supplied.
+
 Mutating Wolverine handlers opt into the lightweight EF Core transaction middleware explicitly. It calls one `SaveChangesAsync` at the end of a successful handler and relies on EF Core's transaction for that save. Read handlers do not open write transactions. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
 
 ## Web application

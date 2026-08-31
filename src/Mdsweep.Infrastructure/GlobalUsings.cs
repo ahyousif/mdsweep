@@ -1,9 +1,15 @@
 global using System.Text;
 global using System.Text.Json;
 global using Ardalis.GuardClauses;
+global using ClosedXML.Excel;
 global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore.Infrastructure;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;
+global using Microsoft.EntityFrameworkCore.Migrations;
+global using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using NodaTime;
+global using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 global using Wolverine;
+global using Wolverine.Attributes;
