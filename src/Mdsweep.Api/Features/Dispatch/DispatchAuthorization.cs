@@ -1,19 +1,18 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
-using Mdsweep.Application.Identity;
-using Wolverine;
+using Mdsweep.Application.Common.Authorization;
 
 namespace Mdsweep.Api.Features.Dispatch;
 
 internal static class DispatchAuthorization
 {
-    public static async Task<ProviderContext?> ResolveDispatcher(
+    public static async Task<TenantContext?> ResolveDispatcher(
         ClaimsPrincipal user,
-        IMessageBus bus,
+        ITenantAccess tenantAccess,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, bus, cancellationToken);
-        return ProviderContextResolver.HasRole(context, "Dispatcher") ? context : null;
+        var context = await TenantContextResolver.ResolveActive(user, tenantAccess, cancellationToken);
+        return TenantContextResolver.HasRole(context, "Dispatcher") ? context : null;
     }
 }

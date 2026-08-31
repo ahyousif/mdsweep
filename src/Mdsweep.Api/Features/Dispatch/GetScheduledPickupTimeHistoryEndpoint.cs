@@ -6,11 +6,11 @@ using Wolverine.Http;
 
 namespace Mdsweep.Api.Features.Dispatch;
 
-public static class DeactivateDriverEndpoint
+public static class GetScheduledPickupTimeHistoryEndpoint
 {
-    [WolverinePost(DispatchRoutes.DeactivateDriver)]
-    public static async Task<IResult> Post(
-        Guid driverId,
+    [WolverineGet(DispatchRoutes.ScheduledPickupTimeHistory)]
+    public static async Task<IResult> Get(
+        string tripNumber,
         ClaimsPrincipal user,
         ITenantAccess tenantAccess,
         IMessageBus bus,
@@ -21,10 +21,11 @@ public static class DeactivateDriverEndpoint
         if (context is null)
             return Results.Forbid();
 
-        var result = await bus.InvokeAsync<DispatchManagementResult<bool>>(
-            new DeactivateDriver(driverId),
+        var result = await bus.InvokeAsync<GetScheduledPickupTimeHistoryResult>(
+            new GetScheduledPickupTimeHistory(tripNumber),
             cancellationToken
         );
-        return DispatchHttpResult.Map(result, _ => Results.NoContent());
+
+        return result.Found ? Results.Ok(result.Changes) : Results.NotFound();
     }
 }

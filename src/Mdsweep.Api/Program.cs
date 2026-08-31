@@ -28,11 +28,17 @@ builder.Host.UseWolverine(options =>
         aggregate.DequeueDomainEvents()
     );
     options.Services.AddDbContextWithWolverineManagedConjoinedTenancy<ApplicationDbContext>(
-        (db, connectionString) =>
+        (DbContextOptionsBuilder<ApplicationDbContext> db, JasperFx.MultiTenancy.ConnectionString connectionString) =>
+        {
             db.UseNpgsql(
-                connectionString.Value,
-                npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
-            )
+                    connectionString.Value,
+                    npgsql => npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
+                )
+                // Wolverine adds runtime tenant query filters to the model. Those filters do not
+                // change the relational schema and are intentionally absent from the design-time
+                // migration snapshot, which remains the new-database schema baseline.
+                .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        }
     );
 });
 builder.Services.AddWolverineHttp();

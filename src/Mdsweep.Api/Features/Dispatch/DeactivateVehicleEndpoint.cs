@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Mdsweep.Application.Common.Authorization;
 using Mdsweep.Application.Dispatch;
 using Wolverine;
 using Wolverine.Http;
@@ -11,16 +12,17 @@ public static class DeactivateVehicleEndpoint
     public static async Task<IResult> Post(
         Guid vehicleId,
         ClaimsPrincipal user,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatchAuthorization.ResolveDispatcher(user, bus, cancellationToken);
+        var context = await DispatchAuthorization.ResolveDispatcher(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<DispatchManagementResult<bool>>(
-            new DeactivateVehicle(context.ProviderId, vehicleId),
+            new DeactivateVehicle(vehicleId),
             cancellationToken
         );
         return DispatchHttpResult.Map(result, _ => Results.NoContent());

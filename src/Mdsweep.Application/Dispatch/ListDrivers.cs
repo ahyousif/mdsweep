@@ -1,3 +1,3 @@
 namespace Mdsweep.Application.Dispatch;
 
-public sealed record ListDrivers(Guid ProviderId);
+public sealed record ListDrivers;

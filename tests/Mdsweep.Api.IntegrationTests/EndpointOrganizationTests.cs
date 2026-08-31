@@ -18,7 +18,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
         Assert.Equal(5, identityEndpoints.Count);
         Assert.True(IsAnonymous(identityEndpoints["/api/auth/login"]));
         AssertProtected(identityEndpoints["/api/auth/me"]);
-        AssertProtected(identityEndpoints["/api/auth/provider-context"]);
+        AssertProtected(identityEndpoints["/api/auth/tenant-context"]);
         AssertProtected(identityEndpoints["/api/auth/antiforgery"]);
         AssertProtected(identityEndpoints["/api/auth/logout"]);
 
@@ -26,7 +26,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
         {
             "GET /api/auth/login",
             "GET /api/auth/me",
-            "POST /api/auth/provider-context",
+            "POST /api/auth/tenant-context",
             "GET /api/auth/antiforgery",
             "POST /api/auth/logout",
             "GET /api/drivers",

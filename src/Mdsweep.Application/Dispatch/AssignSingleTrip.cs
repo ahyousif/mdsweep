@@ -1,8 +1,7 @@
 namespace Mdsweep.Application.Dispatch;
 
 public sealed record AssignSingleTrip(
-    Guid ProviderId,
-    Guid AppUserId,
+    Guid UserId,
     string TripNumber,
     AssignTripRequest Request
 );

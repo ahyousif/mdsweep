@@ -6,11 +6,11 @@ using Wolverine.Http;
 
 namespace Mdsweep.Api.Features.Dispatch;
 
-public static class DeactivateDriverEndpoint
+public static class GetServiceDayEndpoint
 {
-    [WolverinePost(DispatchRoutes.DeactivateDriver)]
-    public static async Task<IResult> Post(
-        Guid driverId,
+    [WolverineGet(DispatchRoutes.ServiceDay)]
+    public static async Task<IResult> Get(
+        DateOnly serviceDate,
         ClaimsPrincipal user,
         ITenantAccess tenantAccess,
         IMessageBus bus,
@@ -21,10 +21,10 @@ public static class DeactivateDriverEndpoint
         if (context is null)
             return Results.Forbid();
 
-        var result = await bus.InvokeAsync<DispatchManagementResult<bool>>(
-            new DeactivateDriver(driverId),
+        var trips = await bus.InvokeAsync<List<ServiceDayTripResponse>>(
+            new GetServiceDay(serviceDate),
             cancellationToken
         );
-        return DispatchHttpResult.Map(result, _ => Results.NoContent());
+        return Results.Ok(trips);
     }
 }

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Mdsweep.Application.Common.Authorization;
 using Mdsweep.Application.Dispatch;
 using Wolverine;
 using Wolverine.Http;
@@ -12,16 +13,17 @@ public static class AssignTripEndpoint
         string tripNumber,
         AssignTripRequest request,
         ClaimsPrincipal user,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatchAuthorization.ResolveDispatcher(user, bus, cancellationToken);
+        var context = await DispatchAuthorization.ResolveDispatcher(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<DispatchManagementResult<AssignmentMutationResponse>>(
-            new AssignSingleTrip(context.ProviderId, context.AppUserId, tripNumber, request),
+            new AssignSingleTrip(context.UserId, tripNumber, request),
             cancellationToken
         );
         return DispatchHttpResult.Map(result, value => Results.Ok(value.Value));

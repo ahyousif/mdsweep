@@ -11,6 +11,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 {
     private readonly PostgreSqlContainer database = new PostgreSqlBuilder().WithImage("postgres:17-alpine").Build();
     protected WebApplicationFactory<Program> Application = null!;
+    protected string DatabaseConnectionString => database.GetConnectionString();
 
     public async Task InitializeAsync()
     {

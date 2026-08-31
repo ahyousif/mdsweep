@@ -34,6 +34,8 @@ Trips is one deep module organized internally by Manifest intake, planning, perf
 
 CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Tenant-owned changes, or discard earlier broker-provided details.
 
+TripImports is a sibling feature to Trips. It owns the retained preview and application lifecycle for one uploaded broker file; Trips owns the resulting Trip aggregate and its operational state.
+
 The Dispatcher and Driver experiences are separate HTTP and web adapters over Trips. Driver-facing queries disclose only assigned Trips, and Driver actions remain authorized against the active Assignment. Vehicle management and Vehicle Assignment are outside the MVP.
 
 Billing-file writers translate billing-ready Trip data into the MTM workbook and retain the generated Billing Batch. The Dispatcher continues the manual MTM Link review and submission workflow.
@@ -58,7 +60,7 @@ The interface returns an estimate or an actionable failure. It does not assign D
 
 Timestamp-sensitive Trips behavior receives time from an injected clock. Production uses system time and tests use a controlled clock so offline receipt and event ordering are deterministic. Correction authorization and timing remain unresolved product policy.
 
-Avoid seams for EF Core persistence. Each slice uses the application's DbContext directly; test observable workflow behavior against PostgreSQL rather than wrapping it in a generic repository.
+Application handlers do not receive `ApplicationDbContext`. Aggregate writes use the common `IRepository`, which Wolverine maps to the scoped EF Core DbContext for its lightweight transaction. Narrow query ports are permitted only where a feature requires a query EF Core cannot expose through that write convention.
 
 ## Persistence
 

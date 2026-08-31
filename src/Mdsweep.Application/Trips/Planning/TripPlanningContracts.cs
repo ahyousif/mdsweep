@@ -1,16 +1,11 @@
+using Mdsweep.Application.Common.Abstractions;
+
 namespace Mdsweep.Application.Trips.Planning;
 
-/// <summary>Payload for setting a Trip's planned pickup time.</summary>
-public sealed record SetScheduledPickupTimeRequest(LocalTime ScheduledPickupTime);
+public sealed record SetScheduledPickupTime(Guid TripId, LocalTime ScheduledPickupTime)
+    : IRequest<SetScheduledPickupTimeResult>;
 
-public sealed record SetScheduledPickupTime(Guid UserId, string TripNumber, LocalTime ScheduledPickupTime);
-
-public sealed record SetScheduledPickupTimeResult(
-    SetScheduledPickupTimeOutcome Outcome,
-    LocalTime ScheduledPickupTime
-);
-
-public enum SetScheduledPickupTimeOutcome { Updated, NotFound, Inactive }
+public sealed record SetScheduledPickupTimeResult(Guid TripId, LocalTime ScheduledPickupTime);
 
 public sealed record GetScheduledPickupTimeHistory(string TripNumber);
 

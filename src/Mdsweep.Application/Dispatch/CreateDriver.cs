@@ -1,3 +1,3 @@
 namespace Mdsweep.Application.Dispatch;
 
-public sealed record CreateDriver(Guid ProviderId, CreateDriverRequest Request);
+public sealed record CreateDriver(CreateDriverRequest Request);
