@@ -1,6 +1,5 @@
 using Mdsweep.Application.Dispatch;
 using Mdsweep.Domain.Dispatch;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
@@ -15,7 +14,7 @@ public static class VehicleAdministrationHandler
         CancellationToken cancellationToken
     ) =>
         db
-            .Vehicles.Where(x => x.ProviderId == query.ProviderId)
+            .Vehicles.Where(x => x.TenantId == query.TenantId)
             .OrderBy(x => x.DisplayName)
             .Select(x => new VehicleResponse(x.Id, x.DisplayName, x.Vin, x.IsActive))
             .ToListAsync(cancellationToken);
@@ -38,7 +37,7 @@ public static class VehicleAdministrationHandler
 
         var vehicle = new Vehicle
         {
-            ProviderId = command.ProviderId,
+            TenantId = command.TenantId,
             DisplayName = request.DisplayName.Trim(),
             Vin = request.Vin.Trim(),
         };
@@ -59,7 +58,7 @@ public static class VehicleAdministrationHandler
     )
     {
         var vehicle = await db.Vehicles.SingleOrDefaultAsync(
-            x => x.Id == command.VehicleId && x.ProviderId == command.ProviderId,
+            x => x.Id == command.VehicleId && x.TenantId == command.TenantId,
             cancellationToken
         );
         if (vehicle is null)

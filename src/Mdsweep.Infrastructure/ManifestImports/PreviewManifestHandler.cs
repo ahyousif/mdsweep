@@ -20,14 +20,14 @@ public static class PreviewManifestHandler
             : ManifestXlsx.Preview(stream);
         var rows = await IdentifyBrokerChanges(
             parsedRows,
-            command.ProviderId,
+            command.TenantId,
             db,
             cancellationToken
         );
         var preview = new ManifestPreview
         {
             FileName = command.FileName,
-            ProviderId = command.ProviderId,
+            TenantId = command.TenantId,
             RowsJson = System.Text.Json.JsonSerializer.Serialize(rows),
         };
 
@@ -49,7 +49,7 @@ public static class PreviewManifestHandler
 
     private static async Task<IReadOnlyList<ManifestPreviewRow>> IdentifyBrokerChanges(
         IReadOnlyList<ManifestPreviewRow> rows,
-        Guid providerId,
+        string tenantId,
         ApplicationDbContext db,
         CancellationToken cancellationToken
     )
@@ -60,7 +60,7 @@ public static class PreviewManifestHandler
             .ToArray();
         var existing = await db
             .Trips.AsNoTracking()
-            .Where(trip => trip.ProviderId == providerId && tripNumbers.Contains(trip.TripNumber))
+            .Where(trip => trip.TenantId == tenantId && tripNumbers.Contains(trip.TripNumber))
             .ToDictionaryAsync(
                 trip => trip.TripNumber,
                 StringComparer.OrdinalIgnoreCase,

@@ -5,7 +5,6 @@ using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
 using Mdsweep.Domain.Dispatch;
 using Mdsweep.Domain.DriverWork;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
@@ -41,25 +40,6 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         });
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var appUser = new AppUser { KeycloakSubject = "dispatcher-test" };
-        db.Providers.Add(
-            new Provider
-            {
-                Id = providerId,
-                Name = "Synthetic Provider",
-                KeycloakOrganizationId = "synthetic-provider",
-            }
-        );
-        db.AppUsers.Add(appUser);
-        db.ProviderMemberships.Add(
-            new ProviderMembership
-            {
-                ProviderId = providerId,
-                AppUserId = appUser.Id,
-                Role = "Dispatcher",
-            }
-        );
         var tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant", "synthetic-tenant");
         var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test");
         db.Tenants.Add(tenant);
@@ -110,32 +90,25 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 
     protected async Task<(Guid DriverId, Guid VehicleId)> AddActiveResources()
     {
-        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        const string tenantId = "mdsw-eep2-3456";
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var appUser = new AppUser { KeycloakSubject = $"driver-{Guid.CreateVersion7()}" };
+        var user = UserAggregate.Create("Synthetic", "Driver", $"driver-{Guid.CreateVersion7()}");
         var driver = new Driver
         {
-            ProviderId = providerId,
-            AppUserId = appUser.Id,
+            TenantId = tenantId,
+            UserId = user.Id,
             DisplayName = "Synthetic Driver",
             MtmDriverNumber = $"DRV-{Guid.CreateVersion7():N}",
         };
         var vehicle = new Vehicle
         {
-            ProviderId = providerId,
+            TenantId = tenantId,
             DisplayName = "Van",
             Vin = $"VIN{Guid.CreateVersion7():N}"[..17],
         };
-        db.AppUsers.Add(appUser);
-        db.ProviderMemberships.Add(
-            new ProviderMembership
-            {
-                ProviderId = providerId,
-                AppUserId = appUser.Id,
-                Role = "Driver",
-            }
-        );
+        db.Users.Add(user);
+        db.TenantMemberships.Add(TenantMembership.Create(tenantId, user.Id, "Driver"));
         db.Drivers.Add(driver);
         db.Vehicles.Add(vehicle);
         await db.SaveChangesAsync();
@@ -144,23 +117,23 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 
     protected async Task AssignTripToAuthenticatedDriver(HttpClient client, string tripNumber)
     {
-        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        const string tenantId = "mdsw-eep2-3456";
         Guid driverId;
         Guid vehicleId;
         await using (var scope = Application.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var user = await db.AppUsers.SingleAsync(x => x.KeycloakSubject == "dispatcher-test");
+            var user = await db.Users.SingleAsync(x => x.KeycloakUserId == "dispatcher-test");
             var driver = new Driver
             {
-                ProviderId = providerId,
-                AppUserId = user.Id,
+                TenantId = tenantId,
+                UserId = user.Id,
                 DisplayName = "Authenticated Driver",
                 MtmDriverNumber = $"DRV-{tripNumber}",
             };
             var vehicle = new Vehicle
             {
-                ProviderId = providerId,
+                TenantId = tenantId,
                 DisplayName = "Driver Van",
                 Vin = $"VIN{tripNumber}".PadRight(17, '0'),
             };
@@ -188,16 +161,9 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 
         await using var driverScope = Application.Services.CreateAsyncScope();
         var driverDb = driverScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var membership = await driverDb.ProviderMemberships.SingleAsync(x => x.ProviderId == providerId);
-        driverDb.ProviderMemberships.Remove(membership);
-        driverDb.ProviderMemberships.Add(
-            new ProviderMembership
-            {
-                ProviderId = providerId,
-                AppUserId = membership.AppUserId,
-                Role = "Driver",
-            }
-        );
+        var membership = await driverDb.TenantMemberships.SingleAsync(x => x.TenantId == tenantId);
+        driverDb.TenantMemberships.Remove(membership);
+        driverDb.TenantMemberships.Add(TenantMembership.Create(tenantId, membership.UserId, "Driver"));
         await driverDb.SaveChangesAsync();
     }
 
@@ -245,14 +211,14 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
     protected sealed record AssignmentResponse(
         Guid DriverId,
         Guid VehicleId,
-        Guid AssignedByAppUserId,
+        Guid AssignedByUserId,
         DateTimeOffset AssignedAt,
         DateTimeOffset? SupersededAt
     );
 
     protected sealed record DriverResponse(
         Guid Id,
-        Guid AppUserId,
+        Guid UserId,
         string DisplayName,
         string MtmDriverNumber,
         bool IsActive

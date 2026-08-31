@@ -39,8 +39,8 @@ internal sealed class DriverConfiguration : IEntityTypeConfiguration<Driver>
     public void Configure(EntityTypeBuilder<Driver> entity)
     {
         entity.HasKey(x => x.Id);
-        entity.HasIndex(x => new { x.ProviderId, x.MtmDriverNumber }).IsUnique();
-        entity.HasIndex(x => new { x.ProviderId, x.AppUserId }).IsUnique();
+        entity.HasIndex(x => new { x.TenantId, x.MtmDriverNumber }).IsUnique();
+        entity.HasIndex(x => new { x.TenantId, x.UserId }).IsUnique();
         entity.Property(x => x.DisplayName).HasMaxLength(200);
         entity.Property(x => x.MtmDriverNumber).HasMaxLength(64);
     }
@@ -51,7 +51,7 @@ internal sealed class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
     public void Configure(EntityTypeBuilder<Vehicle> entity)
     {
         entity.HasKey(x => x.Id);
-        entity.HasIndex(x => new { x.ProviderId, x.Vin }).IsUnique();
+        entity.HasIndex(x => new { x.TenantId, x.Vin }).IsUnique();
         entity.Property(x => x.DisplayName).HasMaxLength(200);
         entity.Property(x => x.Vin).HasMaxLength(32);
     }

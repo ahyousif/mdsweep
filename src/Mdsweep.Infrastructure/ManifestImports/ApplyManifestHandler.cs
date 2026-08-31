@@ -15,7 +15,7 @@ public static class ApplyManifestHandler
     )
     {
         var preview = await db.ManifestPreviews.SingleOrDefaultAsync(
-            x => x.Id == command.PreviewId && x.ProviderId == command.ProviderId,
+            x => x.Id == command.PreviewId && x.TenantId == command.TenantId,
             cancellationToken
         );
         if (preview is null)
@@ -33,7 +33,7 @@ public static class ApplyManifestHandler
         var tripNumbers = importable.Select(row => row.TripNumber).ToArray();
         var existing = await db
             .Trips.Where(x =>
-                x.ProviderId == command.ProviderId && tripNumbers.Contains(x.TripNumber)
+                x.TenantId == command.TenantId && tripNumbers.Contains(x.TripNumber)
             )
             .ToDictionaryAsync(
                 x => x.TripNumber,
@@ -48,7 +48,7 @@ public static class ApplyManifestHandler
                 trip = new Trip
                 {
                     TripNumber = row.TripNumber,
-                    ProviderId = command.ProviderId,
+                    TenantId = command.TenantId,
                     JourneyKey = JourneyKey(row.TripNumber),
                 };
                 db.Trips.Add(trip);
@@ -60,7 +60,7 @@ public static class ApplyManifestHandler
                 new TripBrokerImport
                 {
                     TripId = trip.Id,
-                    ProviderId = command.ProviderId,
+                    TenantId = command.TenantId,
                     ManifestPreviewId = preview.Id,
                     TripNumber = row.TripNumber,
                     AppointmentDate = row.AppointmentDate!.Value,

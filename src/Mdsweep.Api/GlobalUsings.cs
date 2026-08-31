@@ -1,4 +1,5 @@
 global using ArdalisResult = Ardalis.Result;
+global using Mdsweep.Application.Common.Authorization;
 global using ResultStatus = Ardalis.Result.ResultStatus;
 global using ValidationError = Ardalis.Result.ValidationError;
 global using Microsoft.AspNetCore.Antiforgery;

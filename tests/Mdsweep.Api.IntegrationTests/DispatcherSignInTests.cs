@@ -16,12 +16,9 @@ public sealed class DispatcherSignInTests : IAsyncLifetime
         application = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.UseSetting("ConnectionStrings:mdsweep", database.GetConnectionString());
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
-                services.AddDbContext<ApplicationDbContext>(options =>
-                    options.UseNpgsql(database.GetConnectionString())
-                );
             });
         });
     }

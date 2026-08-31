@@ -57,12 +57,12 @@ internal sealed class DriverTripSyncConflictConfiguration
         entity
             .HasIndex(x => new
             {
-                x.ProviderId,
+                x.TenantId,
                 x.DriverId,
                 x.ActionId,
             })
             .IsUnique();
-        entity.HasIndex(x => new { x.ProviderId, x.ReceivedAt });
+        entity.HasIndex(x => new { x.TenantId, x.ReceivedAt });
         entity.Property(x => x.TripNumber).HasMaxLength(64);
         entity.Property(x => x.Type).HasConversion<string>().HasMaxLength(40);
         entity.Property(x => x.Reason).HasMaxLength(500);

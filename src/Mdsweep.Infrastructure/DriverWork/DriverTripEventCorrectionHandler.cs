@@ -18,8 +18,8 @@ public static class DriverTripEventCorrectionHandler
     )
     {
         var driver = await ResolveDriver(
-            command.ProviderId,
-            command.AppUserId,
+            command.TenantId,
+            command.UserId,
             db,
             cancellationToken
         );

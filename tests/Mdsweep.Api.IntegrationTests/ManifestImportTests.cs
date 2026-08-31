@@ -5,7 +5,6 @@ using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
 using Mdsweep.Domain.Dispatch;
 using Mdsweep.Domain.DriverWork;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
@@ -235,7 +234,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
     [Fact]
     public async Task Wolverine_unit_of_work_rolls_back_all_manifest_changes_when_save_fails()
     {
-        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var tenantId = "mdsw-eep2-3456";
         var duplicate = new ManifestPreviewRow(
             "ROLLBACK100A",
             ManifestRowDisposition.Ready,
@@ -256,7 +255,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
         var preview = new ManifestPreview
         {
-            ProviderId = providerId,
+            TenantId = tenantId,
             FileName = "rollback.csv",
             RowsJson = JsonSerializer.Serialize(new[] { duplicate, duplicate }),
         };

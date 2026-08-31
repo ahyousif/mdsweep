@@ -16,10 +16,6 @@ public sealed class DispatcherAuthenticationHandler(
             [
                 new Claim("sub", "dispatcher-test"),
                 new Claim(ClaimTypes.Role, "Dispatcher"),
-                new Claim(
-                    ProviderContextResolver.ActiveProviderIdClaim,
-                    "11111111-1111-1111-1111-111111111111"
-                ),
                 new Claim(TenantClaimTypes.ActiveTenantId, "mdsw-eep2-3456"),
             ],
             Scheme.Name

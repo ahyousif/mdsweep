@@ -16,7 +16,7 @@ public static class GetManifestPreviewHandler
         var preview = await db
             .ManifestPreviews.AsNoTracking()
             .SingleOrDefaultAsync(
-                x => x.Id == query.PreviewId && x.ProviderId == query.ProviderId,
+                x => x.Id == query.PreviewId && x.TenantId == query.TenantId,
                 cancellationToken
             );
         if (preview is null)

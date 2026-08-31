@@ -19,8 +19,8 @@ public sealed class ScheduledPickupTimeChange
 public sealed class Driver
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public Guid ProviderId { get; init; }
-    public Guid AppUserId { get; init; }
+    public required string TenantId { get; init; }
+    public Guid UserId { get; init; }
     public required string DisplayName { get; set; }
     public required string MtmDriverNumber { get; set; }
     public bool IsActive { get; set; } = true;
@@ -29,7 +29,7 @@ public sealed class Driver
 public sealed class Vehicle
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public Guid ProviderId { get; init; }
+    public required string TenantId { get; init; }
     public required string DisplayName { get; set; }
     public required string Vin { get; set; }
     public bool IsActive { get; set; } = true;
@@ -41,7 +41,7 @@ public sealed class TripAssignment
     public Guid TripId { get; init; }
     public Guid DriverId { get; init; }
     public Guid VehicleId { get; init; }
-    public Guid AssignedByAppUserId { get; init; }
+    public Guid AssignedByUserId { get; init; }
     public DateTimeOffset AssignedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? SupersededAt { get; set; }
 }

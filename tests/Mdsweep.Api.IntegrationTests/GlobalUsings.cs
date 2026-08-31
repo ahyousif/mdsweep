@@ -1,4 +1,6 @@
 global using ClosedXML.Excel;
+global using Mdsweep.Domain.Tenants;
+global using Mdsweep.Domain.Users;
 global using JasperFx.MultiTenancy;
 global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Hosting;

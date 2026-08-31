@@ -16,7 +16,7 @@ public static class DriverTripQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var driver = await ResolveDriver(query.ProviderId, query.AppUserId, db, cancellationToken);
+        var driver = await ResolveDriver(query.TenantId, query.UserId, db, cancellationToken);
         if (driver is null)
         {
             return new DriverWorkResult<IReadOnlyList<DriverTripResponse>>(
@@ -68,7 +68,7 @@ public static class DriverTripQueryHandler
         CancellationToken cancellationToken
     )
     {
-        var driver = await ResolveDriver(query.ProviderId, query.AppUserId, db, cancellationToken);
+        var driver = await ResolveDriver(query.TenantId, query.UserId, db, cancellationToken);
         if (driver is null)
         {
             return new DriverWorkResult<IReadOnlyList<DriverTripEventResponse>>(

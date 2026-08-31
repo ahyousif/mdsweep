@@ -14,7 +14,7 @@ public static class SetScheduledPickupTimeHandler
     )
     {
         var trip = await db.Trips.SingleOrDefaultAsync(
-            x => x.ProviderId == command.ProviderId && x.TripNumber == command.TripNumber,
+            x => x.TenantId == command.TenantId && x.TripNumber == command.TripNumber,
             cancellationToken
         );
         if (trip is null)
@@ -61,7 +61,7 @@ public static class SetScheduledPickupTimeHandler
             {
                 TripId = trip.Id,
                 ScheduledPickupTime = command.ScheduledPickupTime,
-                ChangedBy = command.AppUserId.ToString(),
+                ChangedBy = command.UserId.ToString(),
             }
         );
 

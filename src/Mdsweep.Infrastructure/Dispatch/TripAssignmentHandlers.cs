@@ -1,6 +1,5 @@
 using Mdsweep.Application.Dispatch;
 using Mdsweep.Domain.Dispatch;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
@@ -17,7 +16,7 @@ public static class TripAssignmentHandler
     {
         var trips = await db
             .Trips.Where(x =>
-                x.ProviderId == command.ProviderId
+                x.TenantId == command.TenantId
                 && x.JourneyKey == command.JourneyKey
                 && x.IsActive
             )
@@ -27,8 +26,8 @@ public static class TripAssignmentHandler
             : await Assign(
                 trips,
                 command.Request,
-                command.ProviderId,
-                command.AppUserId,
+                command.TenantId,
+                command.UserId,
                 db,
                 cancellationToken
             );
@@ -41,7 +40,7 @@ public static class TripAssignmentHandler
     )
     {
         var trip = await db.Trips.SingleOrDefaultAsync(
-            x => x.ProviderId == command.ProviderId && x.TripNumber == command.TripNumber,
+            x => x.TenantId == command.TenantId && x.TripNumber == command.TripNumber,
             cancellationToken
         );
         if (trip is null)
@@ -56,8 +55,8 @@ public static class TripAssignmentHandler
         return await Assign(
             [trip],
             command.Request,
-            command.ProviderId,
-            command.AppUserId,
+            command.TenantId,
+            command.UserId,
             db,
             cancellationToken
         );
@@ -70,7 +69,7 @@ public static class TripAssignmentHandler
     )
     {
         var trip = await db.Trips.SingleOrDefaultAsync(
-            x => x.ProviderId == query.ProviderId && x.TripNumber == query.TripNumber,
+            x => x.TenantId == query.TenantId && x.TripNumber == query.TripNumber,
             cancellationToken
         );
         if (trip is null)
@@ -82,7 +81,7 @@ public static class TripAssignmentHandler
             .Select(x => new AssignmentResponse(
                 x.DriverId,
                 x.VehicleId,
-                x.AssignedByAppUserId,
+                x.AssignedByUserId,
                 x.AssignedAt,
                 x.SupersededAt
             ))
@@ -93,24 +92,24 @@ public static class TripAssignmentHandler
     private static async Task<DispatchManagementResult<AssignmentMutationResponse>> Assign(
         IReadOnlyList<Trip> trips,
         AssignTripRequest request,
-        Guid providerId,
-        Guid appUserId,
+        string tenantId,
+        Guid userId,
         ApplicationDbContext db,
         CancellationToken cancellationToken
     )
     {
         var driver = await db.Drivers.SingleOrDefaultAsync(
-            x => x.Id == request.DriverId && x.ProviderId == providerId && x.IsActive,
+            x => x.Id == request.DriverId && x.TenantId == tenantId && x.IsActive,
             cancellationToken
         );
         var vehicle = await db.Vehicles.SingleOrDefaultAsync(
-            x => x.Id == request.VehicleId && x.ProviderId == providerId && x.IsActive,
+            x => x.Id == request.VehicleId && x.TenantId == tenantId && x.IsActive,
             cancellationToken
         );
         if (driver is null || vehicle is null)
         {
             return Invalid<AssignmentMutationResponse>(
-                "Choose active Driver and Vehicle records for this Provider."
+                "Choose active Driver and Vehicle records for this Tenant."
             );
         }
 
@@ -120,7 +119,7 @@ public static class TripAssignmentHandler
             from trip in db.Trips
             join assignment in db.TripAssignments on trip.Id equals assignment.TripId
             where
-                trip.ProviderId == providerId
+                trip.TenantId == tenantId
                 && journeyKeys.Contains(trip.JourneyKey)
                 && !ids.Contains(trip.Id)
                 && assignment.SupersededAt == null
@@ -144,7 +143,7 @@ public static class TripAssignmentHandler
                     TripId = trip.Id,
                     DriverId = driver.Id,
                     VehicleId = vehicle.Id,
-                    AssignedByAppUserId = appUserId,
+                    AssignedByUserId = userId,
                 }
             );
         }

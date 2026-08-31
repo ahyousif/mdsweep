@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
-using Mdsweep.Infrastructure.Persistence;
 
 namespace Mdsweep.Api.Features.DriverWork;
 
@@ -10,17 +9,17 @@ public static class DriverWorkEndpoints
     [WolverineGet("/api/driver-work/trips")]
     public static async Task<IResult> ListTrips(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<DriverWorkResult<IReadOnlyList<DriverTripResponse>>>(
-            new ListDriverTrips(context.ProviderId, context.AppUserId),
+            new ListDriverTrips(context.TenantId, context.UserId),
             cancellationToken
         );
         return result.Outcome == DriverWorkOutcome.Success
@@ -32,19 +31,19 @@ public static class DriverWorkEndpoints
     public static async Task<IResult> TripHistory(
         string tripNumber,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<
             DriverWorkResult<IReadOnlyList<DriverTripEventResponse>>
         >(
-            new GetDriverTripHistory(context.ProviderId, context.AppUserId, tripNumber),
+            new GetDriverTripHistory(context.TenantId, context.UserId, tripNumber),
             cancellationToken
         );
         return result.Outcome switch
@@ -60,17 +59,17 @@ public static class DriverWorkEndpoints
         string tripNumber,
         RecordDriverTripEventRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<DriverWorkResult<DriverTripEventResponse>>(
-            new RecordDriverTripEvent(context.ProviderId, context.AppUserId, tripNumber, request),
+            new RecordDriverTripEvent(context.TenantId, context.UserId, tripNumber, request),
             cancellationToken
         );
         return EventResult(result);
@@ -80,17 +79,17 @@ public static class DriverWorkEndpoints
     public static async Task<IResult> SynchronizeEvent(
         SynchronizeDriverTripEventRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<DriverWorkResult<DriverTripEventResponse>>(
-            new SynchronizeDriverTripEvent(context.ProviderId, context.AppUserId, request),
+            new SynchronizeDriverTripEvent(context.TenantId, context.UserId, request),
             cancellationToken
         );
         return EventResult(result);
@@ -99,17 +98,17 @@ public static class DriverWorkEndpoints
     [WolverineGet("/api/driver-work/conflicts")]
     public static async Task<IResult> ListConflicts(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Dispatcher", db, cancellationToken);
+        var context = await Resolve(user, "Dispatcher", tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var conflicts = await bus.InvokeAsync<List<DriverTripSyncConflictResponse>>(
-            new ListDriverSyncConflicts(context.ProviderId),
+            new ListDriverSyncConflicts(context.TenantId),
             cancellationToken
         );
         return Results.Ok(conflicts);
@@ -121,19 +120,19 @@ public static class DriverWorkEndpoints
         Guid eventId,
         CorrectDriverTripEventRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await Resolve(user, "Driver", db, cancellationToken);
+        var context = await Resolve(user, "Driver", tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
 
         var result = await bus.InvokeAsync<DriverWorkResult<DriverTripEventCorrectionResponse>>(
             new CorrectDriverTripEvent(
-                context.ProviderId,
-                context.AppUserId,
+                context.TenantId,
+                context.UserId,
                 tripNumber,
                 eventId,
                 request
@@ -163,14 +162,14 @@ public static class DriverWorkEndpoints
             _ => Results.BadRequest(new { message = result.Message }),
         };
 
-    private static async Task<ProviderContext?> Resolve(
+    private static async Task<TenantContext?> Resolve(
         ClaimsPrincipal user,
         string role,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        return ProviderContextResolver.HasRole(context, role) ? context : null;
+        var context = await TenantContextResolver.ResolveActive(user, tenantAccess, cancellationToken);
+        return TenantContextResolver.HasRole(context, role) ? context : null;
     }
 }

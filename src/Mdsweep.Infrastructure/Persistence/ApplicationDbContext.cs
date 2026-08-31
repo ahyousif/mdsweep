@@ -1,7 +1,6 @@
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Dispatch;
 using Mdsweep.Domain.DriverWork;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
@@ -24,9 +23,6 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<DriverTripEvent> DriverTripEvents => Set<DriverTripEvent>();
     public DbSet<DriverTripEventCorrection> DriverTripEventCorrections => Set<DriverTripEventCorrection>();
     public DbSet<DriverTripSyncConflict> DriverTripSyncConflicts => Set<DriverTripSyncConflict>();
-    public DbSet<Provider> Providers => Set<Provider>();
-    public DbSet<AppUser> AppUsers => Set<AppUser>();
-    public DbSet<ProviderMembership> ProviderMemberships => Set<ProviderMembership>();
     public DbSet<PassengerAggregate> Passengers => Set<PassengerAggregate>();
     public DbSet<TenantAggregate> Tenants => Set<TenantAggregate>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();

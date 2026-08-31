@@ -138,13 +138,13 @@ internal static class DriverWorkHandlerSupport
         );
 
     internal static Task<Driver?> ResolveDriver(
-        Guid providerId,
-        Guid appUserId,
+        string tenantId,
+        Guid userId,
         ApplicationDbContext db,
         CancellationToken cancellationToken
     ) =>
         db.Drivers.SingleOrDefaultAsync(
-            x => x.ProviderId == providerId && x.AppUserId == appUserId && x.IsActive,
+            x => x.TenantId == tenantId && x.UserId == userId && x.IsActive,
             cancellationToken
         );
 

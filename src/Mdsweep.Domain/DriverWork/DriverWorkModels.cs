@@ -36,7 +36,7 @@ public sealed class DriverTripSyncConflict
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid ActionId { get; init; }
-    public Guid ProviderId { get; init; }
+    public required string TenantId { get; init; }
     public Guid DriverId { get; init; }
     public required string TripNumber { get; init; }
     public DriverTripEventType Type { get; init; }

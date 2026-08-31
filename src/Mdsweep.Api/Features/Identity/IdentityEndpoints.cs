@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Mdsweep.Infrastructure.Persistence;
+using Mdsweep.Application.Common.Authorization;
 
 namespace Mdsweep.Api.Features.Identity;
 
@@ -20,22 +20,22 @@ public static class IdentityEndpoints
                 "/api/auth/me",
                 async (
                     ClaimsPrincipal user,
-                    ApplicationDbContext db,
+                    ITenantAccess tenantAccess,
                     CancellationToken cancellationToken
                 ) =>
                 {
-                    var contexts = await ProviderContextResolver.ResolveAll(
-                        user,
-                        db,
-                        cancellationToken
-                    );
+                    var userSubject = user.FindFirstValue("sub");
+                    if (string.IsNullOrWhiteSpace(userSubject))
+                        return Results.Forbid();
+
+                    var contexts = await tenantAccess.GetMembershipsAsync(userSubject, cancellationToken);
                     return contexts.Count == 0
                         ? Results.Forbid()
                         : Results.Ok(
                             contexts.Select(context => new
                             {
-                                appUserId = context.AppUserId,
-                                providerId = context.ProviderId,
+                                userId = context.UserId,
+                                tenantId = context.TenantId,
                                 role = context.Role,
                             })
                         );
@@ -43,7 +43,7 @@ public static class IdentityEndpoints
             )
             .RequireAuthorization();
         endpoints
-            .MapPost("/api/auth/provider-context", SelectProviderContext)
+            .MapPost("/api/auth/tenant-context", SelectTenantContext)
             .RequireAuthorization();
         endpoints
             .MapGet(
@@ -83,33 +83,31 @@ public static class IdentityEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> SelectProviderContext(
-        SelectProviderContextRequest request,
+    private static async Task<IResult> SelectTenantContext(
+        SelectTenantContextRequest request,
         ClaimsPrincipal user,
         HttpContext httpContext,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         CancellationToken cancellationToken
     )
     {
-        var context = (
-            await ProviderContextResolver.ResolveAll(user, db, cancellationToken)
-        ).SingleOrDefault(x => x.ProviderId == request.ProviderId);
+        var userSubject = user.FindFirstValue("sub");
+        if (string.IsNullOrWhiteSpace(userSubject))
+            return Results.Forbid();
+
+        var context = (await tenantAccess.GetMembershipsAsync(userSubject, cancellationToken))
+            .SingleOrDefault(x => x.TenantId == request.TenantId);
         if (context is null)
             return Results.Forbid();
 
         var identity = new ClaimsIdentity(user.Identity);
         foreach (
             var claim in identity
-                .FindAll(ProviderContextResolver.ActiveProviderIdClaim)
-                .Concat(identity.FindAll(ClaimTypes.Role))
-                .Concat(identity.FindAll("roles"))
+                .FindAll(TenantClaimTypes.ActiveTenantId)
                 .ToArray()
         )
             identity.RemoveClaim(claim);
-        identity.AddClaim(
-            new Claim(ProviderContextResolver.ActiveProviderIdClaim, context.ProviderId.ToString())
-        );
-        identity.AddClaim(new Claim(ClaimTypes.Role, context.Role));
+        identity.AddClaim(new Claim(TenantClaimTypes.ActiveTenantId, context.TenantId));
         await httpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identity)
@@ -117,5 +115,6 @@ public static class IdentityEndpoints
         return Results.NoContent();
     }
 
-    private sealed record SelectProviderContextRequest(Guid ProviderId);
+    /// <summary>Selects the Tenant used for subsequent authenticated requests.</summary>
+    private sealed record SelectTenantContextRequest(string TenantId);
 }

@@ -5,6 +5,16 @@ namespace Mdsweep.Infrastructure.Identity;
 
 public sealed class TenantAccess(ApplicationDbContext db) : ITenantAccess
 {
+    public async Task<IReadOnlyList<TenantMembershipContext>> GetMembershipsAsync(
+        string userSubject,
+        CancellationToken cancellationToken
+    ) => await (
+            from user in db.Users
+            join membership in db.TenantMemberships on user.Id equals membership.UserId
+            where user.KeycloakUserId == userSubject
+            select new TenantMembershipContext(user.Id, membership.TenantId, membership.Role)
+        ).ToListAsync(cancellationToken);
+
     public Task<bool> HasRoleAsync(
         string userSubject,
         string tenantId,

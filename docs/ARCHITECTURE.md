@@ -24,15 +24,15 @@ Each module presents a small interface through its HTTP endpoints and applicatio
 
 **Interface:** create, find, maintain, and inspect a Passenger's Trip history.
 
-Passengers owns Provider-scoped Passenger identity, contact details, operational notes, and broker-specific member identifiers. A Passenger may exist before any Manifest or Trip. Trips references a Passenger; it does not own Passenger identity. Manifest adapters reconcile broker-provided Passenger details through this module without overwriting Provider-owned information.
+Passengers owns Tenant-scoped Passenger identity and broker-specific member identifiers. A Passenger may exist before any Manifest or Trip. Trips references a Passenger; it does not own Passenger identity. Manifest adapters reconcile broker-provided Passenger details through this module without overwriting Tenant-owned information.
 
 ### Trips
 
 **Interface:** review and accept a Manifest, plan and assign Trips, record Trip outcomes and actual timestamps, review and close Trips, and prepare a billing file.
 
-Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Provider planning decisions, Assignment history, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
+Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Tenant planning decisions, Assignment history, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
 
-CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Provider-owned changes, or discard earlier broker-provided details.
+CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Tenant-owned changes, or discard earlier broker-provided details.
 
 The Dispatcher and Driver experiences are separate HTTP and web adapters over Trips. Driver-facing queries disclose only assigned Trips, and Driver actions remain authorized against the active Assignment. Vehicle management and Vehicle Assignment are outside the MVP.
 
@@ -42,9 +42,9 @@ The exact file implementation generates the ten-column `.xlsx` Claims Sheet docu
 
 ### Access
 
-Access owns Users, Provider Memberships, and role authorization. Keycloak owns external identities, credentials, and sessions. One MDSweep Keycloak realm serves each production environment; a Provider maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
+Access owns Users, Tenant Memberships, and role authorization. Keycloak owns external identities, credentials, and sessions. One MDSweep Keycloak realm serves each production environment; a Tenant maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
 
-ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API resolves a User and allowed Provider context server-side, maps Keycloak's immutable `sub` to the local User ID, and enforces Provider/resource authorization itself. Every Provider-owned entity stores the local `ProviderId`; the application stores the ProviderId-to-Keycloak-Organization mapping and never trusts a client-supplied ProviderId without membership verification.
+ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API maps Keycloak's immutable `sub` to the local User ID, returns allowed Tenant memberships from `/api/auth/me`, and accepts a membership-verified selection at `/api/auth/tenant-context`. The selected Tenant ID is stored in the signed application cookie as `mdsweep_tenant_id`; Wolverine detects it globally for conjoined tenancy. Reusable authorization policies verify the User's membership and role for protected resources. The application never trusts a client-supplied Tenant ID.
 
 ## Seams and adapters
 
@@ -62,9 +62,9 @@ Avoid seams for EF Core persistence. Each slice uses the application's DbContext
 
 ## Persistence
 
-PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep continues to use checked-in EF Core migrations; Wolverine does not own schema creation or add messaging tables. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Provider-owned changes and retain append-only history for Manifest receipts, Assignments, actual timestamps, outcomes, corrections, and closure.
+PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep continues to use checked-in EF Core migrations for application schema; Wolverine uses its own persistence schema for its conjoined-tenant registry and message persistence. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Tenant-owned changes and retain append-only history for Manifest receipts, Assignments, actual timestamps, outcomes, corrections, and closure.
 
-New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Provider IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
+New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Tenant IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
 
 Domain factories enforce preconditions with Ardalis Guard Clauses, including repository `GuardClauseExtensions` where they express the invariant. Factories do not silently trim, normalize, or otherwise rewrite supplied values: invalid input is rejected and valid input is preserved as supplied.
 
@@ -114,6 +114,5 @@ The pilot acceptance path is: import a representative manifest without spreadshe
 - Any authorized MTM API or browser automation
 - Live mapping provider
 - Managed PostgreSQL migration
-- Multitenancy
 - Arabic and other translations
 - Automatic assignment and route optimization

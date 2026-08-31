@@ -3,7 +3,7 @@ namespace Mdsweep.Domain.ManifestImports;
 public sealed class Trip
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public Guid ProviderId { get; init; }
+    public required string TenantId { get; init; }
     public required string TripNumber { get; init; }
     public required string JourneyKey { get; init; }
     public DateOnly AppointmentDate { get; internal set; }
@@ -71,7 +71,7 @@ public sealed class Trip
 public sealed class TripBrokerImport
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public Guid ProviderId { get; init; }
+    public required string TenantId { get; init; }
     public Guid TripId { get; init; }
     public Guid ManifestPreviewId { get; init; }
     public DateTimeOffset ImportedAt { get; init; } = DateTimeOffset.UtcNow;
@@ -86,7 +86,7 @@ public sealed class TripBrokerImport
 public sealed class ManifestPreview
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public Guid ProviderId { get; init; }
+    public required string TenantId { get; init; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public required string FileName { get; init; }
     public required string RowsJson { get; init; }

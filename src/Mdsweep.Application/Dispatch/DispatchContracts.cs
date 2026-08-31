@@ -3,8 +3,8 @@ namespace Mdsweep.Application.Dispatch;
 public sealed record SetScheduledPickupTimeRequest(TimeOnly ScheduledPickupTime);
 
 public sealed record SetScheduledPickupTime(
-    Guid ProviderId,
-    Guid AppUserId,
+    string TenantId,
+    Guid UserId,
     string TripNumber,
     TimeOnly ScheduledPickupTime
 );
@@ -21,14 +21,14 @@ public enum SetScheduledPickupTimeOutcome
     Inactive,
 }
 
-public sealed record GetScheduledPickupTimeHistory(Guid ProviderId, string TripNumber);
+public sealed record GetScheduledPickupTimeHistory(string TenantId, string TripNumber);
 
 public sealed record GetScheduledPickupTimeHistoryResult(
     bool Found,
     IReadOnlyList<ScheduledPickupTimeChangeResponse> Changes
 );
 
-public sealed record GetServiceDay(Guid ProviderId, DateOnly ServiceDate);
+public sealed record GetServiceDay(string TenantId, DateOnly ServiceDate);
 
 public enum DispatchManagementOutcome
 {
@@ -45,41 +45,41 @@ public sealed record DispatchManagementResult<T>(
     string? Location = null
 );
 
-public sealed record ListDrivers(Guid ProviderId);
+public sealed record ListDrivers(string TenantId);
 
-public sealed record CreateDriver(Guid ProviderId, CreateDriverRequest Request);
+public sealed record CreateDriver(string TenantId, CreateDriverRequest Request);
 
-public sealed record CreateDriverAccess(Guid ProviderId, CreateDriverAccessRequest Request);
+public sealed record CreateDriverAccess(string TenantId, CreateDriverAccessRequest Request);
 
 public sealed record ResetDriverAccess(
-    Guid ProviderId,
+    string TenantId,
     Guid DriverId,
     ResetDriverAccessRequest Request
 );
 
-public sealed record DeactivateDriver(Guid ProviderId, Guid DriverId);
+public sealed record DeactivateDriver(string TenantId, Guid DriverId);
 
-public sealed record ListVehicles(Guid ProviderId);
+public sealed record ListVehicles(string TenantId);
 
-public sealed record CreateVehicle(Guid ProviderId, CreateVehicleRequest Request);
+public sealed record CreateVehicle(string TenantId, CreateVehicleRequest Request);
 
-public sealed record DeactivateVehicle(Guid ProviderId, Guid VehicleId);
+public sealed record DeactivateVehicle(string TenantId, Guid VehicleId);
 
 public sealed record AssignJourney(
-    Guid ProviderId,
-    Guid AppUserId,
+    string TenantId,
+    Guid UserId,
     string JourneyKey,
     AssignTripRequest Request
 );
 
 public sealed record AssignSingleTrip(
-    Guid ProviderId,
-    Guid AppUserId,
+    string TenantId,
+    Guid UserId,
     string TripNumber,
     AssignTripRequest Request
 );
 
-public sealed record GetAssignmentHistory(Guid ProviderId, string TripNumber);
+public sealed record GetAssignmentHistory(string TenantId, string TripNumber);
 
 public sealed record AssignmentMutationResponse(
     IReadOnlyList<string> AssignedTripNumbers,
@@ -87,7 +87,7 @@ public sealed record AssignmentMutationResponse(
 );
 
 public sealed record CreateDriverRequest(
-    Guid AppUserId,
+    Guid UserId,
     string DisplayName,
     string MtmDriverNumber
 );
@@ -103,7 +103,7 @@ public sealed record ResetDriverAccessRequest(string TemporaryPassword);
 
 public sealed record DriverResponse(
     Guid Id,
-    Guid AppUserId,
+    Guid UserId,
     string DisplayName,
     string MtmDriverNumber,
     bool IsActive
@@ -118,7 +118,7 @@ public sealed record AssignTripRequest(Guid DriverId, Guid VehicleId);
 public sealed record AssignmentResponse(
     Guid DriverId,
     Guid VehicleId,
-    Guid AssignedByAppUserId,
+    Guid AssignedByUserId,
     DateTimeOffset AssignedAt,
     DateTimeOffset? SupersededAt
 );

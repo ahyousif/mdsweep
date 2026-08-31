@@ -5,7 +5,6 @@ using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.DriverWork;
 using Mdsweep.Domain.Dispatch;
 using Mdsweep.Domain.DriverWork;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
@@ -20,15 +19,10 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
         await using (var scope = Application.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var membership = await db.ProviderMemberships.SingleAsync();
-            db.ProviderMemberships.Remove(membership);
-            db.ProviderMemberships.Add(
-                new ProviderMembership
-                {
-                    ProviderId = membership.ProviderId,
-                    AppUserId = membership.AppUserId,
-                    Role = "Driver",
-                }
+            var membership = await db.TenantMemberships.SingleAsync();
+            db.TenantMemberships.Remove(membership);
+            db.TenantMemberships.Add(
+                TenantMembership.Create(membership.TenantId, membership.UserId, "Driver")
             );
             await db.SaveChangesAsync();
         }
@@ -46,32 +40,25 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
     [Fact]
     public async Task Dispatcher_can_assign_a_journey_then_reassign_one_trip_with_history()
     {
-        var providerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var tenantId = "mdsw-eep2-3456";
         Guid driverId;
         Guid vehicleId;
         await using (var scope = Application.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var driverUser = new AppUser { KeycloakSubject = "driver-test" };
-            db.AppUsers.Add(driverUser);
-            db.ProviderMemberships.Add(
-                new ProviderMembership
-                {
-                    ProviderId = providerId,
-                    AppUserId = driverUser.Id,
-                    Role = "Driver",
-                }
-            );
+            var driverUser = UserAggregate.Create("Synthetic", "User", "driver-test");
+            db.Users.Add(driverUser);
+            db.TenantMemberships.Add(TenantMembership.Create(tenantId, driverUser.Id, "Driver"));
             var driver = new Driver
             {
-                ProviderId = providerId,
-                AppUserId = driverUser.Id,
+                TenantId = tenantId,
+                UserId = driverUser.Id,
                 DisplayName = "Synthetic Driver",
                 MtmDriverNumber = "DRV-1",
             };
             var vehicle = new Vehicle
             {
-                ProviderId = providerId,
+                TenantId = tenantId,
                 DisplayName = "Van 1",
                 Vin = "SYNTHETICVIN00001",
             };

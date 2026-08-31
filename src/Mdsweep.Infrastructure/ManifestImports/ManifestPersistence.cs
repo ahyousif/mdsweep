@@ -7,8 +7,8 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
     public void Configure(EntityTypeBuilder<Trip> entity)
     {
         entity.HasKey(x => x.Id);
-        entity.HasIndex(x => new { x.ProviderId, x.TripNumber }).IsUnique();
-        entity.HasIndex(x => x.ProviderId);
+        entity.HasIndex(x => new { x.TenantId, x.TripNumber }).IsUnique();
+        entity.HasIndex(x => x.TenantId);
         entity.Property(x => x.TripNumber).HasMaxLength(64);
         entity.Property(x => x.JourneyKey).HasMaxLength(64);
         entity.Property(x => x.PassengerPhone).HasMaxLength(32);
@@ -23,7 +23,7 @@ internal sealed class TripBrokerImportConfiguration : IEntityTypeConfiguration<T
         entity
             .HasIndex(x => new
             {
-                x.ProviderId,
+                x.TenantId,
                 x.ManifestPreviewId,
                 x.TripNumber,
             })
@@ -47,7 +47,7 @@ internal sealed class ManifestPreviewConfiguration : IEntityTypeConfiguration<Ma
     public void Configure(EntityTypeBuilder<ManifestPreview> entity)
     {
         entity.HasKey(x => x.Id);
-        entity.HasIndex(x => x.ProviderId);
+        entity.HasIndex(x => x.TenantId);
         entity.Property(x => x.RowsJson).HasColumnType("jsonb");
     }
 }

@@ -23,28 +23,28 @@ public sealed record DriverWorkResult<T>(
     string? Location = null
 );
 
-public sealed record ListDriverTrips(Guid ProviderId, Guid AppUserId);
+public sealed record ListDriverTrips(string TenantId, Guid UserId);
 
-public sealed record GetDriverTripHistory(Guid ProviderId, Guid AppUserId, string TripNumber);
+public sealed record GetDriverTripHistory(string TenantId, Guid UserId, string TripNumber);
 
 public sealed record RecordDriverTripEvent(
-    Guid ProviderId,
-    Guid AppUserId,
+    string TenantId,
+    Guid UserId,
     string TripNumber,
     RecordDriverTripEventRequest Event
 );
 
 public sealed record SynchronizeDriverTripEvent(
-    Guid ProviderId,
-    Guid AppUserId,
+    string TenantId,
+    Guid UserId,
     SynchronizeDriverTripEventRequest Request
 );
 
-public sealed record ListDriverSyncConflicts(Guid ProviderId);
+public sealed record ListDriverSyncConflicts(string TenantId);
 
 public sealed record CorrectDriverTripEvent(
-    Guid ProviderId,
-    Guid AppUserId,
+    string TenantId,
+    Guid UserId,
     string TripNumber,
     Guid EventId,
     CorrectDriverTripEventRequest Correction

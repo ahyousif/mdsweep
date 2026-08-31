@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.Dispatch;
-using Mdsweep.Infrastructure.Persistence;
 
 namespace Mdsweep.Api.Features.Dispatch;
 
@@ -11,19 +10,19 @@ public static class GetScheduledPickupTimeHistoryEndpoint
     public static async Task<IResult> Get(
         string tripNumber,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        if (context is null || !ProviderContextResolver.HasRole(context, "Dispatcher"))
+        var context = await TenantContextResolver.ResolveActive(user, tenantAccess, cancellationToken);
+        if (context is null || !TenantContextResolver.HasRole(context, "Dispatcher"))
         {
             return Results.Forbid();
         }
 
         var result = await bus.InvokeAsync<GetScheduledPickupTimeHistoryResult>(
-            new GetScheduledPickupTimeHistory(context.ProviderId, tripNumber),
+            new GetScheduledPickupTimeHistory(context.TenantId, tripNumber),
             cancellationToken
         );
 

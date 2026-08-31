@@ -12,7 +12,7 @@ public static class GetServiceDayHandler
     ) =>
         db
             .Trips.Where(x =>
-                x.ProviderId == query.ProviderId && x.AppointmentDate == query.ServiceDate
+                x.TenantId == query.TenantId && x.AppointmentDate == query.ServiceDate
             )
             .OrderBy(x => x.AppointmentTime)
             .Select(x => new ServiceDayTripResponse(

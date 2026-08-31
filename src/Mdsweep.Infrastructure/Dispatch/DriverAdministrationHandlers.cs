@@ -1,7 +1,8 @@
 using Mdsweep.Application.Dispatch;
 using Mdsweep.Domain.Dispatch;
-using Mdsweep.Domain.Identity;
 using Mdsweep.Domain.ManifestImports;
+using Mdsweep.Domain.Tenants;
+using Mdsweep.Domain.Users;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 
@@ -15,11 +16,11 @@ public static class DriverAdministrationHandler
         CancellationToken cancellationToken
     ) =>
         db
-            .Drivers.Where(x => x.ProviderId == query.ProviderId)
+            .Drivers.Where(x => x.TenantId == query.TenantId)
             .OrderBy(x => x.DisplayName)
             .Select(x => new DriverResponse(
                 x.Id,
-                x.AppUserId,
+                x.UserId,
                 x.DisplayName,
                 x.MtmDriverNumber,
                 x.IsActive
@@ -42,24 +43,24 @@ public static class DriverAdministrationHandler
             return Invalid<DriverResponse>("A Driver name and MTM Driver Number are required.");
         }
 
-        var hasMembership = await db.ProviderMemberships.AnyAsync(
+        var hasMembership = await db.TenantMemberships.AnyAsync(
             x =>
-                x.ProviderId == command.ProviderId
-                && x.AppUserId == request.AppUserId
+                x.TenantId == command.TenantId
+                && x.UserId == request.UserId
                 && x.Role == "Driver",
             cancellationToken
         );
         if (!hasMembership)
         {
-            return Invalid<DriverResponse>("The App User must be a Driver for this Provider.");
+            return Invalid<DriverResponse>("The User must be a Driver for this Tenant.");
         }
 
         var driver = new Driver
         {
-            ProviderId = command.ProviderId,
-            AppUserId = request.AppUserId,
-            DisplayName = request.DisplayName.Trim(),
-            MtmDriverNumber = request.MtmDriverNumber.Trim(),
+            TenantId = command.TenantId,
+            UserId = request.UserId,
+            DisplayName = request.DisplayName,
+            MtmDriverNumber = request.MtmDriverNumber,
         };
         db.Drivers.Add(driver);
 
@@ -67,7 +68,7 @@ public static class DriverAdministrationHandler
             $"/api/drivers/{driver.Id}",
             new DriverResponse(
                 driver.Id,
-                driver.AppUserId,
+                driver.UserId,
                 driver.DisplayName,
                 driver.MtmDriverNumber,
                 driver.IsActive
@@ -96,32 +97,25 @@ public static class DriverAdministrationHandler
         }
 
         var organizationId = await db
-            .Providers.Where(x => x.Id == command.ProviderId)
+            .Tenants.Where(x => x.Id == command.TenantId)
             .Select(x => x.KeycloakOrganizationId)
             .SingleAsync(cancellationToken);
         var subject = await keycloak.CreateDriverAsync(
-            request.Email.Trim(),
+            request.Email,
             request.TemporaryPassword,
             organizationId,
             cancellationToken
         );
-        var appUser = new AppUser { KeycloakSubject = subject };
+        var user = UserAggregate.Create(request.DisplayName, "Driver", subject);
         var driver = new Driver
         {
-            ProviderId = command.ProviderId,
-            AppUserId = appUser.Id,
-            DisplayName = request.DisplayName.Trim(),
-            MtmDriverNumber = request.MtmDriverNumber.Trim(),
+            TenantId = command.TenantId,
+            UserId = user.Id,
+            DisplayName = request.DisplayName,
+            MtmDriverNumber = request.MtmDriverNumber,
         };
-        db.AppUsers.Add(appUser);
-        db.ProviderMemberships.Add(
-            new ProviderMembership
-            {
-                ProviderId = command.ProviderId,
-                AppUserId = appUser.Id,
-                Role = "Driver",
-            }
-        );
+        db.Users.Add(user);
+        db.TenantMemberships.Add(TenantMembership.Create(command.TenantId, user.Id, "Driver"));
         db.Drivers.Add(driver);
 
         // Keep the existing compensation workflow: Keycloak must be cleaned up
@@ -140,7 +134,7 @@ public static class DriverAdministrationHandler
             $"/api/drivers/{driver.Id}",
             new DriverResponse(
                 driver.Id,
-                appUser.Id,
+                user.Id,
                 driver.DisplayName,
                 driver.MtmDriverNumber,
                 driver.IsActive
@@ -161,15 +155,15 @@ public static class DriverAdministrationHandler
         }
 
         var driver = await db.Drivers.SingleOrDefaultAsync(
-            x => x.Id == command.DriverId && x.ProviderId == command.ProviderId,
+            x => x.Id == command.DriverId && x.TenantId == command.TenantId,
             cancellationToken
         );
         if (driver is null)
             return NotFound<bool>();
 
         var subject = await db
-            .AppUsers.Where(x => x.Id == driver.AppUserId)
-            .Select(x => x.KeycloakSubject)
+            .Users.Where(x => x.Id == driver.UserId)
+            .Select(x => x.KeycloakUserId)
             .SingleAsync(cancellationToken);
         await keycloak.ResetPasswordAsync(
             subject,
@@ -187,7 +181,7 @@ public static class DriverAdministrationHandler
     )
     {
         var driver = await db.Drivers.SingleOrDefaultAsync(
-            x => x.Id == command.DriverId && x.ProviderId == command.ProviderId,
+            x => x.Id == command.DriverId && x.TenantId == command.TenantId,
             cancellationToken
         );
         if (driver is null)

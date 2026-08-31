@@ -18,8 +18,8 @@ public static class DriverTripEventHandler
     )
     {
         var driver = await ResolveDriver(
-            command.ProviderId,
-            command.AppUserId,
+            command.TenantId,
+            command.UserId,
             db,
             cancellationToken
         );
@@ -54,8 +54,8 @@ public static class DriverTripEventHandler
     )
     {
         var driver = await ResolveDriver(
-            command.ProviderId,
-            command.AppUserId,
+            command.TenantId,
+            command.UserId,
             db,
             cancellationToken
         );
@@ -94,7 +94,7 @@ public static class DriverTripEventHandler
         db.DriverTripSyncConflicts.Add(
             new DriverTripSyncConflict
             {
-                ProviderId = command.ProviderId,
+                TenantId = command.TenantId,
                 DriverId = driver.Id,
                 ActionId = request.ActionId,
                 TripNumber = request.TripNumber,
@@ -120,7 +120,7 @@ public static class DriverTripEventHandler
         CancellationToken cancellationToken
     ) =>
         db
-            .DriverTripSyncConflicts.Where(x => x.ProviderId == query.ProviderId)
+            .DriverTripSyncConflicts.Where(x => x.TenantId == query.TenantId)
             .OrderByDescending(x => x.ReceivedAt)
             .Select(x => new DriverTripSyncConflictResponse(
                 x.Id,

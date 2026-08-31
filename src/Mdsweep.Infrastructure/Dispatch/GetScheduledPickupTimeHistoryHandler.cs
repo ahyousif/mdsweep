@@ -12,7 +12,7 @@ public static class GetScheduledPickupTimeHistoryHandler
     )
     {
         var tripId = await db
-            .Trips.Where(x => x.ProviderId == query.ProviderId && x.TripNumber == query.TripNumber)
+            .Trips.Where(x => x.TenantId == query.TenantId && x.TripNumber == query.TripNumber)
             .Select(x => (Guid?)x.Id)
             .SingleOrDefaultAsync(cancellationToken);
         if (!tripId.HasValue)

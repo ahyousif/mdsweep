@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Application.Dispatch;
-using Mdsweep.Infrastructure.Persistence;
 
 namespace Mdsweep.Api.Features.Dispatch;
 
@@ -10,17 +9,17 @@ public static class DispatchManagementEndpoints
     [WolverineGet("/api/drivers")]
     public static async Task<IResult> ListDrivers(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         return Results.Ok(
             await bus.InvokeAsync<List<DriverResponse>>(
-                new ListDrivers(context.ProviderId),
+                new ListDrivers(context.TenantId),
                 cancellationToken
             )
         );
@@ -30,16 +29,16 @@ public static class DispatchManagementEndpoints
     public static async Task<IResult> CreateDriver(
         CreateDriverRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<DriverResponse>>(
-            new CreateDriver(context.ProviderId, request),
+            new CreateDriver(context.TenantId, request),
             cancellationToken
         );
         return CreatedResult(result);
@@ -49,16 +48,16 @@ public static class DispatchManagementEndpoints
     public static async Task<IResult> CreateDriverAccess(
         CreateDriverAccessRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<DriverResponse>>(
-            new CreateDriverAccess(context.ProviderId, request),
+            new CreateDriverAccess(context.TenantId, request),
             cancellationToken
         );
         return CreatedResult(result);
@@ -69,16 +68,16 @@ public static class DispatchManagementEndpoints
         Guid driverId,
         ResetDriverAccessRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<bool>>(
-            new ResetDriverAccess(context.ProviderId, driverId, request),
+            new ResetDriverAccess(context.TenantId, driverId, request),
             cancellationToken
         );
         return NoContentResult(result);
@@ -88,16 +87,16 @@ public static class DispatchManagementEndpoints
     public static async Task<IResult> DeactivateDriver(
         Guid driverId,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<bool>>(
-            new DeactivateDriver(context.ProviderId, driverId),
+            new DeactivateDriver(context.TenantId, driverId),
             cancellationToken
         );
         return NoContentResult(result);
@@ -106,17 +105,17 @@ public static class DispatchManagementEndpoints
     [WolverineGet("/api/vehicles")]
     public static async Task<IResult> ListVehicles(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         return Results.Ok(
             await bus.InvokeAsync<List<VehicleResponse>>(
-                new ListVehicles(context.ProviderId),
+                new ListVehicles(context.TenantId),
                 cancellationToken
             )
         );
@@ -126,16 +125,16 @@ public static class DispatchManagementEndpoints
     public static async Task<IResult> CreateVehicle(
         CreateVehicleRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<VehicleResponse>>(
-            new CreateVehicle(context.ProviderId, request),
+            new CreateVehicle(context.TenantId, request),
             cancellationToken
         );
         return CreatedResult(result);
@@ -145,16 +144,16 @@ public static class DispatchManagementEndpoints
     public static async Task<IResult> DeactivateVehicle(
         Guid vehicleId,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<bool>>(
-            new DeactivateVehicle(context.ProviderId, vehicleId),
+            new DeactivateVehicle(context.TenantId, vehicleId),
             cancellationToken
         );
         return NoContentResult(result);
@@ -165,16 +164,16 @@ public static class DispatchManagementEndpoints
         string journeyKey,
         AssignTripRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<AssignmentMutationResponse>>(
-            new AssignJourney(context.ProviderId, context.AppUserId, journeyKey, request),
+            new AssignJourney(context.TenantId, context.UserId, journeyKey, request),
             cancellationToken
         );
         return AssignmentResult(result);
@@ -185,16 +184,16 @@ public static class DispatchManagementEndpoints
         string tripNumber,
         AssignTripRequest request,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<DispatchManagementResult<AssignmentMutationResponse>>(
-            new AssignSingleTrip(context.ProviderId, context.AppUserId, tripNumber, request),
+            new AssignSingleTrip(context.TenantId, context.UserId, tripNumber, request),
             cancellationToken
         );
         return AssignmentResult(result);
@@ -204,17 +203,17 @@ public static class DispatchManagementEndpoints
     public static async Task<IResult> AssignmentHistory(
         string tripNumber,
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         IMessageBus bus,
         CancellationToken cancellationToken
     )
     {
-        var context = await DispatcherContext(user, db, cancellationToken);
+        var context = await DispatcherContext(user, tenantAccess, cancellationToken);
         if (context is null)
             return Results.Forbid();
         var result = await bus.InvokeAsync<
             DispatchManagementResult<IReadOnlyList<AssignmentResponse>>
-        >(new GetAssignmentHistory(context.ProviderId, tripNumber), cancellationToken);
+        >(new GetAssignmentHistory(context.TenantId, tripNumber), cancellationToken);
         return result.Outcome == DispatchManagementOutcome.Success
             ? Results.Ok(result.Value)
             : Results.NotFound();
@@ -249,13 +248,13 @@ public static class DispatchManagementEndpoints
             _ => Results.BadRequest(new { message = result.Message }),
         };
 
-    private static async Task<ProviderContext?> DispatcherContext(
+    private static async Task<TenantContext?> DispatcherContext(
         ClaimsPrincipal user,
-        ApplicationDbContext db,
+        ITenantAccess tenantAccess,
         CancellationToken cancellationToken
     )
     {
-        var context = await ProviderContextResolver.ResolveActive(user, db, cancellationToken);
-        return ProviderContextResolver.HasRole(context, "Dispatcher") ? context : null;
+        var context = await TenantContextResolver.ResolveActive(user, tenantAccess, cancellationToken);
+        return TenantContextResolver.HasRole(context, "Dispatcher") ? context : null;
     }
 }
