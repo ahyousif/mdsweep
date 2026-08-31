@@ -25,7 +25,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             { new StreamContent(file), "file", "mtm-manifest.csv" },
         };
 
-        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+        using var response = await client.PostAsync("/api/manifest-receipts", form);
 
         response.EnsureSuccessStatusCode();
         var preview = await response.Content.ReadFromJsonAsync<PreviewResponse>();
@@ -71,7 +71,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             },
         };
 
-        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+        using var response = await client.PostAsync("/api/manifest-receipts", form);
 
         response.EnsureSuccessStatusCode();
     }
@@ -90,6 +90,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             "Pickup Address",
             "Time",
             "Trip Number",
+            "Medicaid Number",
             "Trip Status",
             "Member's First Name",
             "Member's Last Name",
@@ -107,14 +108,15 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         worksheet.Cell(2, 3).Value = "100 First St";
         worksheet.Cell(2, 4).Value = new TimeSpan(9, 15, 0);
         worksheet.Cell(2, 5).Value = "EXCEL100A";
-        worksheet.Cell(2, 6).Value = "VALID";
-        worksheet.Cell(2, 7).Value = "Synthetic";
-        worksheet.Cell(2, 8).Value = "Passenger";
-        worksheet.Cell(2, 9).Value = "Phoenix";
-        worksheet.Cell(2, 10).Value = "Mesa";
-        worksheet.Cell(2, 11).Value = "Ambulatory";
-        worksheet.Cell(2, 12).Value = "Cab";
-        worksheet.Cell(2, 13).Value = "N";
+        worksheet.Cell(2, 6).Value = "MED-EXCEL100A";
+        worksheet.Cell(2, 7).Value = "VALID";
+        worksheet.Cell(2, 8).Value = "Synthetic";
+        worksheet.Cell(2, 9).Value = "Passenger";
+        worksheet.Cell(2, 10).Value = "Phoenix";
+        worksheet.Cell(2, 11).Value = "Mesa";
+        worksheet.Cell(2, 12).Value = "Ambulatory";
+        worksheet.Cell(2, 13).Value = "Cab";
+        worksheet.Cell(2, 14).Value = "N";
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
@@ -125,7 +127,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             { new StreamContent(stream), "file", "mtm-manifest.xlsx" },
         };
 
-        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+        using var response = await client.PostAsync("/api/manifest-receipts", form);
 
         response.EnsureSuccessStatusCode();
         var preview = await response.Content.ReadFromJsonAsync<PreviewResponse>();
@@ -135,7 +137,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         Assert.Equal("Ready", row.Disposition);
 
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();
@@ -159,7 +161,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             { new StringContent("not an excel workbook"), "file", "mtm-manifest.xls" },
         };
         using var legacyResponse = await client.PostAsync(
-            "/api/manifest-imports/preview",
+            "/api/manifest-receipts",
             legacyForm
         );
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, legacyResponse.StatusCode);
@@ -174,7 +176,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             { new StringContent("not an excel workbook"), "file", "mtm-manifest.xlsx" },
         };
         using var invalidResponse = await client.PostAsync(
-            "/api/manifest-imports/preview",
+            "/api/manifest-receipts",
             invalidForm
         );
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, invalidResponse.StatusCode);
@@ -193,7 +195,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         var preview = await Preview(client, "mtm-manifest.csv");
 
         using var applyResponse = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
 
@@ -211,8 +213,20 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         Assert.Equal(2, serviceDay.Count(x => x.JourneyKey == "SYNTH100"));
         Assert.Contains(serviceDay, x => x.TripNumber == "SYNTH200A" && !x.IsActive);
 
+        await using (var passengerScope = Application.Services.CreateAsyncScope())
+        {
+            var db = passengerScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.Equal(2, await db.Passengers.IgnoreQueryFilters().CountAsync());
+            Assert.Equal(
+                1,
+                await db
+                    .Passengers.IgnoreQueryFilters()
+                    .CountAsync(passenger => passenger.BrokerMemberId == "SYNTH-001")
+            );
+        }
+
         var retainedPreview = await client.GetFromJsonAsync<PreviewResponse>(
-            $"/api/manifest-imports/{preview.PreviewId}"
+            $"/api/manifest-receipts/{preview.ReceiptId}"
         );
         Assert.NotNull(retainedPreview);
         Assert.Contains(
@@ -221,7 +235,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
 
         using var retryResponse = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         retryResponse.EnsureSuccessStatusCode();
@@ -235,8 +249,9 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
     public async Task Wolverine_unit_of_work_rolls_back_all_manifest_changes_when_save_fails()
     {
         var tenantId = "mdsw-eep2-3456";
-        var duplicate = new ManifestPreviewRow(
+        var duplicate = new ManifestReceiptRow(
             "ROLLBACK100A",
+            "MED-ROLLBACK100A",
             ManifestRowDisposition.Ready,
             [],
             new DateOnly(2026, 9, 15),
@@ -247,13 +262,12 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             "Phoenix",
             "200 Main St",
             "Mesa",
-            null,
             "Ambulatory",
             "Cab",
             "VALID",
             false
         );
-        var preview = new ManifestPreview
+        var preview = new ManifestReceipt
         {
             TenantId = tenantId,
             FileName = "rollback.csv",
@@ -263,7 +277,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         await using (var setupScope = Application.Services.CreateAsyncScope())
         {
             var setupDb = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            setupDb.ManifestPreviews.Add(preview);
+            setupDb.ManifestReceipts.Add(preview);
             await setupDb.SaveChangesAsync();
         }
 
@@ -271,7 +285,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Test");
         HttpResponseMessage? response = null;
         var failure = await Record.ExceptionAsync(async () =>
-            response = await client.PostAsync($"/api/manifest-imports/{preview.Id}/apply", null)
+            response = await client.PostAsync($"/api/manifest-receipts/{preview.Id}/apply", null)
         );
 
         if (failure is null)
@@ -283,8 +297,8 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         await using var assertionScope = Application.Services.CreateAsyncScope();
         var db = assertionScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.False(await db.Trips.AnyAsync(x => x.TripNumber == duplicate.TripNumber));
-        Assert.False(await db.TripBrokerImports.AnyAsync(x => x.ManifestPreviewId == preview.Id));
-        Assert.Null((await db.ManifestPreviews.SingleAsync(x => x.Id == preview.Id)).AppliedAt);
+        Assert.False(await db.TripBrokerImports.AnyAsync(x => x.ManifestReceiptId == preview.Id));
+        Assert.Null((await db.ManifestReceipts.SingleAsync(x => x.Id == preview.Id)).AppliedAt);
     }
 
     [Fact]
@@ -314,7 +328,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
 
         using var applyResponse = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         applyResponse.EnsureSuccessStatusCode();
@@ -332,7 +346,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             Manifest(Row("REVISED1", "VALID", "0915", "100 First St", "200 Main St"))
         );
         using var firstApply = await client.PostAsync(
-            $"/api/manifest-imports/{original.PreviewId}/apply",
+            $"/api/manifest-receipts/{original.ReceiptId}/apply",
             null
         );
         firstApply.EnsureSuccessStatusCode();
@@ -342,7 +356,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             Manifest(Row("REVISED1", "TURN BACK", "1030", "300 New St", "400 Changed St"))
         );
         using var secondApply = await client.PostAsync(
-            $"/api/manifest-imports/{revised.PreviewId}/apply",
+            $"/api/manifest-receipts/{revised.ReceiptId}/apply",
             null
         );
         secondApply.EnsureSuccessStatusCode();
@@ -374,7 +388,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
         var original = await PreviewCsv(client, originalCsv);
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{original.PreviewId}/apply",
+            $"/api/manifest-receipts/{original.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();
@@ -417,7 +431,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
             Manifest(Row("SCHEDULED1", "VALID", "0915", "100 First St", "200 Main St"))
         );
         using var firstApply = await client.PostAsync(
-            $"/api/manifest-imports/{original.PreviewId}/apply",
+            $"/api/manifest-receipts/{original.ReceiptId}/apply",
             null
         );
         firstApply.EnsureSuccessStatusCode();
@@ -434,7 +448,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
         var unchanged = Assert.Single(unchangedWithProviderSchedule.Rows);
         Assert.Equal("Unchanged", unchanged.BrokerChange);
-        Assert.True(unchanged.HasProviderOverrides);
+        Assert.True(unchanged.HasOperationalOverrides);
         Assert.True(unchanged.IsActive);
         Assert.Contains(
             unchanged.Messages,
@@ -462,7 +476,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
         var changed = Assert.Single(revised.Rows);
         Assert.Equal("BrokerChanged", changed.BrokerChange);
-        Assert.True(changed.HasProviderOverrides);
+        Assert.True(changed.HasOperationalOverrides);
         Assert.True(changed.IsActive);
         Assert.Contains(
             changed.Messages,
@@ -474,7 +488,7 @@ public sealed class ManifestImportTests : MdsweepIntegrationTest
         );
 
         using var revisedApply = await client.PostAsync(
-            $"/api/manifest-imports/{revised.PreviewId}/apply",
+            $"/api/manifest-receipts/{revised.ReceiptId}/apply",
             null
         );
         revisedApply.EnsureSuccessStatusCode();

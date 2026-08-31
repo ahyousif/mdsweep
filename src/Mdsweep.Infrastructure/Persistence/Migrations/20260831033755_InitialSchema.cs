@@ -29,11 +29,11 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ManifestPreviews",
+                name: "ManifestReceipts",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<string>(type: "text", nullable: false),
+                    tenant_id = table.Column<string>(type: "text", nullable: true, defaultValue: "*DEFAULT*"),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     FileName = table.Column<string>(type: "text", nullable: false),
                     RowsJson = table.Column<string>(type: "jsonb", nullable: false),
@@ -41,7 +41,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ManifestPreviews", x => x.Id);
+                    table.PrimaryKey("PK_ManifestReceipts", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -70,34 +70,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Tenants", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Trips",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<string>(type: "text", nullable: false),
-                    TripNumber = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    JourneyKey = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    AppointmentDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    AppointmentTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
-                    MemberFirstName = table.Column<string>(type: "text", nullable: false),
-                    MemberLastName = table.Column<string>(type: "text", nullable: false),
-                    PickupAddress = table.Column<string>(type: "text", nullable: false),
-                    PickupCity = table.Column<string>(type: "text", nullable: false),
-                    DeliveryAddress = table.Column<string>(type: "text", nullable: false),
-                    DeliveryCity = table.Column<string>(type: "text", nullable: false),
-                    PassengerPhone = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
-                    PassengerType = table.Column<string>(type: "text", nullable: false),
-                    VehicleType = table.Column<string>(type: "text", nullable: false),
-                    BrokerStatus = table.Column<string>(type: "text", nullable: false),
-                    IsWillCall = table.Column<bool>(type: "boolean", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Trips", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -158,6 +130,66 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Trips",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<string>(type: "text", nullable: true, defaultValue: "*DEFAULT*"),
+                    TripNumber = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    PassengerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JourneyKey = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    AppointmentDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    AppointmentTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
+                    MemberFirstName = table.Column<string>(type: "text", nullable: false),
+                    MemberLastName = table.Column<string>(type: "text", nullable: false),
+                    PickupAddress = table.Column<string>(type: "text", nullable: false),
+                    PickupCity = table.Column<string>(type: "text", nullable: false),
+                    DeliveryAddress = table.Column<string>(type: "text", nullable: false),
+                    DeliveryCity = table.Column<string>(type: "text", nullable: false),
+                    PassengerType = table.Column<string>(type: "text", nullable: false),
+                    VehicleType = table.Column<string>(type: "text", nullable: false),
+                    BrokerStatus = table.Column<string>(type: "text", nullable: false),
+                    IsWillCall = table.Column<bool>(type: "boolean", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Trips", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Trips_Passengers_PassengerId",
+                        column: x => x.PassengerId,
+                        principalTable: "Passengers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TenantMemberships",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Role = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenantMemberships", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TenantMemberships_Tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "Tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TenantMemberships_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "DriverTripEvents",
                 columns: table => new
                 {
@@ -212,83 +244,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TripBrokerImports",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<string>(type: "text", nullable: false),
-                    TripId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ManifestPreviewId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ImportedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    TripNumber = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    AppointmentDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    AppointmentTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
-                    PickupAddress = table.Column<string>(type: "text", nullable: false),
-                    DeliveryAddress = table.Column<string>(type: "text", nullable: false),
-                    BrokerStatus = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TripBrokerImports", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TripBrokerImports_ManifestPreviews_ManifestPreviewId",
-                        column: x => x.ManifestPreviewId,
-                        principalTable: "ManifestPreviews",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_TripBrokerImports_Trips_TripId",
-                        column: x => x.TripId,
-                        principalTable: "Trips",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TripSchedules",
-                columns: table => new
-                {
-                    TripId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ScheduledPickupTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TripSchedules", x => x.TripId);
-                    table.ForeignKey(
-                        name: "FK_TripSchedules_Trips_TripId",
-                        column: x => x.TripId,
-                        principalTable: "Trips",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TenantMemberships",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Role = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TenantMemberships", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TenantMemberships_Tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "Tenants",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_TenantMemberships_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "TripAssignments",
                 columns: table => new
                 {
@@ -319,6 +274,58 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         name: "FK_TripAssignments_Vehicles_VehicleId",
                         column: x => x.VehicleId,
                         principalTable: "Vehicles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TripBrokerImports",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<string>(type: "text", nullable: true, defaultValue: "*DEFAULT*"),
+                    TripId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ManifestReceiptId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ImportedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    TripNumber = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    BrokerMemberId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    AppointmentDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    AppointmentTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
+                    PickupAddress = table.Column<string>(type: "text", nullable: false),
+                    DeliveryAddress = table.Column<string>(type: "text", nullable: false),
+                    BrokerStatus = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TripBrokerImports", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TripBrokerImports_ManifestReceipts_ManifestReceiptId",
+                        column: x => x.ManifestReceiptId,
+                        principalTable: "ManifestReceipts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_TripBrokerImports_Trips_TripId",
+                        column: x => x.TripId,
+                        principalTable: "Trips",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TripSchedules",
+                columns: table => new
+                {
+                    TripId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ScheduledPickupTime = table.Column<TimeOnly>(type: "time without time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TripSchedules", x => x.TripId);
+                    table.ForeignKey(
+                        name: "FK_TripSchedules_Trips_TripId",
+                        column: x => x.TripId,
+                        principalTable: "Trips",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -406,9 +413,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 columns: new[] { "TenantId", "ReceivedAt" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ManifestPreviews_TenantId",
-                table: "ManifestPreviews",
-                column: "TenantId");
+                name: "IX_ManifestReceipts_tenant_id",
+                table: "ManifestReceipts",
+                column: "tenant_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Passengers_tenant_id",
@@ -467,14 +474,19 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 column: "VehicleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TripBrokerImports_ManifestPreviewId",
+                name: "IX_TripBrokerImports_ManifestReceiptId",
                 table: "TripBrokerImports",
-                column: "ManifestPreviewId");
+                column: "ManifestReceiptId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TripBrokerImports_TenantId_ManifestPreviewId_TripNumber",
+                name: "IX_TripBrokerImports_tenant_id",
                 table: "TripBrokerImports",
-                columns: new[] { "TenantId", "ManifestPreviewId", "TripNumber" },
+                column: "tenant_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TripBrokerImports_tenant_id_ManifestReceiptId_TripNumber",
+                table: "TripBrokerImports",
+                columns: new[] { "tenant_id", "ManifestReceiptId", "TripNumber" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -483,14 +495,19 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 column: "TripId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Trips_TenantId",
+                name: "IX_Trips_PassengerId",
                 table: "Trips",
-                column: "TenantId");
+                column: "PassengerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Trips_TenantId_TripNumber",
+                name: "IX_Trips_tenant_id",
                 table: "Trips",
-                columns: new[] { "TenantId", "TripNumber" },
+                column: "tenant_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Trips_tenant_id_TripNumber",
+                table: "Trips",
+                columns: new[] { "tenant_id", "TripNumber" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -514,9 +531,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "DriverTripSyncConflicts");
-
-            migrationBuilder.DropTable(
-                name: "Passengers");
 
             migrationBuilder.DropTable(
                 name: "ScheduledPickupTimeChanges");
@@ -546,13 +560,16 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "Vehicles");
 
             migrationBuilder.DropTable(
-                name: "ManifestPreviews");
+                name: "ManifestReceipts");
 
             migrationBuilder.DropTable(
                 name: "Drivers");
 
             migrationBuilder.DropTable(
                 name: "Trips");
+
+            migrationBuilder.DropTable(
+                name: "Passengers");
         }
     }
 }

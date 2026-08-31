@@ -5,30 +5,30 @@ using Mdsweep.Infrastructure.Persistence;
 
 namespace Mdsweep.Infrastructure.ManifestImports;
 
-public static class GetManifestPreviewHandler
+public static class GetManifestReceiptHandler
 {
-    public static async Task<GetManifestPreviewResult> Handle(
-        GetManifestPreview query,
+    public static async Task<GetManifestReceiptResult> Handle(
+        GetManifestReceipt query,
         ApplicationDbContext db,
         CancellationToken cancellationToken
     )
     {
-        var preview = await db
-            .ManifestPreviews.AsNoTracking()
+        var receipt = await db
+            .ManifestReceipts.AsNoTracking()
             .SingleOrDefaultAsync(
-                x => x.Id == query.PreviewId && x.TenantId == query.TenantId,
+                x => x.Id == query.ReceiptId,
                 cancellationToken
             );
-        if (preview is null)
+        if (receipt is null)
         {
-            return new GetManifestPreviewResult(false, null);
+            return new GetManifestReceiptResult(false, null);
         }
 
-        var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
-        return new GetManifestPreviewResult(
+        var rows = JsonSerializer.Deserialize<List<ManifestReceiptRow>>(receipt.RowsJson) ?? [];
+        return new GetManifestReceiptResult(
             true,
-            new ManifestPreviewResponse(
-                preview.Id,
+            new ManifestReceiptResponse(
+                receipt.Id,
                 rows.Count(x => x.Disposition == ManifestRowDisposition.Ready),
                 rows.Count(x => x.Disposition == ManifestRowDisposition.Warning),
                 rows.Count(x => x.Disposition == ManifestRowDisposition.Blocked),

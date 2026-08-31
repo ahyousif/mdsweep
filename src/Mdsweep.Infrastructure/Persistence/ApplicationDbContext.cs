@@ -14,7 +14,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 {
     public DbSet<Trip> Trips => Set<Trip>();
     public DbSet<TripBrokerImport> TripBrokerImports => Set<TripBrokerImport>();
-    public DbSet<ManifestPreview> ManifestPreviews => Set<ManifestPreview>();
+    public DbSet<ManifestReceipt> ManifestReceipts => Set<ManifestReceipt>();
     public DbSet<TripSchedule> TripSchedules => Set<TripSchedule>();
     public DbSet<ScheduledPickupTimeChange> ScheduledPickupTimeChanges => Set<ScheduledPickupTimeChange>();
     public DbSet<Driver> Drivers => Set<Driver>();

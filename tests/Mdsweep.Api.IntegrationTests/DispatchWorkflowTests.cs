@@ -79,7 +79,7 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
             )
         );
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();
@@ -145,7 +145,7 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
             Manifest(Row("INACTIVE1", "TURN BACK", "0915", "100 First St", "200 Main St"))
         );
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();
@@ -173,7 +173,7 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
             Manifest(Row("ACTIVE1", "VALID", "0915", "100 First St", "200 Main St"))
         );
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();
@@ -201,7 +201,7 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
             Manifest(Row("ACTIVE2", "VALID", "0915", "100 First St", "200 Main St"))
         );
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();
@@ -227,7 +227,7 @@ public sealed class DispatchWorkflowTests : MdsweepIntegrationTest
             )
         );
         using var apply = await client.PostAsync(
-            $"/api/manifest-imports/{preview.PreviewId}/apply",
+            $"/api/manifest-receipts/{preview.ReceiptId}/apply",
             null
         );
         apply.EnsureSuccessStatusCode();

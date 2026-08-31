@@ -4,7 +4,7 @@ namespace Mdsweep.Infrastructure.Dispatch;
 
 public static class DispatchReadModel
 {
-    public static async Task<HashSet<Guid>> GetTripIdsWithProviderOverrides(
+    public static async Task<HashSet<Guid>> GetTripIdsWithOperationalOverrides(
         ApplicationDbContext db,
         IEnumerable<Guid> tripIds,
         CancellationToken cancellationToken

@@ -5,9 +5,9 @@ using Mdsweep.Infrastructure.ManifestImports;
 
 namespace Mdsweep.Api.Features.ManifestImports;
 
-public static class PreviewManifestEndpoint
+public static class ReceiveManifestEndpoint
 {
-    [WolverinePost("/api/manifest-imports/preview")]
+    [WolverinePost("/api/manifest-receipts")]
     public static async Task<IResult> Preview(
         IFormFile? file,
         ClaimsPrincipal user,
@@ -44,13 +44,8 @@ public static class PreviewManifestEndpoint
             using var content = new MemoryStream();
             await input.CopyToAsync(content, cancellationToken);
 
-            var response = await bus.InvokeAsync<ManifestPreviewResponse>(
-                new PreviewManifest(
-                    context.TenantId,
-                    Path.GetFileName(file.FileName),
-                    extension,
-                    content.ToArray()
-                ),
+            var response = await bus.InvokeAsync<ManifestReceiptResponse>(
+                new ReceiveManifest(Path.GetFileName(file.FileName), extension, content.ToArray()),
                 cancellationToken
             );
 

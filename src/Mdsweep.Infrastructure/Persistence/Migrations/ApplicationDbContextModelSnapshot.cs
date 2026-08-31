@@ -315,7 +315,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.ToTable("DriverTripSyncConflicts");
                 });
 
-            modelBuilder.Entity("Mdsweep.Domain.ManifestImports.ManifestPreview", b =>
+            modelBuilder.Entity("Mdsweep.Domain.ManifestImports.ManifestReceipt", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -336,14 +336,16 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb");
 
                     b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("*DEFAULT*")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("ManifestPreviews");
+                    b.ToTable("ManifestReceipts");
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.ManifestImports.Trip", b =>
@@ -389,9 +391,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("PassengerPhone")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
+                    b.Property<Guid>("PassengerId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PassengerType")
                         .IsRequired()
@@ -406,8 +407,10 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("*DEFAULT*")
+                        .HasColumnName("tenant_id");
 
                     b.Property<string>("TripNumber")
                         .IsRequired()
@@ -419,6 +422,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PassengerId");
 
                     b.HasIndex("TenantId");
 
@@ -440,6 +445,11 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.Property<TimeOnly>("AppointmentTime")
                         .HasColumnType("time without time zone");
 
+                    b.Property<string>("BrokerMemberId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("BrokerStatus")
                         .IsRequired()
                         .HasColumnType("text");
@@ -451,7 +461,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("ImportedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("ManifestPreviewId")
+                    b.Property<Guid>("ManifestReceiptId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("PickupAddress")
@@ -459,8 +469,10 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("*DEFAULT*")
+                        .HasColumnName("tenant_id");
 
                     b.Property<Guid>("TripId")
                         .HasColumnType("uuid");
@@ -472,11 +484,13 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ManifestPreviewId");
+                    b.HasIndex("ManifestReceiptId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("TripId");
 
-                    b.HasIndex("TenantId", "ManifestPreviewId", "TripNumber")
+                    b.HasIndex("TenantId", "ManifestReceiptId", "TripNumber")
                         .IsUnique();
 
                     b.ToTable("TripBrokerImports");
@@ -770,11 +784,20 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Mdsweep.Domain.ManifestImports.Trip", b =>
+                {
+                    b.HasOne("Mdsweep.Domain.Passengers.PassengerAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("PassengerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Mdsweep.Domain.ManifestImports.TripBrokerImport", b =>
                 {
-                    b.HasOne("Mdsweep.Domain.ManifestImports.ManifestPreview", null)
+                    b.HasOne("Mdsweep.Domain.ManifestImports.ManifestReceipt", null)
                         .WithMany()
-                        .HasForeignKey("ManifestPreviewId")
+                        .HasForeignKey("ManifestReceiptId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

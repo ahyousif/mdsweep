@@ -109,7 +109,6 @@ public sealed record DriverTripResponse(
     string PickupCity,
     string DeliveryAddress,
     string DeliveryCity,
-    string? PassengerPhone,
     DriverTripEventType? LastEventType,
     DriverTripEventType? NextAction = null
 );

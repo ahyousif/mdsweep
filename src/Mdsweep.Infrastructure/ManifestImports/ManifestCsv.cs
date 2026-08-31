@@ -4,7 +4,7 @@ namespace Mdsweep.Infrastructure.ManifestImports;
 
 public static class ManifestCsv
 {
-    public static async Task<IReadOnlyList<ManifestPreviewRow>> Preview(
+    public static async Task<IReadOnlyList<ManifestReceiptRow>> Preview(
         Stream source,
         CancellationToken cancellationToken
     )

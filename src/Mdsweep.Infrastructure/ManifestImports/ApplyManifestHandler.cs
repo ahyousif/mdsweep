@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Mdsweep.Application.ManifestImports;
 using Mdsweep.Domain.ManifestImports;
+using Mdsweep.Domain.Passengers;
 using Mdsweep.Infrastructure.Persistence;
 
 namespace Mdsweep.Infrastructure.ManifestImports;
@@ -14,41 +15,58 @@ public static class ApplyManifestHandler
         CancellationToken cancellationToken
     )
     {
-        var preview = await db.ManifestPreviews.SingleOrDefaultAsync(
-            x => x.Id == command.PreviewId && x.TenantId == command.TenantId,
+        var receipt = await db.ManifestReceipts.SingleOrDefaultAsync(
+            x => x.Id == command.ReceiptId,
             cancellationToken
         );
-        if (preview is null)
+        if (receipt is null)
         {
             return new ApplyManifestResult(false, 0, 0);
         }
 
-        var rows = JsonSerializer.Deserialize<List<ManifestPreviewRow>>(preview.RowsJson) ?? [];
+        var rows = JsonSerializer.Deserialize<List<ManifestReceiptRow>>(receipt.RowsJson) ?? [];
         var importable = rows.Where(x => x.Disposition.IsImportable()).ToArray();
-        if (preview.AppliedAt.HasValue)
+        if (receipt.AppliedAt.HasValue)
         {
             return new ApplyManifestResult(true, importable.Length, rows.Count - importable.Length);
         }
 
         var tripNumbers = importable.Select(row => row.TripNumber).ToArray();
         var existing = await db
-            .Trips.Where(x =>
-                x.TenantId == command.TenantId && tripNumbers.Contains(x.TripNumber)
-            )
+            .Trips.Where(x => tripNumbers.Contains(x.TripNumber))
             .ToDictionaryAsync(
                 x => x.TripNumber,
                 StringComparer.OrdinalIgnoreCase,
                 cancellationToken
             );
 
+        var brokerMemberIds = importable
+            .Select(row => row.BrokerMemberId)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var passengers = await db
+            .Passengers.Where(passenger => brokerMemberIds.Contains(passenger.BrokerMemberId!))
+            .ToDictionaryAsync(passenger => passenger.BrokerMemberId!, StringComparer.Ordinal, cancellationToken);
+
         foreach (var row in importable)
         {
+            if (!passengers.TryGetValue(row.BrokerMemberId, out var passenger))
+            {
+                passenger = PassengerAggregate.Create(
+                    row.BrokerMemberId,
+                    row.MemberFirstName,
+                    row.MemberLastName
+                );
+                db.Passengers.Add(passenger);
+                passengers.Add(row.BrokerMemberId, passenger);
+            }
+
             if (!existing.TryGetValue(row.TripNumber, out var trip))
             {
                 trip = new Trip
                 {
                     TripNumber = row.TripNumber,
-                    TenantId = command.TenantId,
+                    PassengerId = passenger.Id,
                     JourneyKey = JourneyKey(row.TripNumber),
                 };
                 db.Trips.Add(trip);
@@ -60,9 +78,9 @@ public static class ApplyManifestHandler
                 new TripBrokerImport
                 {
                     TripId = trip.Id,
-                    TenantId = command.TenantId,
-                    ManifestPreviewId = preview.Id,
+                    ManifestReceiptId = receipt.Id,
                     TripNumber = row.TripNumber,
+                    BrokerMemberId = row.BrokerMemberId,
                     AppointmentDate = row.AppointmentDate!.Value,
                     AppointmentTime = row.AppointmentTime!.Value,
                     PickupAddress = row.PickupAddress,
@@ -72,7 +90,7 @@ public static class ApplyManifestHandler
             );
         }
 
-        preview.AppliedAt ??= DateTimeOffset.UtcNow;
+        receipt.AppliedAt ??= DateTimeOffset.UtcNow;
 
         return new ApplyManifestResult(true, importable.Length, rows.Count - importable.Length);
     }

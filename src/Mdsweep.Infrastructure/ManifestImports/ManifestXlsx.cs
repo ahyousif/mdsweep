@@ -5,7 +5,7 @@ namespace Mdsweep.Infrastructure.ManifestImports;
 
 public static class ManifestXlsx
 {
-    public static IReadOnlyList<ManifestPreviewRow> Preview(Stream source)
+    public static IReadOnlyList<ManifestReceiptRow> Preview(Stream source)
     {
         try
         {

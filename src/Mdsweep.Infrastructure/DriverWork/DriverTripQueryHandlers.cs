@@ -46,7 +46,6 @@ public static class DriverTripQueryHandler
                 trip.PickupCity,
                 trip.DeliveryAddress,
                 trip.DeliveryCity,
-                trip.PassengerPhone,
                 events
                     .Where(x => x.TripId == trip.Id)
                     .OrderByDescending(x => x.ReceivedAt)

@@ -1,10 +1,11 @@
 namespace Mdsweep.Domain.ManifestImports;
 
-public sealed class Trip
+public sealed class Trip : ITenanted
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public required string TenantId { get; init; }
+    public string? TenantId { get; set; }
     public required string TripNumber { get; init; }
+    public Guid PassengerId { get; init; }
     public required string JourneyKey { get; init; }
     public DateOnly AppointmentDate { get; internal set; }
     public TimeOnly AppointmentTime { get; internal set; }
@@ -14,14 +15,13 @@ public sealed class Trip
     public string PickupCity { get; internal set; } = null!;
     public string DeliveryAddress { get; internal set; } = null!;
     public string DeliveryCity { get; internal set; } = null!;
-    public string? PassengerPhone { get; internal set; }
     public string PassengerType { get; internal set; } = null!;
     public string VehicleType { get; internal set; } = null!;
     public string BrokerStatus { get; internal set; } = null!;
     public bool IsWillCall { get; internal set; }
     public bool IsActive { get; internal set; }
 
-    public void ReconcileBrokerFields(ManifestPreviewRow row)
+    public void ReconcileBrokerFields(ManifestReceiptRow row)
     {
         AppointmentDate = row.AppointmentDate!.Value;
         AppointmentTime = row.AppointmentTime!.Value;
@@ -31,7 +31,6 @@ public sealed class Trip
         PickupCity = row.PickupCity;
         DeliveryAddress = row.DeliveryAddress;
         DeliveryCity = row.DeliveryCity;
-        PassengerPhone = row.PassengerPhone;
         PassengerType = row.PassengerType;
         VehicleType = row.VehicleType;
         BrokerStatus = row.BrokerStatus;
@@ -39,7 +38,7 @@ public sealed class Trip
         IsActive = row.Disposition.IsActive();
     }
 
-    public IReadOnlyList<string> BrokerDifferences(ManifestPreviewRow row)
+    public IReadOnlyList<string> BrokerDifferences(ManifestReceiptRow row)
     {
         var differences = new List<string>();
         AddIfDifferent(AppointmentDate == row.AppointmentDate, "appointment date");
@@ -50,7 +49,6 @@ public sealed class Trip
         AddIfDifferent(Same(PickupCity, row.PickupCity), "pickup city");
         AddIfDifferent(Same(DeliveryAddress, row.DeliveryAddress), "destination address");
         AddIfDifferent(Same(DeliveryCity, row.DeliveryCity), "destination city");
-        AddIfDifferent(Same(PassengerPhone, row.PassengerPhone), "passenger phone");
         AddIfDifferent(Same(PassengerType, row.PassengerType), "passenger type");
         AddIfDifferent(Same(VehicleType, row.VehicleType), "vehicle type");
         AddIfDifferent(Same(BrokerStatus, row.BrokerStatus), "MTM status");
@@ -68,14 +66,15 @@ public sealed class Trip
         string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 }
 
-public sealed class TripBrokerImport
+public sealed class TripBrokerImport : ITenanted
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public required string TenantId { get; init; }
+    public string? TenantId { get; set; }
     public Guid TripId { get; init; }
-    public Guid ManifestPreviewId { get; init; }
+    public Guid ManifestReceiptId { get; init; }
     public DateTimeOffset ImportedAt { get; init; } = DateTimeOffset.UtcNow;
     public required string TripNumber { get; init; }
+    public required string BrokerMemberId { get; init; }
     public DateOnly AppointmentDate { get; init; }
     public TimeOnly AppointmentTime { get; init; }
     public required string PickupAddress { get; init; }
@@ -83,10 +82,10 @@ public sealed class TripBrokerImport
     public required string BrokerStatus { get; init; }
 }
 
-public sealed class ManifestPreview
+public sealed class ManifestReceipt : ITenanted
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
-    public required string TenantId { get; init; }
+    public string? TenantId { get; set; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public required string FileName { get; init; }
     public required string RowsJson { get; init; }
@@ -108,8 +107,9 @@ public enum ManifestBrokerChange
     Blocked,
 }
 
-public sealed record ManifestPreviewRow(
+public sealed record ManifestReceiptRow(
     string TripNumber,
+    string BrokerMemberId,
     ManifestRowDisposition Disposition,
     IReadOnlyList<string> Messages,
     DateOnly? AppointmentDate,
@@ -120,13 +120,12 @@ public sealed record ManifestPreviewRow(
     string PickupCity,
     string DeliveryAddress,
     string DeliveryCity,
-    string? PassengerPhone,
     string PassengerType,
     string VehicleType,
     string BrokerStatus,
     bool IsWillCall,
     ManifestBrokerChange BrokerChange = ManifestBrokerChange.New,
-    bool HasProviderOverrides = false,
+    bool HasOperationalOverrides = false,
     bool IsActive = false
 );
 

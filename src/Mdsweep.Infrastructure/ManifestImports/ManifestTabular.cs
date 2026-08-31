@@ -12,10 +12,11 @@ public static class ManifestTabular
         "Pickup Address",
         "Time",
         "Trip Number",
+        "Medicaid Number",
         "Trip Status",
     ];
 
-    public static IReadOnlyList<ManifestPreviewRow> Preview(
+    public static IReadOnlyList<ManifestReceiptRow> Preview(
         IReadOnlyList<IReadOnlyList<string>> records
     )
     {
@@ -23,7 +24,7 @@ public static class ManifestTabular
             throw new ManifestFormatException("The file is empty.");
 
         var positions = records[0]
-            .Select((header, index) => (Header: header.Trim(), Index: index))
+            .Select((header, index) => (Header: header, Index: index))
             .GroupBy(x => x.Header, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(x => x.Key, x => x.First().Index, StringComparer.OrdinalIgnoreCase);
         var missing = RequiredHeaders.Where(header => !positions.ContainsKey(header)).ToArray();
@@ -57,26 +58,27 @@ public static class ManifestTabular
             .ToArray();
     }
 
-    private static ManifestPreviewRow Classify(
+    private static ManifestReceiptRow Classify(
         IReadOnlyList<string> row,
         IReadOnlyDictionary<string, int> positions
     )
     {
         string Get(string name) =>
             positions.TryGetValue(name, out var index) && index < row.Count
-                ? row[index].Trim()
+                ? row[index]
                 : string.Empty;
-        string? Optional(string name)
-        {
-            var value = Get(name);
-            return string.IsNullOrWhiteSpace(value) ? null : value;
-        }
-
         var tripNumber = Get("Trip Number");
+        var brokerMemberId = Get("Medicaid Number");
         var messages = new List<string>();
 
         if (string.IsNullOrWhiteSpace(tripNumber))
             messages.Add("Trip Number is missing.");
+        if (string.IsNullOrWhiteSpace(brokerMemberId))
+            messages.Add("Medicaid Number is missing.");
+        if (string.IsNullOrWhiteSpace(Get("Member's First Name")))
+            messages.Add("Member's First Name is missing.");
+        if (string.IsNullOrWhiteSpace(Get("Member's Last Name")))
+            messages.Add("Member's Last Name is missing.");
         var hasDate = DateOnly.TryParseExact(
             Get("Appointment Date"),
             "MM/dd/yyyy",
@@ -104,15 +106,13 @@ public static class ManifestTabular
         {
             AppointmentDate = hasDate ? appointmentDate : (DateOnly?)null,
             AppointmentTime = hasTime ? appointmentTime : (TimeOnly?)null,
+            BrokerMemberId = brokerMemberId,
             MemberFirstName = Get("Member's First Name"),
             MemberLastName = Get("Member's Last Name"),
             PickupAddress = Get("Pickup Address"),
             PickupCity = Get("Pickup City"),
             DeliveryAddress = Get("Delivery Address"),
             DeliveryCity = Get("Delivery City"),
-            PassengerPhone = Optional("Member's Phone Number")
-                ?? Optional("Member Phone")
-                ?? Optional("Passenger Phone"),
             PassengerType = Get("Passenger Type"),
             VehicleType = Get("Vehicle Type"),
             BrokerStatus = Get("Trip Status"),
@@ -128,12 +128,13 @@ public static class ManifestTabular
                 [$"MTM status is {values.BrokerStatus}; the Trip will remain inactive."]
             );
 
-        ManifestPreviewRow Row(
+        ManifestReceiptRow Row(
             ManifestRowDisposition disposition,
             IReadOnlyList<string> rowMessages
         ) =>
             new(
                 tripNumber,
+                values.BrokerMemberId,
                 disposition,
                 rowMessages,
                 values.AppointmentDate,
@@ -144,7 +145,6 @@ public static class ManifestTabular
                 values.PickupCity,
                 values.DeliveryAddress,
                 values.DeliveryCity,
-                values.PassengerPhone,
                 values.PassengerType,
                 values.VehicleType,
                 values.BrokerStatus,

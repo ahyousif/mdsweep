@@ -5,11 +5,11 @@ using Mdsweep.Infrastructure.Persistence;
 
 namespace Mdsweep.Infrastructure.ManifestImports;
 
-public static class PreviewManifestHandler
+public static class ReceiveManifestHandler
 {
     [Transactional]
-    public static async Task<ManifestPreviewResponse> Handle(
-        PreviewManifest command,
+    public static async Task<ManifestReceiptResponse> Handle(
+        ReceiveManifest command,
         ApplicationDbContext db,
         CancellationToken cancellationToken
     )
@@ -18,23 +18,17 @@ public static class PreviewManifestHandler
         var parsedRows = command.Extension.Equals(".csv", StringComparison.OrdinalIgnoreCase)
             ? await ManifestCsv.Preview(stream, cancellationToken)
             : ManifestXlsx.Preview(stream);
-        var rows = await IdentifyBrokerChanges(
-            parsedRows,
-            command.TenantId,
-            db,
-            cancellationToken
-        );
-        var preview = new ManifestPreview
+        var rows = await IdentifyBrokerChanges(parsedRows, db, cancellationToken);
+        var receipt = new ManifestReceipt
         {
             FileName = command.FileName,
-            TenantId = command.TenantId,
             RowsJson = System.Text.Json.JsonSerializer.Serialize(rows),
         };
 
-        db.ManifestPreviews.Add(preview);
+        db.ManifestReceipts.Add(receipt);
 
-        return new ManifestPreviewResponse(
-            preview.Id,
+        return new ManifestReceiptResponse(
+            receipt.Id,
             rows.Count(x => x.Disposition == ManifestRowDisposition.Ready),
             rows.Count(x => x.Disposition == ManifestRowDisposition.Warning),
             rows.Count(x => x.Disposition == ManifestRowDisposition.Blocked),
@@ -47,9 +41,8 @@ public static class PreviewManifestHandler
         );
     }
 
-    private static async Task<IReadOnlyList<ManifestPreviewRow>> IdentifyBrokerChanges(
-        IReadOnlyList<ManifestPreviewRow> rows,
-        string tenantId,
+    private static async Task<IReadOnlyList<ManifestReceiptRow>> IdentifyBrokerChanges(
+        IReadOnlyList<ManifestReceiptRow> rows,
         ApplicationDbContext db,
         CancellationToken cancellationToken
     )
@@ -60,13 +53,13 @@ public static class PreviewManifestHandler
             .ToArray();
         var existing = await db
             .Trips.AsNoTracking()
-            .Where(trip => trip.TenantId == tenantId && tripNumbers.Contains(trip.TripNumber))
+            .Where(trip => tripNumbers.Contains(trip.TripNumber))
             .ToDictionaryAsync(
                 trip => trip.TripNumber,
                 StringComparer.OrdinalIgnoreCase,
                 cancellationToken
             );
-        var scheduledTripIds = await DispatchReadModel.GetTripIdsWithProviderOverrides(
+        var scheduledTripIds = await DispatchReadModel.GetTripIdsWithOperationalOverrides(
             db,
             existing.Values.Select(trip => trip.Id),
             cancellationToken
@@ -93,12 +86,12 @@ public static class PreviewManifestHandler
                 }
 
                 var differences = trip.BrokerDifferences(row);
-                var hasProviderOverrides = scheduledTripIds.Contains(trip.Id);
+                var hasOperationalOverrides = scheduledTripIds.Contains(trip.Id);
                 var messages =
                     differences.Count > 0
                         ? row.Messages.Append($"MTM changed: {string.Join(", ", differences)}.")
                         : row.Messages;
-                if (hasProviderOverrides)
+                if (hasOperationalOverrides)
                 {
                     messages = messages.Append("Your scheduled pickup time will be preserved.");
                 }
@@ -109,7 +102,7 @@ public static class PreviewManifestHandler
                         differences.Count == 0
                             ? ManifestBrokerChange.Unchanged
                             : ManifestBrokerChange.BrokerChanged,
-                    HasProviderOverrides = hasProviderOverrides,
+                    HasOperationalOverrides = hasOperationalOverrides,
                     IsActive = row.Disposition.IsActive(),
                     Messages = messages.ToArray(),
                 };

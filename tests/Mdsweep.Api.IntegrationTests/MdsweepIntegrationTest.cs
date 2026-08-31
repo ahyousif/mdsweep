@@ -63,7 +63,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         await AddAntiforgeryToken(client);
         await using var file = File.OpenRead(FixturePath(fixture));
         using var form = new MultipartFormDataContent { { new StreamContent(file), "file", fixture } };
-        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+        using var response = await client.PostAsync("/api/manifest-receipts", form);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PreviewResponse>())!;
     }
@@ -76,7 +76,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
     {
         await AddAntiforgeryToken(client);
         using var form = new MultipartFormDataContent { { new StringContent(csv), "file", fileName } };
-        using var response = await client.PostAsync("/api/manifest-imports/preview", form);
+        using var response = await client.PostAsync("/api/manifest-receipts", form);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PreviewResponse>())!;
     }
@@ -151,7 +151,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
                 Row($"{tripNumber}OTHER", "VALID", "1015", "300 Second St", "400 Oak St")
             )
         );
-        using var apply = await client.PostAsync($"/api/manifest-imports/{preview.PreviewId}/apply", null);
+        using var apply = await client.PostAsync($"/api/manifest-receipts/{preview.ReceiptId}/apply", null);
         apply.EnsureSuccessStatusCode();
         using var assignment = await client.PostAsJsonAsync(
             $"/api/trips/{tripNumber}/assignments",
@@ -168,14 +168,14 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
     }
 
     protected static string Manifest(params string[] rows) =>
-        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Passenger Type,Vehicle Type,Will Call Flag\n"
+        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Passenger Type,Vehicle Type,Will Call Flag\n"
         + string.Join('\n', rows);
 
     protected static string Row(string tripNumber, string status, string time, string pickup, string delivery) =>
-        $"09/15/2026,{delivery},{pickup},{time},{tripNumber},{status},Test,Rider,Phoenix,Mesa,Ambulatory,Cab,N";
+        $"09/15/2026,{delivery},{pickup},{time},{tripNumber},MED-{tripNumber},{status},Test,Rider,Phoenix,Mesa,Ambulatory,Cab,N";
 
     protected sealed record PreviewResponse(
-        Guid PreviewId,
+        Guid ReceiptId,
         int Ready,
         int Warning,
         int Blocked,
@@ -187,7 +187,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         string TripNumber,
         string Disposition,
         string BrokerChange,
-        bool HasProviderOverrides,
+        bool HasOperationalOverrides,
         bool IsActive,
         IReadOnlyList<string> Messages
     );

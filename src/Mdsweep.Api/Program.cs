@@ -15,8 +15,8 @@ builder.Services.AddMdsweepInfrastructure(builder.Configuration);
 
 builder.Host.UseWolverine(options =>
 {
-    options.Discovery.IncludeAssembly(typeof(PreviewManifest).Assembly);
-    options.Discovery.IncludeAssembly(typeof(PreviewManifestHandler).Assembly);
+    options.Discovery.IncludeAssembly(typeof(ReceiveManifest).Assembly);
+    options.Discovery.IncludeAssembly(typeof(ReceiveManifestHandler).Assembly);
     options.PersistMessagesWithPostgresql(builder.Configuration.GetConnectionString("mdsweep")!);
     // Lightweight mode keeps EF Core as the unit of work without introducing
     // Wolverine durable message storage, inboxes, or outboxes.

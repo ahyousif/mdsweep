@@ -4,11 +4,11 @@ using Mdsweep.Application.ManifestImports;
 
 namespace Mdsweep.Api.Features.ManifestImports;
 
-public static class GetManifestPreviewEndpoint
+public static class GetManifestReceiptEndpoint
 {
-    [WolverineGet("/api/manifest-imports/{previewId:guid}")]
+    [WolverineGet("/api/manifest-receipts/{receiptId:guid}")]
     public static async Task<IResult> Get(
-        Guid previewId,
+        Guid receiptId,
         ClaimsPrincipal user,
         ITenantAccess tenantAccess,
         IMessageBus bus,
@@ -21,11 +21,11 @@ public static class GetManifestPreviewEndpoint
             return Results.Forbid();
         }
 
-        var response = await bus.InvokeAsync<GetManifestPreviewResult>(
-            new GetManifestPreview(context.TenantId, previewId),
+        var response = await bus.InvokeAsync<GetManifestReceiptResult>(
+            new GetManifestReceipt(receiptId),
             cancellationToken
         );
 
-        return response.Found ? Results.Ok(response.Preview) : Results.NotFound();
+        return response.Found ? Results.Ok(response.Receipt) : Results.NotFound();
     }
 }

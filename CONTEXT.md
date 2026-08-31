@@ -27,7 +27,7 @@ A Tenant Membership role allowed to view assigned Trips and record when their pa
 The Tenant-owned operational record that makes a User eligible for Assignment and retains the broker identifier used for that Driver.
 
 **Passenger**:
-The person for whom transportation is arranged and performed. A Passenger belongs to one Tenant and may be created independently of a Trip. A broker-specific member identifier distinguishes the Passenger within broker records when present.
+The person for whom transportation is arranged and performed. A Passenger belongs to one Tenant and may be created independently of a Trip. A broker-specific member identifier distinguishes the Passenger within broker records. For the initial MTM template, the `Medicaid Number` identifies that Passenger.
 _Avoid_: Patient, Client, Member
 
 **Trip**:

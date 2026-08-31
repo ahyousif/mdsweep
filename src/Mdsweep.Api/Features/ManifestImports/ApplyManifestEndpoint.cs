@@ -6,9 +6,9 @@ namespace Mdsweep.Api.Features.ManifestImports;
 
 public static class ApplyManifestEndpoint
 {
-    [WolverinePost("/api/manifest-imports/{previewId:guid}/apply")]
+    [WolverinePost("/api/manifest-receipts/{receiptId:guid}/apply")]
     public static async Task<IResult> Apply(
-        Guid previewId,
+        Guid receiptId,
         ClaimsPrincipal user,
         ITenantAccess tenantAccess,
         IMessageBus bus,
@@ -22,7 +22,7 @@ public static class ApplyManifestEndpoint
         }
 
         var response = await bus.InvokeAsync<ApplyManifestResult>(
-            new ApplyManifest(context.TenantId, previewId),
+            new ApplyManifest(receiptId),
             cancellationToken
         );
 
