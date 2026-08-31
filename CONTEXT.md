@@ -45,6 +45,13 @@ _Avoid_: Spreadsheet, upload
 **Manifest Receipt**:
 The retained record of a Manifest received and reviewed by the Tenant, including the disposition of every source row.
 
+**Trip Import**:
+The retained preview of one uploaded broker file, including parsed source rows, validation outcomes, and whether it has been applied.
+_Avoid_: Manifest Import, upload
+
+**Broker Trip Facts**:
+Facts supplied by the broker for a Trip, retained separately from Tenant operational decisions so a later import cannot overwrite those decisions.
+
 **Scheduled Pickup Time**:
 The dispatcher's planned time for a driver to pick up the passenger, based on appointment time and operational judgment.
 _Avoid_: Pickup Time

@@ -1,7 +1,6 @@
 using Mdsweep.Domain.Common.Abstractions;
-using Mdsweep.Domain.Dispatch;
-using Mdsweep.Domain.DriverWork;
-using Mdsweep.Domain.ManifestImports;
+using Mdsweep.Domain.TripImports;
+using Mdsweep.Domain.Trips;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
@@ -12,17 +11,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     : DbContext(options),
         IRepository
 {
-    public DbSet<Trip> Trips => Set<Trip>();
-    public DbSet<TripBrokerImport> TripBrokerImports => Set<TripBrokerImport>();
-    public DbSet<ManifestReceipt> ManifestReceipts => Set<ManifestReceipt>();
-    public DbSet<TripSchedule> TripSchedules => Set<TripSchedule>();
-    public DbSet<ScheduledPickupTimeChange> ScheduledPickupTimeChanges => Set<ScheduledPickupTimeChange>();
-    public DbSet<Driver> Drivers => Set<Driver>();
-    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
-    public DbSet<TripAssignment> TripAssignments => Set<TripAssignment>();
-    public DbSet<DriverTripEvent> DriverTripEvents => Set<DriverTripEvent>();
-    public DbSet<DriverTripEventCorrection> DriverTripEventCorrections => Set<DriverTripEventCorrection>();
-    public DbSet<DriverTripSyncConflict> DriverTripSyncConflicts => Set<DriverTripSyncConflict>();
+    public DbSet<TripAggregate> Trips => Set<TripAggregate>();
+    public DbSet<TripImportAggregate> TripImports => Set<TripImportAggregate>();
     public DbSet<PassengerAggregate> Passengers => Set<PassengerAggregate>();
     public DbSet<TenantAggregate> Tenants => Set<TenantAggregate>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
@@ -55,5 +45,12 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     {
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.ConfigureWarnings(warnings =>
+            warnings.Ignore(RelationalEventId.PendingModelChangesWarning)
+        );
     }
 }

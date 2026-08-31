@@ -1,9 +1,10 @@
-using Mdsweep.Application.DriverWork;
 using Mdsweep.Application.Common.Authorization;
 using Mdsweep.Domain.Common.Abstractions;
-using Mdsweep.Infrastructure.DriverWork;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
+using Mdsweep.Application.TripImports.Abstractions;
+using Mdsweep.Infrastructure.TripImports.Parsing;
+using Mdsweep.Infrastructure.TripImports.Persistence;
 
 namespace Mdsweep.Infrastructure;
 
@@ -16,8 +17,10 @@ public static class DependencyInjection
     {
         services.AddScoped<IRepository>(serviceProvider => serviceProvider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ITenantAccess, TenantAccess>();
+        services.AddScoped<ITripImportWorkflowStore, EfTripImportWorkflowStore>();
+        services.AddSingleton<ITripImportFileParser, CsvTripImportFileParser>();
+        services.AddSingleton<ITripImportFileParser, XlsxTripImportFileParser>();
 
-        services.AddSingleton<IDriverWorkClock, SystemDriverWorkClock>();
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 
         return services;

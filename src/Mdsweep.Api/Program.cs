@@ -1,10 +1,10 @@
 using System.Text.Json.Serialization;
 using Mdsweep.Api.Features.Identity;
-using Mdsweep.Application.ManifestImports;
+using Mdsweep.Application.TripImports;
+using Mdsweep.Application.TripImports.Preview;
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Identity;
-using Mdsweep.Infrastructure.ManifestImports;
 using Mdsweep.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,11 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddMdsweepInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<IClock>(NodaTime.SystemClock.Instance);
 
 builder.Host.UseWolverine(options =>
 {
-    options.Discovery.IncludeAssembly(typeof(ReceiveManifest).Assembly);
-    options.Discovery.IncludeAssembly(typeof(ReceiveManifestHandler).Assembly);
+    options.Discovery.IncludeAssembly(typeof(PreviewTripImportCommand).Assembly);
     options.PersistMessagesWithPostgresql(builder.Configuration.GetConnectionString("mdsweep")!);
     // Lightweight mode keeps EF Core as the unit of work without introducing
     // Wolverine durable message storage, inboxes, or outboxes.
