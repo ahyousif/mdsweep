@@ -13,71 +13,71 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Passengers",
+                name: "passengers",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<string>(type: "text", nullable: false),
-                    BrokerMemberId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    FirstName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
+                    broker_member_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    first_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Passengers", x => x.Id);
+                    table.PrimaryKey("PK_passengers", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Tenants",
+                name: "tenants",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    KeycloakOrganizationId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
+                    name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    keycloak_organization_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tenants", x => x.Id);
+                    table.PrimaryKey("PK_tenants", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "trip_imports",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    ContentFingerprint = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    AppliedAt = table.Column<Instant>(type: "timestamp with time zone", nullable: true)
+                    file_name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    content_fingerprint = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    applied_at = table.Column<Instant>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trip_imports", x => x.Id);
+                    table.PrimaryKey("PK_trip_imports", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Users",
+                name: "users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    KeycloakUserId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    first_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    keycloak_user_id = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.Id);
+                    table.PrimaryKey("PK_users", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "trips",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    PassengerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    BrokerTripNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    passenger_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    broker_trip_number = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     service_date = table.Column<DateOnly>(type: "date", nullable: false),
                     appointment_time = table.Column<LocalTime>(type: "time", nullable: true),
                     pickup_address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -86,16 +86,16 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     dropoff_city = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     broker_status = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     is_will_call = table.Column<bool>(type: "boolean", nullable: false),
-                    ScheduledPickupTime = table.Column<LocalTime>(type: "time", nullable: true)
+                    scheduled_pickup_time = table.Column<LocalTime>(type: "time", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trips", x => x.Id);
+                    table.PrimaryKey("PK_trips", x => x.id);
                     table.ForeignKey(
-                        name: "FK_trips_Passengers_PassengerId",
-                        column: x => x.PassengerId,
-                        principalTable: "Passengers",
-                        principalColumn: "Id",
+                        name: "FK_trips_passengers_passenger_id",
+                        column: x => x.passenger_id,
+                        principalTable: "passengers",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -103,112 +103,112 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "trip_import_rows",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TripImportId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RowNumber = table.Column<int>(type: "integer", nullable: false),
-                    TripNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    BrokerMemberId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    FirstName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    LastName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    ServiceDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    AppointmentTime = table.Column<LocalTime>(type: "time", nullable: true),
-                    PickupAddress = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    PickupCity = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    DropoffAddress = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    DropoffCity = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    BrokerStatus = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    IsWillCall = table.Column<bool>(type: "boolean", nullable: false),
-                    Disposition = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    AppliedTripId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Messages = table.Column<string[]>(type: "text[]", nullable: false)
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    trip_import_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    row_number = table.Column<int>(type: "integer", nullable: false),
+                    trip_number = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    broker_member_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    first_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    service_date = table.Column<DateOnly>(type: "date", nullable: true),
+                    appointment_time = table.Column<LocalTime>(type: "time", nullable: true),
+                    pickup_address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    pickup_city = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    dropoff_address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    dropoff_city = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    broker_status = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    is_will_call = table.Column<bool>(type: "boolean", nullable: false),
+                    disposition = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    applied_trip_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    messages = table.Column<List<string>>(type: "text[]", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trip_import_rows", x => x.Id);
+                    table.PrimaryKey("PK_trip_import_rows", x => x.id);
                     table.ForeignKey(
-                        name: "FK_trip_import_rows_trip_imports_TripImportId",
-                        column: x => x.TripImportId,
+                        name: "FK_trip_import_rows_trip_imports_trip_import_id",
+                        column: x => x.trip_import_id,
                         principalTable: "trip_imports",
-                        principalColumn: "Id",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "TenantMemberships",
+                name: "tenant_memberships",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Role = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false)
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
+                    user_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    role = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TenantMemberships", x => x.Id);
+                    table.PrimaryKey("PK_tenant_memberships", x => x.id);
                     table.ForeignKey(
-                        name: "FK_TenantMemberships_Tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "Tenants",
-                        principalColumn: "Id",
+                        name: "FK_tenant_memberships_tenants_tenant_id",
+                        column: x => x.tenant_id,
+                        principalTable: "tenants",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_TenantMemberships_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
+                        name: "FK_tenant_memberships_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Passengers_tenant_id_BrokerMemberId",
-                table: "Passengers",
-                columns: new[] { "tenant_id", "BrokerMemberId" },
+                name: "IX_passengers_tenant_id_broker_member_id",
+                table: "passengers",
+                columns: new[] { "tenant_id", "broker_member_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_TenantMemberships_TenantId_UserId",
-                table: "TenantMemberships",
-                columns: new[] { "TenantId", "UserId" },
+                name: "IX_tenant_memberships_tenant_id_user_id",
+                table: "tenant_memberships",
+                columns: new[] { "tenant_id", "user_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_TenantMemberships_UserId",
-                table: "TenantMemberships",
-                column: "UserId");
+                name: "IX_tenant_memberships_user_id",
+                table: "tenant_memberships",
+                column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tenants_KeycloakOrganizationId",
-                table: "Tenants",
-                column: "KeycloakOrganizationId",
+                name: "IX_tenants_keycloak_organization_id",
+                table: "tenants",
+                column: "keycloak_organization_id",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_trip_import_rows_TripImportId",
+                name: "IX_trip_import_rows_trip_import_id",
                 table: "trip_import_rows",
-                column: "TripImportId");
+                column: "trip_import_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trip_imports_tenant_id_ContentFingerprint",
+                name: "IX_trip_imports_tenant_id_content_fingerprint",
                 table: "trip_imports",
-                columns: new[] { "tenant_id", "ContentFingerprint" },
+                columns: new[] { "tenant_id", "content_fingerprint" },
                 unique: true,
-                filter: "\"Status\" = 'Applied'");
+                filter: "status = 'Applied'");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trips_PassengerId",
+                name: "IX_trips_passenger_id",
                 table: "trips",
-                column: "PassengerId");
+                column: "passenger_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trips_tenant_id_BrokerTripNumber",
+                name: "IX_trips_tenant_id_broker_trip_number",
                 table: "trips",
-                columns: new[] { "tenant_id", "BrokerTripNumber" },
+                columns: new[] { "tenant_id", "broker_trip_number" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_KeycloakUserId",
-                table: "Users",
-                column: "KeycloakUserId",
+                name: "IX_users_keycloak_user_id",
+                table: "users",
+                column: "keycloak_user_id",
                 unique: true);
         }
 
@@ -216,7 +216,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "TenantMemberships");
+                name: "tenant_memberships");
 
             migrationBuilder.DropTable(
                 name: "trip_import_rows");
@@ -225,16 +225,16 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "trips");
 
             migrationBuilder.DropTable(
-                name: "Tenants");
+                name: "tenants");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "users");
 
             migrationBuilder.DropTable(
                 name: "trip_imports");
 
             migrationBuilder.DropTable(
-                name: "Passengers");
+                name: "passengers");
         }
     }
 }

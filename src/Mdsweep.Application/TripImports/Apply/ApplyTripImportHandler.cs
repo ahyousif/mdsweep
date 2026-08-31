@@ -24,6 +24,26 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
             rows.Select(row => row.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
         )).ToDictionary(trip => trip.BrokerTripNumber, StringComparer.OrdinalIgnoreCase);
 
+        // Phase 1: inspect every applicable row before touching an aggregate. Wolverine
+        // saves tracked changes after a successful result, including a Result.Conflict.
+        foreach (var row in rows)
+        {
+            if (row.TripNumber is null || row.BrokerMemberId is null || row.FirstName is null || row.LastName is null || row.ServiceDate is null)
+                return Result.Invalid(new ValidationError { Identifier = "tripImport", ErrorMessage = $"Row {row.RowNumber} is incomplete and cannot be applied." });
+        }
+
+        // Re-check ownership even when Preview displayed the row as blocked. The
+        // preview is feedback; this is the persisted-data invariant.
+        foreach (var row in tripImport.Rows.Where(row => row.TripNumber is not null && row.BrokerMemberId is not null))
+        {
+            if (trips.TryGetValue(row.TripNumber, out var trip)
+                && (!passengers.TryGetValue(row.BrokerMemberId, out var passenger) || trip.PassengerId != passenger.Id))
+            {
+                return Result.Conflict($"Trip {row.TripNumber} already belongs to a different passenger.");
+            }
+        }
+
+        // Phase 2: validation is complete, so aggregate changes are safe to track.
         foreach (var row in rows)
         {
             if (!passengers.TryGetValue(row.BrokerMemberId!, out var passenger))
@@ -47,8 +67,6 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
             }
             else
             {
-                if (trip.PassengerId != passenger.Id)
-                    return Result.Conflict("A broker trip number cannot be moved to a different passenger.");
                 trip.ReconcileBrokerFacts(brokerFacts);
             }
             row.MarkApplied(trip.Id);

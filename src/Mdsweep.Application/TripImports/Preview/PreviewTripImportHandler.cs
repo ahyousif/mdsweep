@@ -1,12 +1,15 @@
 using System.Security.Cryptography;
 using Mdsweep.Application.TripImports.Abstractions;
 using Mdsweep.Domain.TripImports;
+using Mdsweep.Domain.Passengers;
+using Mdsweep.Domain.Trips;
 using Mdsweep.Domain.Common.Abstractions;
 
 namespace Mdsweep.Application.TripImports.Preview;
 
 public sealed class PreviewTripImportHandler(
     IEnumerable<ITripImportFileParser> parsers,
+    ITripImportLookup lookup,
     IRepository repository
 )
 {
@@ -41,24 +44,52 @@ public sealed class PreviewTripImportHandler(
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var existingPassengers = (await lookup.FindPassengersAsync(
+            parsedRows.Where(row => !string.IsNullOrWhiteSpace(row.BrokerMemberId))
+                .Select(row => row.BrokerMemberId!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+        )).ToDictionary(passenger => passenger.BrokerMemberId!, StringComparer.OrdinalIgnoreCase);
+        var existingTrips = (await lookup.FindTripsAsync(
+            parsedRows.Where(row => !string.IsNullOrWhiteSpace(row.TripNumber))
+                .Select(row => row.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+        )).ToDictionary(trip => trip.BrokerTripNumber, StringComparer.OrdinalIgnoreCase);
         var import = TripImportAggregate.Create(
             command.FileName,
             fingerprint,
-            parsedRows.Select(row => ToImportRow(row, duplicateTripNumbers.Contains(row.TripNumber ?? string.Empty)))
+            parsedRows.Select(row => ToImportRow(
+                row,
+                duplicateTripNumbers.Contains(row.TripNumber ?? string.Empty),
+                BelongsToDifferentPassenger(row, existingPassengers, existingTrips)
+            ))
         );
         await repository.AddAsync(import, ct);
         return Result.Success(import.Id);
     }
 
-    private static TripImportRow ToImportRow(ParsedTripImportRow row, bool hasDuplicateTripNumber)
+    private static bool BelongsToDifferentPassenger(
+        ParsedTripImportRow row,
+        IReadOnlyDictionary<string, PassengerAggregate> passengers,
+        IReadOnlyDictionary<string, TripAggregate> trips
+    ) => !string.IsNullOrWhiteSpace(row.TripNumber)
+         && trips.TryGetValue(row.TripNumber, out var trip)
+         && (!string.IsNullOrWhiteSpace(row.BrokerMemberId)
+             && (!passengers.TryGetValue(row.BrokerMemberId, out var passenger) || trip.PassengerId != passenger.Id));
+
+    private static TripImportRow ToImportRow(
+        ParsedTripImportRow row,
+        bool hasDuplicateTripNumber,
+        bool belongsToDifferentPassenger
+    )
     {
         var messages = new List<string>();
         if (string.IsNullOrWhiteSpace(row.TripNumber)) messages.Add("Trip Number is required.");
         if (string.IsNullOrWhiteSpace(row.BrokerMemberId)) messages.Add("Medicaid Number is required.");
-        if (row.ServiceDate is null) messages.Add("Appointment Date is required.");
+        if (row.AppointmentDateValidationError is not null) messages.Add(row.AppointmentDateValidationError);
+        else if (row.ServiceDate is null) messages.Add("Appointment Date is required.");
+        if (row.AppointmentTimeValidationError is not null) messages.Add(row.AppointmentTimeValidationError);
         if (string.IsNullOrWhiteSpace(row.FirstName)) messages.Add("Member's First Name is required.");
         if (string.IsNullOrWhiteSpace(row.LastName)) messages.Add("Member's Last Name is required.");
         if (hasDuplicateTripNumber) messages.Add("Trip Number occurs more than once in this import.");
+        if (belongsToDifferentPassenger) messages.Add($"Trip {row.TripNumber} already belongs to a different passenger.");
 
         var disposition = messages.Count > 0
             ? TripImportRowDisposition.Blocked

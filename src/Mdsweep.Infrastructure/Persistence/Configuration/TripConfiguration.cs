@@ -9,14 +9,16 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
     {
         builder.ToTable("trips");
         builder.HasKey(trip => trip.Id);
+        builder.Property(trip => trip.Id).HasColumnName("id");
         builder.Property(trip => trip.TenantId).HasColumnName("tenant_id").HasMaxLength(14).IsRequired();
-        builder.Property(trip => trip.BrokerTripNumber).HasMaxLength(100).IsRequired();
+        builder.Property(trip => trip.PassengerId).HasColumnName("passenger_id");
+        builder.Property(trip => trip.BrokerTripNumber).HasColumnName("broker_trip_number").HasMaxLength(100).IsRequired();
         builder.HasIndex(trip => new { trip.TenantId, trip.BrokerTripNumber }).IsUnique();
         builder.HasOne<PassengerAggregate>()
             .WithMany()
             .HasForeignKey(trip => trip.PassengerId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.Property(trip => trip.ScheduledPickupTime).HasColumnType("time");
+        builder.Property(trip => trip.ScheduledPickupTime).HasColumnName("scheduled_pickup_time").HasColumnType("time");
         builder.OwnsOne(trip => trip.BrokerFacts, facts =>
         {
             facts.Property(value => value.ServiceDate).HasColumnName("service_date").IsRequired();

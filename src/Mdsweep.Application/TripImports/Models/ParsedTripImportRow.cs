@@ -13,5 +13,7 @@ public sealed record ParsedTripImportRow(
     string? DropoffAddress,
     string? DropoffCity,
     string? BrokerStatus,
-    bool IsWillCall
+    bool IsWillCall,
+    string? AppointmentDateValidationError,
+    string? AppointmentTimeValidationError
 );

@@ -7,10 +7,12 @@ public sealed class TenantMembershipConfiguration : IEntityTypeConfiguration<Ten
 {
     public void Configure(EntityTypeBuilder<TenantMembership> builder)
     {
-        builder.ToTable("TenantMemberships");
+        builder.ToTable("tenant_memberships");
         builder.HasKey(membership => membership.Id);
-        builder.Property(membership => membership.TenantId).HasMaxLength(14);
-        builder.Property(membership => membership.Role).HasMaxLength(40);
+        builder.Property(membership => membership.Id).HasColumnName("id");
+        builder.Property(membership => membership.TenantId).HasColumnName("tenant_id").HasMaxLength(14);
+        builder.Property(membership => membership.UserId).HasColumnName("user_id");
+        builder.Property(membership => membership.Role).HasColumnName("role").HasMaxLength(40);
         builder.HasIndex(membership => new { membership.TenantId, membership.UserId }).IsUnique();
         builder
             .HasOne<TenantAggregate>()
