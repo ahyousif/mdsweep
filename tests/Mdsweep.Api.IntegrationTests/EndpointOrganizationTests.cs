@@ -40,8 +40,8 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             "POST /api/journeys/{journeyKey}/assignments",
             "POST /api/trips/{tripNumber}/assignments",
             "GET /api/trips/{tripNumber}/assignments",
-            "GET /api/trips/{tripNumber}/scheduled-pickup-time/history",
-            "PUT /api/trips/{tripNumber}/scheduled-pickup-time",
+            "GET /api/trips/{id:guid}",
+            "PUT /api/trips/{id:guid}/scheduled-pickup-time",
             "GET /api/service-days/{serviceDate}/trips",
         };
         var expectedPaths = expectedRoutes

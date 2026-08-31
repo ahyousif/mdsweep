@@ -24,6 +24,11 @@ public sealed class PassengerManagementTests : MdsweepIntegrationTest
         Assert.Equal("Jordan", created.FirstName);
         Assert.Equal("Example", created.LastName);
         Assert.NotNull(createResponse.Headers.Location);
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var passenger = await db.Passengers.IgnoreQueryFilters().SingleAsync(x => x.Id == created.Id);
+        Assert.Equal("mdsw-eep2-3456", passenger.TenantId);
     }
 
     [Fact]

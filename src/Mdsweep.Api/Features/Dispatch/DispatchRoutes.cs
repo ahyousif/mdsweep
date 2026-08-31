@@ -11,7 +11,5 @@ internal static class DispatchRoutes
     public const string AssignJourney = "/api/journeys/{journeyKey}/assignments";
     public const string AssignTrip = "/api/trips/{tripNumber}/assignments";
     public const string AssignmentHistory = AssignTrip;
-    public const string ScheduledPickupTime = "/api/trips/{tripNumber}/scheduled-pickup-time";
-    public const string ScheduledPickupTimeHistory = ScheduledPickupTime + "/history";
     public const string ServiceDay = "/api/service-days/{serviceDate}/trips";
 }

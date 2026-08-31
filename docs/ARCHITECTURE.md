@@ -48,6 +48,16 @@ Access owns Users, Tenant Memberships, and role authorization. Keycloak owns ext
 
 ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API maps Keycloak's immutable `sub` to the local User ID, returns allowed Tenant memberships from `/api/auth/me`, and accepts a membership-verified selection at `/api/auth/tenant-context`. The selected Tenant ID is stored in the signed application cookie as `mdsweep_tenant_id`; Wolverine detects it globally for conjoined tenancy. Reusable authorization policies verify the User's membership and role for protected resources. The application never trusts a client-supplied Tenant ID.
 
+### Tenant-owned slice convention
+
+Passenger is the reference vertical slice for new Tenant-owned behavior:
+
+```text
+HTTP endpoint → Dispatcher policy → IMessageBus.SendAsync → Application handler → aggregate → IRepository
+```
+
+Wolverine HTTP derives the ambient Tenant from the authenticated active-Tenant claim. Endpoints do not accept or pass Tenant IDs, `ClaimsPrincipal`, or `ITenantAccess` merely to establish Tenant or role context; reusable ASP.NET Core policies perform that authorization. Commands and queries remain Tenant-free, while conjoined EF tenancy applies query filtering and Tenant stamping. Read handlers do not open write transactions; mutating aggregate handlers use `IRepository` with Wolverine's EF transaction middleware. Legacy Dispatch and DriverWork code is not a template for new slices.
+
 ## Seams and adapters
 
 ### Travel-time estimation

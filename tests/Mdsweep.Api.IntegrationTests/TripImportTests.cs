@@ -112,9 +112,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
 
-        await using (var scope = Application.Services.CreateAsyncScope())
+        await using (var db = CreateSeedDb())
         {
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var otherPassenger = PassengerAggregate.Create("MED-OTHER", "Other", "Passenger");
             otherPassenger.TenantId = "mdsw-eep2-3456";
             var existingTrip = TripAggregate.Create(otherPassenger.Id, "TRIP-107", new BrokerTripFacts(
@@ -140,9 +139,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     [Fact]
     public async Task Existing_trip_with_a_different_passenger_is_blocked_in_preview_and_apply()
     {
-        await using (var scope = Application.Services.CreateAsyncScope())
+        await using (var db = CreateSeedDb())
         {
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var passenger = PassengerAggregate.Create("MED-OLD", "Old", "Passenger");
             passenger.TenantId = "mdsw-eep2-3456";
             var trip = TripAggregate.Create(passenger.Id, "TRIP-108", new BrokerTripFacts(
@@ -197,6 +195,12 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     }
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string csv) => Upload(client, "trips.csv", System.Text.Encoding.UTF8.GetBytes(csv));
+
+    private ApplicationDbContext CreateSeedDb() => new(
+        new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+            .Options
+    );
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string fileName, byte[] content)
     {

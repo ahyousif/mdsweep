@@ -17,11 +17,14 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
             return Result.Conflict("An identical trip import has already been applied.");
 
         var items = tripImport.Items.Where(item => item.Disposition is not TripImportItemDisposition.Blocked).ToList();
+        var ownershipCandidates = tripImport.Items
+            .Where(item => item.TripNumber is not null && item.BrokerMemberId is not null)
+            .ToList();
         var passengers = (await lookup.FindPassengersAsync(
-            items.Select(item => item.BrokerMemberId!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+            ownershipCandidates.Select(item => item.BrokerMemberId!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
         )).ToDictionary(passenger => passenger.BrokerMemberId!, StringComparer.OrdinalIgnoreCase);
         var trips = (await lookup.FindTripsAsync(
-            items.Select(item => item.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
+            ownershipCandidates.Select(item => item.TripNumber!).Distinct(StringComparer.OrdinalIgnoreCase).ToList(), ct
         )).ToDictionary(trip => trip.BrokerTripNumber, StringComparer.OrdinalIgnoreCase);
 
         // Phase 1: inspect every applicable row before touching an aggregate. Wolverine
@@ -34,10 +37,10 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
 
         // Re-check ownership even when Preview displayed the row as blocked. The
         // preview is feedback; this is the persisted-data invariant.
-        foreach (var item in tripImport.Items.Where(item => item.TripNumber is not null && item.BrokerMemberId is not null))
+        foreach (var item in ownershipCandidates)
         {
-            if (trips.TryGetValue(item.TripNumber, out var trip)
-                && (!passengers.TryGetValue(item.BrokerMemberId, out var passenger) || trip.PassengerId != passenger.Id))
+            if (trips.TryGetValue(item.TripNumber!, out var trip)
+                && (!passengers.TryGetValue(item.BrokerMemberId!, out var passenger) || trip.PassengerId != passenger.Id))
             {
                 return Result.Conflict($"Trip {item.TripNumber} already belongs to a different passenger.");
             }

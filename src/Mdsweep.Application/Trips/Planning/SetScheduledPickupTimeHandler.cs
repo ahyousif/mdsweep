@@ -1,21 +1,15 @@
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Trips;
-using JasperFx.MultiTenancy;
-using Wolverine.Attributes;
 
 namespace Mdsweep.Application.Trips.Planning;
 
-public static class SetScheduledPickupTimeHandler
+public sealed class SetScheduledPickupTimeHandler(IRepository repository)
 {
-    [Transactional(typeof(IRepository))]
-    public static async Task<Result<SetScheduledPickupTimeResult>> Handle(
+    public async Task<Result<SetScheduledPickupTimeResult>> Handle(
         SetScheduledPickupTime command,
-        IRepository repository,
-        TenantId activeTenant,
         CancellationToken ct
     )
     {
-        _ = activeTenant;
         var trip = await repository.GetByIdAsync<TripAggregate, Guid>(command.TripId, ct);
         if (trip is null)
             return Result.NotFound();

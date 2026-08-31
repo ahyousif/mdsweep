@@ -7,21 +7,7 @@ public sealed record SetScheduledPickupTime(Guid TripId, LocalTime ScheduledPick
 
 public sealed record SetScheduledPickupTimeResult(Guid TripId, LocalTime ScheduledPickupTime);
 
-public sealed record GetScheduledPickupTimeHistory(string TripNumber);
-
-public sealed record GetScheduledPickupTimeHistoryResult(
-    bool Found,
-    IReadOnlyList<ScheduledPickupTimeChangeResponse> Changes
-);
-
 public sealed record GetServiceDayTrips(DateOnly ServiceDate);
-
-public sealed record ScheduledPickupTimeChangeResponse(
-    long Sequence,
-    LocalTime ScheduledPickupTime,
-    Instant ChangedAt,
-    Guid ChangedByUserId
-);
 
 public sealed record ServiceDayTripResponse(
     string TripNumber,
