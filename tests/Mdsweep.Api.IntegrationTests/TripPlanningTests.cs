@@ -1,7 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Reflection;
-using Mdsweep.Application.Trips.Get;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
@@ -54,15 +52,6 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
             new { scheduledPickupTime = "09:15:00" }
         );
         Assert.Equal(HttpStatusCode.NotFound, setResponse.StatusCode);
-    }
-
-    [Fact]
-    public void Get_trip_handler_is_explicitly_non_transactional()
-    {
-        var handle = typeof(GetTripHandler).GetMethod(nameof(GetTripHandler.Handle));
-
-        Assert.NotNull(handle);
-        Assert.NotNull(handle.GetCustomAttribute<Wolverine.Attributes.NonTransactionalAttribute>());
     }
 
     private async Task<TripAggregate> AddTrip(string tenantId, string brokerTripNumber)

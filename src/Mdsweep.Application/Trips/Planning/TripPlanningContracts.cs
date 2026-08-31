@@ -3,7 +3,7 @@ using Mdsweep.Application.Common.Abstractions;
 namespace Mdsweep.Application.Trips.Planning;
 
 public sealed record SetScheduledPickupTime(Guid TripId, LocalTime ScheduledPickupTime)
-    : IRequest<SetScheduledPickupTimeResult>;
+    : ICommand<SetScheduledPickupTimeResult>;
 
 public sealed record SetScheduledPickupTimeResult(Guid TripId, LocalTime ScheduledPickupTime);
 

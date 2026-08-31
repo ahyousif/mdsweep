@@ -5,7 +5,6 @@ namespace Mdsweep.Application.Trips.Get;
 
 public sealed class GetTripHandler(IRepository repository)
 {
-    [Wolverine.Attributes.NonTransactional]
     public async Task<Result<TripModel>> Handle(GetTripQuery query, CancellationToken ct)
     {
         var trip = await repository.GetByIdAsync<TripAggregate, Guid>(query.Id, ct);

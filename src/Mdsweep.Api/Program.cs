@@ -40,22 +40,6 @@ builder.Host.UseWolverine(options =>
                 .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         }
     );
-    // The conjoined registration's default DI factory is intentionally for host-level work
-    // (migrations and administration) and is pinned to the default tenant. HTTP/message work
-    // must instead build from the scoped IMessageBus, which Wolverine HTTP has already tagged
-    // from the authenticated active-tenant claim.
-    options.Services.AddScoped<ApplicationDbContext>(serviceProvider =>
-        serviceProvider
-            .GetRequiredService<Wolverine.EntityFrameworkCore.Internals.IDbContextBuilder<ApplicationDbContext>>()
-            .BuildAsync(
-                serviceProvider.GetRequiredService<IMessageBus>().TenantId
-                    ?? JasperFx.StorageConstants.DefaultTenantId,
-                CancellationToken.None
-            )
-            .AsTask()
-            .GetAwaiter()
-            .GetResult()
-    );
 });
 builder.Services.AddWolverineHttp();
 
