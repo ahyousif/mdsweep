@@ -9,6 +9,11 @@ public sealed class GetPassengerHandler(IRepository repository)
     {
         var passenger = await repository.GetByIdAsync<PassengerAggregate, Guid>(query.Id, ct);
 
-        return passenger is null ? Result.NotFound() : Result.Success(PassengerModel.FromAggregate(passenger));
+        if (passenger is null)
+        {
+            return Result.NotFound();
+        }
+
+        return Result.Success(PassengerModel.FromAggregate(passenger));
     }
 }

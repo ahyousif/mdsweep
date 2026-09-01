@@ -1,5 +1,6 @@
 using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Extensions;
+using Mdsweep.Api.Common.Pagination;
 using Mdsweep.Application.Common.Extensions;
 
 namespace Mdsweep.Api.Features.Trips.List;
@@ -16,13 +17,7 @@ public static class ListTripsEndpoint
     )
     {
         var result = await bus.SendAsync(request.ToQuery(), ct);
-        return result.ToEndpointResult(pageResult => new PagedTripsResponse(
-            pageResult.Items.Select(TripResponse.FromModel).ToList(),
-            pageResult.TotalCount,
-            pageResult.Page,
-            pageResult.PageSize
-        ));
-    }
 
-    private sealed record PagedTripsResponse(IReadOnlyList<TripResponse> Items, int TotalCount, int Page, int PageSize);
+        return result.ToEndpointResult(page => page.ToResponse(TripResponse.FromModel));
+    }
 }
