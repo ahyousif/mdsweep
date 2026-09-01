@@ -1,5 +1,6 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Infrastructure.Persistence;
+using Wolverine.FluentValidation;
 
 namespace Mdsweep.Api.Configuration;
 
@@ -13,6 +14,7 @@ public static class MessagingExtensions
             // remove API endpoints or Application handlers from Wolverine's graph.
             options.ApplicationAssembly = typeof(Program).Assembly;
             options.Discovery.IncludeAssembly(typeof(IRequest<>).Assembly);
+            options.UseFluentValidation();
             options.AddPersistence(builder.Configuration);
         });
 

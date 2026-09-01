@@ -3,6 +3,7 @@ using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Persistence;
+using Wolverine.Http.FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,7 @@ app.UseAntiforgery();
 app.MapWolverineEndpoints(options =>
 {
     options.RoutePrefix("api");
+    options.UseFluentValidationProblemDetailMiddleware();
 
     options.RequireAuthorizeOnAll();
     options.AutoAntiforgeryOnFormEndpoints();

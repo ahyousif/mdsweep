@@ -13,7 +13,9 @@
     </PackageReference>
     <PackageReference Include="NodaTime.Serialization.SystemTextJson" />
     <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.FluentValidation" />
     <PackageReference Include="WolverineFx.Http" />
+    <PackageReference Include="WolverineFx.Http.FluentValidation" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 </Project>

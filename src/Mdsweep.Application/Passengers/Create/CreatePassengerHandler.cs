@@ -7,31 +7,7 @@ public sealed class CreatePassengerHandler(IRepository repository)
 {
     public async Task<Result<Guid>> Handle(CreatePassengerCommand command, CancellationToken ct)
     {
-        var validationErrors = new List<ValidationError>();
-        if (string.IsNullOrWhiteSpace(command.FirstName))
-        {
-            validationErrors.Add(
-                new ValidationError { Identifier = nameof(command.FirstName), ErrorMessage = "First name is required." }
-            );
-        }
-
-        if (string.IsNullOrWhiteSpace(command.LastName))
-        {
-            validationErrors.Add(
-                new ValidationError { Identifier = nameof(command.LastName), ErrorMessage = "Last name is required." }
-            );
-        }
-
-        if (validationErrors.Count > 0)
-        {
-            return Result.Invalid(validationErrors);
-        }
-
-        var passenger = PassengerAggregate.Create(
-            command.BrokerMemberId,
-            command.FirstName,
-            command.LastName
-        );
+        var passenger = PassengerAggregate.Create(command.BrokerMemberId, command.FirstName, command.LastName);
 
         await repository.AddAsync(passenger, ct);
 
