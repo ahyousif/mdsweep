@@ -64,7 +64,9 @@ Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS
 
 ### Host configuration ownership
 
-API composition owns ASP.NET Core, BFF authentication, authorization, antiforgery, Wolverine host and discovery configuration, HTTP endpoint mapping, and middleware ordering. Wolverine Application and HTTP discovery is explicitly configured there; it must never depend on the calling assembly of an extension method, because moving an extension can otherwise silently remove handlers or endpoints.
+API composition owns ASP.NET Core, BFF authentication, authorization, antiforgery, Wolverine host and discovery configuration, HTTP endpoint mapping, and middleware ordering.
+
+> Assembly discovery is an explicit composition-root responsibility. Moving Wolverine configuration between assemblies can change convention-based discovery behavior. Endpoint and handler assemblies must be explicitly registered rather than relying on the calling assembly.
 
 Infrastructure owns PostgreSQL, EF Core, Wolverine persistence integration, the `IRepository` implementation, Keycloak administration, typed Options binding, the system clock, file parsing adapters, migrations, and managed-tenant initialization. Runtime services bind typed Options rather than consuming raw `IConfiguration`.
 
