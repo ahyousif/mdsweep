@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace Mdsweep.Api.Features.Passengers.Create;
 
 public sealed class CreatePassengerValidator : AbstractValidator<CreatePassengerRequest>
