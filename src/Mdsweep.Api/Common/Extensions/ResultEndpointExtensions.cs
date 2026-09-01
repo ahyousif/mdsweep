@@ -17,7 +17,7 @@ internal static class ResultEndpointExtensions
         };
 
     public static EndpointResult ToEndpointResult<TValue, TResponse>(
-        this ArdalisResult.Result<TValue> result,
+        this Result<TValue> result,
         Func<TValue, TResponse> map
     ) =>
         result.Status switch
@@ -32,7 +32,7 @@ internal static class ResultEndpointExtensions
         };
 
     public static EndpointResult ToEndpointResult<TValue>(
-        this ArdalisResult.Result<TValue> result,
+        this Result<TValue> result,
         Func<TValue, EndpointResult> ok
     ) =>
         result.Status switch
@@ -47,7 +47,7 @@ internal static class ResultEndpointExtensions
         };
 
     public static async Task<EndpointResult> ToEndpointResultAsync<TValue>(
-        this ArdalisResult.Result<TValue> result,
+        this Result<TValue> result,
         Func<TValue, Task<EndpointResult>> ok
     ) =>
         result.Status switch
@@ -58,6 +58,28 @@ internal static class ResultEndpointExtensions
             ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
             ResultStatus.Unauthorized => Results.Unauthorized(),
             ResultStatus.Forbidden => Results.Forbid(),
+            _ => Results.BadRequest(),
+        };
+
+    public static EndpointResult ToEndpointResult<TValue, TResponse>(
+        this PagedResult<IReadOnlyList<TValue>> result,
+        Func<TValue, TResponse> map
+    ) =>
+        result.Status switch
+        {
+            ResultStatus.Ok => Results.Ok(
+                new
+                {
+                    Items = result.Value.Select(map),
+                    result.PagedInfo.PageNumber,
+                    result.PagedInfo.PageSize,
+                    result.PagedInfo.TotalPages,
+                    result.PagedInfo.TotalRecords,
+                }
+            ),
+
+            ResultStatus.NotFound => Results.NotFound(),
+            ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
             _ => Results.BadRequest(),
         };
 

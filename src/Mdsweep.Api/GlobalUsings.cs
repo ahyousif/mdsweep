@@ -1,5 +1,6 @@
 global using System.Text.Json.Serialization;
 global using Ardalis.GuardClauses;
+global using Ardalis.Result;
 global using FluentValidation;
 global using Mdsweep.Application.Common.Authorization;
 global using Microsoft.AspNetCore.Antiforgery;

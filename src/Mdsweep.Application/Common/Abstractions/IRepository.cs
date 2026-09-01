@@ -1,6 +1,6 @@
 using Mdsweep.Domain.Common.Abstractions;
 
-namespace Mdsweep.Application.Common.Persistence;
+namespace Mdsweep.Application.Common.Abstractions;
 
 /// <summary>
 /// The shared aggregate persistence seam. It remains non-generic because the

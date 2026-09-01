@@ -1,4 +1,4 @@
-namespace Mdsweep.Application.Common.Pagination;
+namespace Mdsweep.Application.Common.Models;
 
 public enum SortDirection
 {

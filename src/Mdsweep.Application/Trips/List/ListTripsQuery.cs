@@ -1,6 +1,5 @@
 using Mdsweep.Application.Common.Abstractions;
-using Mdsweep.Application.Common.Pagination;
-using ApplicationPagedResult = Mdsweep.Application.Common.Pagination.PagedResult<Mdsweep.Application.Trips.TripModel>;
+using Mdsweep.Application.Common.Models;
 
 namespace Mdsweep.Application.Trips.List;
 
@@ -12,12 +11,4 @@ public sealed record ListTripsQuery(
     int PageSize = 50,
     TripSortBy SortBy = TripSortBy.AppointmentTime,
     SortDirection SortDirection = SortDirection.Ascending
-) : IQuery<ApplicationPagedResult>;
-
-public enum TripSortBy
-{
-    AppointmentTime,
-    ServiceDate,
-    BrokerTripNumber,
-    ScheduledPickupTime,
-}
+) : IQuery<PagedResult<IReadOnlyList<TripModel>>>;
