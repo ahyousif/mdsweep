@@ -1,6 +1,8 @@
 global using System.Text;
 global using System.Text.Json;
 global using Ardalis.GuardClauses;
+global using Ardalis.Specification;
+global using Ardalis.Specification.EntityFrameworkCore;
 global using ClosedXML.Excel;
 global using CsvHelper;
 global using CsvHelper.Configuration;

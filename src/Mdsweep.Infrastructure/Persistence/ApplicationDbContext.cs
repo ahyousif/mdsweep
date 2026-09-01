@@ -1,6 +1,4 @@
-using Ardalis.Specification;
-using Ardalis.Specification.EntityFrameworkCore;
-using Mdsweep.Application.Common.Persistence;
+using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;

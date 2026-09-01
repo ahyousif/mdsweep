@@ -1,10 +1,8 @@
-using EndpointResult = Microsoft.AspNetCore.Http.IResult;
-
 namespace Mdsweep.Api.Common.Extensions;
 
 internal static class ResultEndpointExtensions
 {
-    public static EndpointResult ToEndpointResult(this ArdalisResult.Result result) =>
+    public static IResult ToEndpointResult(this Result result) =>
         result.Status switch
         {
             ResultStatus.Ok => Results.NoContent(),
@@ -16,7 +14,7 @@ internal static class ResultEndpointExtensions
             _ => Results.BadRequest(),
         };
 
-    public static EndpointResult ToEndpointResult<TValue, TResponse>(
+    public static IResult ToEndpointResult<TValue, TResponse>(
         this Result<TValue> result,
         Func<TValue, TResponse> map
     ) =>
@@ -31,10 +29,7 @@ internal static class ResultEndpointExtensions
             _ => Results.BadRequest(),
         };
 
-    public static EndpointResult ToEndpointResult<TValue>(
-        this Result<TValue> result,
-        Func<TValue, EndpointResult> ok
-    ) =>
+    public static IResult ToEndpointResult<TValue>(this Result<TValue> result, Func<TValue, IResult> ok) =>
         result.Status switch
         {
             ResultStatus.Ok => ok(result.Value),
@@ -46,9 +41,9 @@ internal static class ResultEndpointExtensions
             _ => Results.BadRequest(),
         };
 
-    public static async Task<EndpointResult> ToEndpointResultAsync<TValue>(
+    public static async Task<IResult> ToEndpointResultAsync<TValue>(
         this Result<TValue> result,
-        Func<TValue, Task<EndpointResult>> ok
+        Func<TValue, Task<IResult>> ok
     ) =>
         result.Status switch
         {
@@ -61,7 +56,7 @@ internal static class ResultEndpointExtensions
             _ => Results.BadRequest(),
         };
 
-    public static EndpointResult ToEndpointResult<TValue, TResponse>(
+    public static IResult ToEndpointResult<TValue, TResponse>(
         this PagedResult<IReadOnlyList<TValue>> result,
         Func<TValue, TResponse> map
     ) =>
@@ -70,16 +65,20 @@ internal static class ResultEndpointExtensions
             ResultStatus.Ok => Results.Ok(
                 new
                 {
-                    Items = result.Value.Select(map),
-                    result.PagedInfo.PageNumber,
-                    result.PagedInfo.PageSize,
-                    result.PagedInfo.TotalPages,
-                    result.PagedInfo.TotalRecords,
+                    Items = result.Value.Select(map).ToList(),
+
+                    TotalCount = result.PagedInfo.TotalRecords,
+                    Page = result.PagedInfo.PageNumber,
+                    PageSize = result.PagedInfo.PageSize,
+                    TotalPages = result.PagedInfo.TotalPages,
                 }
             ),
 
             ResultStatus.NotFound => Results.NotFound(),
+            ResultStatus.Conflict => Results.Conflict(),
             ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
+            ResultStatus.Unauthorized => Results.Unauthorized(),
+            ResultStatus.Forbidden => Results.Forbid(),
             _ => Results.BadRequest(),
         };
 

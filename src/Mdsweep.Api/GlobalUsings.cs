@@ -16,6 +16,4 @@ global using NodaTime.Serialization.SystemTextJson;
 global using NodaTime.Text;
 global using Wolverine;
 global using Wolverine.Http;
-global using ArdalisResult = Ardalis.Result;
-global using ResultStatus = Ardalis.Result.ResultStatus;
-global using ValidationError = Ardalis.Result.ValidationError;
+global using IResult = Microsoft.AspNetCore.Http.IResult;

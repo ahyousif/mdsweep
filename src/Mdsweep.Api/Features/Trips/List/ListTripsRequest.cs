@@ -1,28 +1,26 @@
-using Mdsweep.Application.Common.Pagination;
+using Mdsweep.Application.Common.Models;
 using Mdsweep.Application.Trips.List;
 
 namespace Mdsweep.Api.Features.Trips.List;
 
 public sealed class ListTripsRequest
 {
-    public string? ServiceDate { get; set; }
+    public LocalDate? ServiceDate { get; init; }
 
-    public string? BrokerStatus { get; set; }
+    public string? BrokerStatus { get; init; }
 
-    public bool? IsWillCall { get; set; }
+    public bool? IsWillCall { get; init; }
 
-    public int Page { get; set; } = 1;
+    public int Page { get; init; } = 1;
 
-    public int PageSize { get; set; } = 50;
+    public int PageSize { get; init; } = 50;
 
-    public TripSortBy SortBy { get; set; } = TripSortBy.AppointmentTime;
+    public TripSortBy SortBy { get; init; } = TripSortBy.AppointmentTime;
 
-    public SortDirection SortDirection { get; set; } = SortDirection.Ascending;
+    public SortDirection SortDirection { get; init; } = SortDirection.Asc;
 
     public ListTripsQuery ToQuery()
     {
-        LocalDate? serviceDate = ServiceDate is null ? null : LocalDatePattern.Iso.Parse(ServiceDate).Value;
-
-        return new ListTripsQuery(serviceDate, BrokerStatus, IsWillCall, Page, PageSize, SortBy, SortDirection);
+        return new ListTripsQuery(ServiceDate, BrokerStatus, IsWillCall, Page, PageSize, SortBy, SortDirection);
     }
 }

@@ -1,4 +1,4 @@
-using Mdsweep.Application.Common.Pagination;
+using Mdsweep.Application.Common.Models;
 using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Application.Trips.List;
@@ -16,28 +16,28 @@ public sealed class ListTripsSpecification : Specification<TripAggregate, TripMo
 
         switch (query.SortBy, query.SortDirection)
         {
-            case (TripSortBy.AppointmentTime, SortDirection.Ascending):
+            case (TripSortBy.AppointmentTime, SortDirection.Asc):
                 Query.OrderBy(trip => trip.BrokerData.AppointmentTime).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.AppointmentTime, SortDirection.Descending):
+            case (TripSortBy.AppointmentTime, SortDirection.Desc):
                 Query.OrderByDescending(trip => trip.BrokerData.AppointmentTime).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.ServiceDate, SortDirection.Ascending):
+            case (TripSortBy.ServiceDate, SortDirection.Asc):
                 Query.OrderBy(trip => trip.BrokerData.ServiceDate).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.ServiceDate, SortDirection.Descending):
+            case (TripSortBy.ServiceDate, SortDirection.Desc):
                 Query.OrderByDescending(trip => trip.BrokerData.ServiceDate).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.BrokerTripNumber, SortDirection.Ascending):
+            case (TripSortBy.BrokerTripNumber, SortDirection.Asc):
                 Query.OrderBy(trip => trip.BrokerTripNumber).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.BrokerTripNumber, SortDirection.Descending):
+            case (TripSortBy.BrokerTripNumber, SortDirection.Desc):
                 Query.OrderByDescending(trip => trip.BrokerTripNumber).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.ScheduledPickupTime, SortDirection.Ascending):
+            case (TripSortBy.ScheduledPickupTime, SortDirection.Asc):
                 Query.OrderBy(trip => trip.ScheduledPickupTime).ThenBy(trip => trip.Id);
                 break;
-            case (TripSortBy.ScheduledPickupTime, SortDirection.Descending):
+            case (TripSortBy.ScheduledPickupTime, SortDirection.Desc):
                 Query.OrderByDescending(trip => trip.ScheduledPickupTime).ThenBy(trip => trip.Id);
                 break;
             default:
