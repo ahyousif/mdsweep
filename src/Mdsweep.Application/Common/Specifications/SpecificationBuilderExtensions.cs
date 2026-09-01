@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using Mdsweep.Domain.Common.Abstractions;
 
 namespace Mdsweep.Application.Common.Specifications;
@@ -49,17 +48,7 @@ public static class SpecificationBuilderExtensions
         where TId : notnull
         where TSelf : SpecificationBuilder<TEntity, TId, TSelf>
     {
-        builder.Spec.Add(query =>
-        {
-            if (descending)
-            {
-                query.OrderByDescending(keySelector);
-            }
-            else
-            {
-                query.OrderBy(keySelector);
-            }
-        });
+        builder.Spec.AddSorting(keySelector, descending);
 
         return (TSelf)builder;
     }
