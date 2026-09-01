@@ -23,6 +23,28 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         where TAggregate : AggregateRoot<TId>
         where TId : notnull => Set<TAggregate>().FindAsync([id], ct).AsTask();
 
+    public Task<TAggregate?> SingleOrDefaultAsync<TAggregate>(
+        ISpecification<TAggregate> specification,
+        CancellationToken ct
+    )
+        where TAggregate : class, IAggregateRoot
+    {
+        return SpecificationEvaluator
+            .Default.GetQuery(Set<TAggregate>().AsQueryable(), specification)
+            .SingleOrDefaultAsync(ct);
+    }
+
+    public Task<TResult?> SingleOrDefaultAsync<TAggregate, TResult>(
+        ISpecification<TAggregate, TResult> specification,
+        CancellationToken ct
+    )
+        where TAggregate : class, IAggregateRoot
+    {
+        return SpecificationEvaluator
+            .Default.GetQuery(Set<TAggregate>().AsQueryable(), specification)
+            .SingleOrDefaultAsync(ct);
+    }
+
     public Task<List<TResult>> ListAsync<TAggregate, TResult>(
         ISpecification<TAggregate, TResult> specification,
         CancellationToken ct

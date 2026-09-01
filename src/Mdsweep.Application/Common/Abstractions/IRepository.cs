@@ -12,6 +12,15 @@ public interface IRepository
         where TAggregate : AggregateRoot<TId>
         where TId : notnull;
 
+    Task<TAggregate?> SingleOrDefaultAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
+        where TAggregate : class, IAggregateRoot;
+
+    Task<TResult?> SingleOrDefaultAsync<TAggregate, TResult>(
+        ISpecification<TAggregate, TResult> specification,
+        CancellationToken ct
+    )
+        where TAggregate : class, IAggregateRoot;
+
     Task<List<TResult>> ListAsync<TAggregate, TResult>(
         ISpecification<TAggregate, TResult> specification,
         CancellationToken ct

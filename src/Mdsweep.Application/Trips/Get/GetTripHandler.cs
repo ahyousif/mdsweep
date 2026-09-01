@@ -1,5 +1,6 @@
 using Mdsweep.Application.Common.Abstractions;
-using Mdsweep.Domain.Trips;
+using Mdsweep.Application.Common.Specifications;
+using Mdsweep.Application.Trips.Specifications;
 
 namespace Mdsweep.Application.Trips.Get;
 
@@ -7,8 +8,10 @@ public sealed class GetTripHandler(IRepository repository)
 {
     public async Task<Result<TripModel>> Handle(GetTripQuery query, CancellationToken ct)
     {
-        var trip = await repository.GetByIdAsync<TripAggregate, Guid>(query.Id, ct);
+        var specification = new TripsSpecification().WithId(query.Id).Build(TripModelProjection.Instance);
 
-        return trip is null ? Result.NotFound() : Result.Success(TripModel.FromAggregate(trip));
+        var trip = await repository.SingleOrDefaultAsync(specification, ct);
+
+        return trip is null ? Result.NotFound() : Result.Success(trip);
     }
 }

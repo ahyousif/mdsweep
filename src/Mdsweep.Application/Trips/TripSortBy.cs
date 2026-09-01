@@ -1,4 +1,4 @@
-namespace Mdsweep.Application.Trips.List;
+namespace Mdsweep.Application.Trips;
 
 public enum TripSortBy
 {

@@ -1,4 +1,5 @@
 using Mdsweep.Application.Common.Models;
+using Mdsweep.Application.Trips;
 using Mdsweep.Application.Trips.List;
 
 namespace Mdsweep.Api.Features.Trips.List;
