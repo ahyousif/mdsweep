@@ -19,11 +19,14 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(KeycloakAuthenticationOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.Authority), "Authentication authority is required.")
             .Validate(options => !string.IsNullOrWhiteSpace(options.ClientId), "Authentication client id is required.")
-            .Validate(options => !string.IsNullOrWhiteSpace(options.ClientSecret), "Authentication client secret is required.");
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ClientSecret), "Authentication client secret is required.")
+            .ValidateOnStart();
         services.AddOptions<KeycloakAdministrationOptions>()
             .Bind(configuration.GetSection(KeycloakAdministrationOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.ClientId), "Keycloak administration client id is required.")
-            .Validate(options => !string.IsNullOrWhiteSpace(options.ClientSecret), "Keycloak administration client secret is required.");
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ClientSecret), "Keycloak administration client secret is required.")
+            .ValidateOnStart();
+        services.AddSingleton<IClock>(SystemClock.Instance);
         services.AddScoped<IRepository>(serviceProvider => serviceProvider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ITenantAccess, TenantAccess>();
         services.AddScoped<ITripImportLookup, EfTripImportLookup>();

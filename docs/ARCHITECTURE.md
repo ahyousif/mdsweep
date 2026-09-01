@@ -62,7 +62,11 @@ Wolverine HTTP derives the ambient Tenant from the authenticated active-Tenant c
 
 Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS intent. These markers do not control Wolverine transactions; Application handlers have no Wolverine transaction attributes. Aggregate mutation uses `IRepository`, and Wolverine's lightweight EF middleware with `AutoApplyTransactions()` owns successful-handler persistence. Projection-heavy reads may later use Dapper directly, without reader interfaces created solely to wrap SQL.
 
-`Program.cs` composes subsystems and HTTP pipeline behavior. Concrete persistence, external administration adapters, and startup initialization belong in Infrastructure; BFF authentication, authorization, antiforgery, JSON, routing, and middleware ordering remain API concerns. Runtime services bind typed Options rather than consuming raw `IConfiguration`.
+### Host configuration ownership
+
+API composition owns ASP.NET Core, BFF authentication, authorization, antiforgery, Wolverine host and discovery configuration, HTTP endpoint mapping, and middleware ordering. Wolverine Application and HTTP discovery is explicitly configured there; it must never depend on the calling assembly of an extension method, because moving an extension can otherwise silently remove handlers or endpoints.
+
+Infrastructure owns PostgreSQL, EF Core, Wolverine persistence integration, the `IRepository` implementation, Keycloak administration, typed Options binding, the system clock, file parsing adapters, migrations, and managed-tenant initialization. Runtime services bind typed Options rather than consuming raw `IConfiguration`.
 
 ## Seams and adapters
 
@@ -87,6 +91,8 @@ New domain and application code uses NodaTime: `Instant` for timeline events, `L
 Domain factories enforce preconditions with Ardalis Guard Clauses, including repository `GuardClauseExtensions` where they express the invariant. Factories do not silently trim, normalize, or otherwise rewrite supplied values: invalid input is rejected and valid input is preserved as supplied.
 
 Wolverine's lightweight EF Core transaction middleware calls one `SaveChangesAsync` at the end of a successful EF-backed handler. `AutoApplyTransactions()` infers this from `IRepository`; commands and queries do not use Wolverine transaction attributes. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
+
+`WolverineConjoinedTenancyWorkaround` is temporary technical debt. Managed conjoined tenancy resolves normal DI `ApplicationDbContext` instances against the main/default tenant, so Lightweight handlers using `IRepository` need its scoped active-message-tenant context factory. Eager mode cannot replace it while Wolverine 6.30.3 generates colliding concrete `ApplicationDbContext` variables with `WithDbContextAbstraction<IRepository, ApplicationDbContext>()`. Remove the workaround when that upstream defect is fixed; do not replace it with command Tenant IDs, tenant middleware, a UnitOfWork, or a custom transaction policy.
 
 ## Web application
 

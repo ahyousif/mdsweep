@@ -1,7 +1,6 @@
-using System.Text.Json.Serialization;
+using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Infrastructure;
-using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,89 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddMdsweepInfrastructure(builder.Configuration);
-builder.Services.AddSingleton<IClock>(NodaTime.SystemClock.Instance);
-
-builder.Host.AddMdsweepMessaging(builder.Configuration, typeof(Program).Assembly);
-builder.Services.AddWolverineHttp();
-
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
-    options.ForwardLimit = 1;
-});
-
-builder
-    .Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    })
-    .AddCookie(options =>
-    {
-        options.Cookie.Name = AuthenticationConventions.CookieName;
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-
-        options.Events.OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
-        };
-
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            return Task.CompletedTask;
-        };
-    })
-    .AddOpenIdConnect(options =>
-    {
-        options.MapInboundClaims = false;
-
-        options.Authority =
-            builder.Configuration["Authentication:Authority"] ?? "https://keycloak.invalid/realms/mdsweep";
-
-        options.ClientId = builder.Configuration["Authentication:ClientId"] ?? "mdsweep-server";
-
-        options.ClientSecret = builder.Configuration["Authentication:ClientSecret"];
-
-        options.ResponseType = "code";
-        options.SaveTokens = false;
-
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-
-        options.TokenValidationParameters.NameClaimType = "sub";
-        options.TokenValidationParameters.RoleClaimType = "roles";
-    });
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(
-        TenantAuthorizationPolicies.Dispatcher,
-        policy =>
-        {
-            policy.RequireAuthenticatedUser();
-            policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Dispatcher));
-        }
-    );
-});
-builder.Services.AddScoped<IAuthorizationHandler, TenantRoleAuthorizationHandler>();
-
-builder.Services.AddAntiforgery(options =>
-{
-    options.HeaderName = AuthenticationConventions.AntiforgeryHeaderName;
-    options.Cookie.Name = AuthenticationConventions.AntiforgeryCookieName;
-    options.Cookie.HttpOnly = true;
-});
-
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    options.SerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
-});
+builder.AddMdsweepApi();
+builder.AddMdsweepMessaging();
 
 var app = builder.Build();
 
