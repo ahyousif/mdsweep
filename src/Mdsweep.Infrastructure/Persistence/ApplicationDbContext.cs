@@ -1,3 +1,6 @@
+using Ardalis.Specification;
+using Ardalis.Specification.EntityFrameworkCore;
+using Mdsweep.Application.Common.Persistence;
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
@@ -21,6 +24,17 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public Task<TAggregate?> GetByIdAsync<TAggregate, TId>(TId id, CancellationToken ct)
         where TAggregate : AggregateRoot<TId>
         where TId : notnull => Set<TAggregate>().FindAsync([id], ct).AsTask();
+
+    public Task<List<TResult>> ListAsync<TAggregate, TResult>(
+        ISpecification<TAggregate, TResult> specification,
+        CancellationToken ct
+    )
+        where TAggregate : class, IAggregateRoot =>
+        SpecificationEvaluator.Default.GetQuery(Set<TAggregate>().AsQueryable(), specification).ToListAsync(ct);
+
+    public Task<int> CountAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
+        where TAggregate : class, IAggregateRoot =>
+        SpecificationEvaluator.Default.GetQuery(Set<TAggregate>().AsQueryable(), specification).CountAsync(ct);
 
     async Task IRepository.AddAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
     {

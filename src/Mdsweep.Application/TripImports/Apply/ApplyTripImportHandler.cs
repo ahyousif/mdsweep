@@ -1,5 +1,5 @@
+using Mdsweep.Application.Common.Persistence;
 using Mdsweep.Application.TripImports.Abstractions;
-using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.TripImports;
 using Mdsweep.Domain.Trips;

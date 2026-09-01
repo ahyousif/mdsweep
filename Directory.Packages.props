@@ -5,6 +5,8 @@
   <ItemGroup>
     <PackageVersion Include="Ardalis.GuardClauses" Version="5.0.0" />
     <PackageVersion Include="Ardalis.Result" Version="10.1.0" />
+    <PackageVersion Include="Ardalis.Specification" Version="9.3.1" />
+    <PackageVersion Include="Ardalis.Specification.EntityFrameworkCore" Version="9.3.1" />
     <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.2" />
     <PackageVersion Include="Aspire.Hosting.Azure.KeyVault" Version="13.5.2" />
     <PackageVersion Include="Aspire.Hosting.Azure.PostgreSQL" Version="13.5.2" />

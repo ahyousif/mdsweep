@@ -60,7 +60,7 @@ Wolverine HTTP derives the ambient Tenant from the authenticated active-Tenant c
 
 ### CQRS and composition
 
-Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS intent. These markers do not control Wolverine transactions; Application handlers have no Wolverine transaction attributes. Aggregate mutation uses `IRepository`, and Wolverine's lightweight EF middleware with `AutoApplyTransactions()` owns successful-handler persistence. Projection-heavy reads may later use Dapper directly, without reader interfaces created solely to wrap SQL.
+Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS intent. These markers do not control Wolverine transactions; Application handlers have no Wolverine transaction attributes. Aggregate mutation uses the non-generic Application `IRepository`, and Wolverine's lightweight EF middleware with `AutoApplyTransactions()` owns successful-handler persistence. Its generic operations are intentionally implemented directly by `ApplicationDbContext` so Wolverine can retain `WithDbContextAbstraction<IRepository, ApplicationDbContext>()`. Ordinary filtered and paged lists use typed Application query contracts, code-defined Ardalis specifications, `IRepository`, and EF Core. Projection-heavy reads may later use a dedicated Application query abstraction and Dapper directly when that is the natural implementation, without changing the HTTP query contract or forcing SQL through specifications.
 
 ### Host configuration ownership
 

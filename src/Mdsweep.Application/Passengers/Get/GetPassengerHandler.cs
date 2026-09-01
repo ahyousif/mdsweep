@@ -1,4 +1,4 @@
-using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Application.Common.Persistence;
 using Mdsweep.Domain.Passengers;
 
 namespace Mdsweep.Application.Passengers.Get;

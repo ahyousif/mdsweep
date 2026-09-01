@@ -1,6 +1,6 @@
 using Mdsweep.Application.Common.Authorization;
+using Mdsweep.Application.Common.Persistence;
 using Mdsweep.Application.TripImports.Abstractions;
-using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 using Mdsweep.Infrastructure.TripImports.Parsing;

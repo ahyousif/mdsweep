@@ -1,4 +1,4 @@
-using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Application.Common.Persistence;
 using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Application.Trips.SetScheduledPickupTime;

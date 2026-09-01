@@ -28,20 +28,13 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             "POST /api/auth/tenant-context",
             "GET /api/auth/antiforgery",
             "POST /api/auth/logout",
-            "GET /api/drivers",
-            "POST /api/drivers",
-            "POST /api/drivers/access",
-            "POST /api/drivers/{driverId:guid}/reset-access",
-            "POST /api/drivers/{driverId:guid}/deactivate",
-            "GET /api/vehicles",
-            "POST /api/vehicles",
-            "POST /api/vehicles/{vehicleId:guid}/deactivate",
-            "POST /api/journeys/{journeyKey}/assignments",
-            "POST /api/trips/{tripNumber}/assignments",
-            "GET /api/trips/{tripNumber}/assignments",
+            "POST /api/passengers",
+            "POST /api/trip-imports",
+            "GET /api/trip-imports/{id:guid}",
+            "POST /api/trip-imports/{id:guid}/apply",
             "GET /api/trips/{id:guid}",
+            "GET /api/trips",
             "PUT /api/trips/{id:guid}/scheduled-pickup-time",
-            "GET /api/service-days/{serviceDate}/trips",
         };
         var expectedPaths = expectedRoutes
             .Select(route => route[(route.IndexOf(' ') + 1)..])
@@ -56,7 +49,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             .Order(StringComparer.Ordinal)
             .ToList();
 
-        Assert.Equal(expectedRoutes.Order(StringComparer.Ordinal), actualRoutes);
+        Assert.Equal(expectedRoutes.Order(StringComparer.Ordinal), actualRoutes.Order(StringComparer.Ordinal));
     }
 
     private static bool IsAnonymous(RouteEndpoint endpoint) =>
