@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Mdsweep.Infrastructure.Identity;
 
@@ -21,19 +21,15 @@ public interface IKeycloakUserAdministration
     Task DeleteUserAsync(string subject, CancellationToken cancellationToken);
 }
 
-internal sealed class KeycloakUserAdministration(HttpClient client, IConfiguration configuration)
+internal sealed class KeycloakUserAdministration(
+    HttpClient client,
+    IOptions<KeycloakAdministrationOptions> options,
+    IOptions<KeycloakAuthenticationOptions> authentication)
     : IKeycloakUserAdministration
 {
-    private readonly string authority =
-        configuration["Authentication:Authority"]
-        ?? throw new InvalidOperationException("Authentication authority is required.");
-    private readonly string clientId =
-        configuration["KeycloakAdministration:ClientId"] ?? "mdsweep-administration";
-    private readonly string clientSecret =
-        configuration["KeycloakAdministration:ClientSecret"]
-        ?? throw new InvalidOperationException(
-            "Keycloak administration client secret is required."
-        );
+    private readonly string authority = authentication.Value.Authority;
+    private readonly string clientId = options.Value.ClientId;
+    private readonly string clientSecret = options.Value.ClientSecret;
 
     public async Task<string> CreateDriverAsync(
         string email,

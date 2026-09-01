@@ -6,14 +6,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="NodaTime.Serialization.SystemTextJson" />
     <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.FluentValidation" />
     <PackageReference Include="WolverineFx.Http" />
+    <PackageReference Include="WolverineFx.Http.FluentValidation" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 </Project>

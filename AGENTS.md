@@ -37,9 +37,9 @@ This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See
 ## Working rules
 
 - Organize HTTP boundaries by vertical feature under `src/Mdsweep.Api/Features`; keep domain rules in `Mdsweep.Domain`, contracts in `Mdsweep.Application`, and EF/file handlers close to the behavior under `Mdsweep.Infrastructure`.
-- Use EF Core directly inside a feature. Introduce a seam when multiple adapters are real, including a production adapter and a materially different deterministic test adapter.
+- For aggregate mutations, follow `HTTP → Wolverine → Application handler → Domain aggregate → IRepository → EF Core`. Application handlers must not receive `ApplicationDbContext`; aggregate writes use the common `IRepository`, whose EF Core implementation belongs in Infrastructure. Direct EF Core usage is appropriate inside Infrastructure implementations, not Application handlers. A projection-heavy read may later choose a different strategy such as Dapper, but that is not the current default and does not justify generic reader or repository abstractions.
 - Test through the feature's interface and observable database or HTTP outcomes. Use PostgreSQL for persistence integration tests.
-- Preserve broker-original Trip facts, provider overrides, and append-only operational history as distinct data.
+- Preserve broker-original Trip facts, Tenant-owned operational decisions, and append-only operational history as distinct data.
 - Make repeat imports and offline Driver actions idempotent.
 - Keep Billing Export pinned until an authoritative MTM bulk-upload contract is available.
 - Use Playwright for this application's end-to-end tests. Add MTM portal automation only after written authorization and a defined durable workflow.

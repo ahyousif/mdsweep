@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -18,7 +17,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
         Assert.Equal(5, identityEndpoints.Count);
         Assert.True(IsAnonymous(identityEndpoints["/api/auth/login"]));
         AssertProtected(identityEndpoints["/api/auth/me"]);
-        AssertProtected(identityEndpoints["/api/auth/provider-context"]);
+        AssertProtected(identityEndpoints["/api/auth/tenant-context"]);
         AssertProtected(identityEndpoints["/api/auth/antiforgery"]);
         AssertProtected(identityEndpoints["/api/auth/logout"]);
 
@@ -26,23 +25,16 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
         {
             "GET /api/auth/login",
             "GET /api/auth/me",
-            "POST /api/auth/provider-context",
+            "POST /api/auth/tenant-context",
             "GET /api/auth/antiforgery",
             "POST /api/auth/logout",
-            "GET /api/drivers",
-            "POST /api/drivers",
-            "POST /api/drivers/access",
-            "POST /api/drivers/{driverId:guid}/reset-access",
-            "POST /api/drivers/{driverId:guid}/deactivate",
-            "GET /api/vehicles",
-            "POST /api/vehicles",
-            "POST /api/vehicles/{vehicleId:guid}/deactivate",
-            "POST /api/journeys/{journeyKey}/assignments",
-            "POST /api/trips/{tripNumber}/assignments",
-            "GET /api/trips/{tripNumber}/assignments",
-            "GET /api/trips/{tripNumber}/scheduled-pickup-time/history",
-            "PUT /api/trips/{tripNumber}/scheduled-pickup-time",
-            "GET /api/service-days/{serviceDate}/trips",
+            "POST /api/passengers",
+            "POST /api/trip-imports",
+            "GET /api/trip-imports/{id:guid}",
+            "POST /api/trip-imports/{id:guid}/apply",
+            "GET /api/trips/{id:guid}",
+            "GET /api/trips",
+            "PUT /api/trips/{id:guid}/scheduled-pickup-time",
         };
         var expectedPaths = expectedRoutes
             .Select(route => route[(route.IndexOf(' ') + 1)..])
@@ -57,7 +49,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             .Order(StringComparer.Ordinal)
             .ToList();
 
-        Assert.Equal(expectedRoutes.Order(StringComparer.Ordinal), actualRoutes);
+        Assert.Equal(expectedRoutes.Order(StringComparer.Ordinal), actualRoutes.Order(StringComparer.Ordinal));
     }
 
     private static bool IsAnonymous(RouteEndpoint endpoint) =>

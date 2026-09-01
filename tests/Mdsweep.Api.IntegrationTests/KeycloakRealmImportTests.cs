@@ -51,7 +51,7 @@ public sealed class KeycloakRealmImportTests
             tokenBody.RootElement.GetProperty("access_token").GetString()
         );
 
-        var email = $"driver-{Guid.NewGuid():N}@example.test";
+        var email = $"driver-{Guid.CreateVersion7():N}@example.test";
         using var createResponse = await client.PostAsJsonAsync(
             "/admin/realms/mdsweep/users",
             new
