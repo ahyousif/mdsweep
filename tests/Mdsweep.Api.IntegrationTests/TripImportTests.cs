@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using ClosedXML.Excel;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
@@ -43,10 +42,13 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
 
-        using var previewResponse = await Upload(client, Csv(
-            "09/15/2026,\"200 Synthetic Way, Suite 2\",\"100 Sample St\",09:15,TRIP-101,MED-101,VALID,Synthetic,Passenger,Phoenix,Mesa,N\n"
-            + "09/16/2026,200 Way,\"100 Sample\nStreet\",10:15,TRIP-102,MED-101,VALID,Synthetic,Passenger,Phoenix,Mesa,N"
-        ));
+        using var previewResponse = await Upload(
+            client,
+            Csv(
+                "09/15/2026,\"200 Synthetic Way, Suite 2\",\"100 Sample St\",09:15,TRIP-101,MED-101,VALID,Synthetic,Passenger,Phoenix,Mesa,N\n"
+                    + "09/16/2026,200 Way,\"100 Sample\nStreet\",10:15,TRIP-102,MED-101,VALID,Synthetic,Passenger,Phoenix,Mesa,N"
+            )
+        );
         previewResponse.EnsureSuccessStatusCode();
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
@@ -67,14 +69,20 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
 
-        using var invalidDate = await Upload(client, Csv("abc,200 Way,100 St,not-a-time,TRIP-103,MED-103,VALID,Test,Passenger,Phoenix,Mesa,N"));
+        using var invalidDate = await Upload(
+            client,
+            Csv("abc,200 Way,100 St,not-a-time,TRIP-103,MED-103,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
         invalidDate.EnsureSuccessStatusCode();
         var preview = await invalidDate.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
         Assert.Contains("Appointment Date 'abc' is invalid.", preview.Items[0].Messages);
         Assert.Contains("Appointment Time 'not-a-time' is invalid.", preview.Items[0].Messages);
 
-        using var malformed = await Upload(client, Csv("09/15/2026,\"unterminated,100 St,09:15,TRIP-104,MED-104,VALID,Test,Passenger,Phoenix,Mesa,N"));
+        using var malformed = await Upload(
+            client,
+            Csv("09/15/2026,\"unterminated,100 St,09:15,TRIP-104,MED-104,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
         Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
     }
 
@@ -96,7 +104,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var trip = await db.Trips.IgnoreQueryFilters().SingleAsync();
         Assert.Equal("TRIP-105", trip.BrokerTripNumber);
-        Assert.Equal("Mesa", trip.BrokerFacts.DropoffCity);
+        Assert.Equal("Mesa", trip.BrokerData.DropoffCity);
     }
 
     [Fact]
@@ -104,10 +112,13 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
-        using var previewResponse = await Upload(client, Csv(
-            "09/15/2026,200 Way,100 St,09:15,TRIP-106,MED-106,VALID,First,Passenger,Phoenix,Mesa,N\n"
-            + "09/16/2026,201 Way,101 St,10:15,TRIP-107,MED-107,VALID,Second,Passenger,Phoenix,Mesa,N"
-        ));
+        using var previewResponse = await Upload(
+            client,
+            Csv(
+                "09/15/2026,200 Way,100 St,09:15,TRIP-106,MED-106,VALID,First,Passenger,Phoenix,Mesa,N\n"
+                    + "09/16/2026,201 Way,101 St,10:15,TRIP-107,MED-107,VALID,Second,Passenger,Phoenix,Mesa,N"
+            )
+        );
         previewResponse.EnsureSuccessStatusCode();
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
@@ -116,9 +127,20 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         {
             var otherPassenger = PassengerAggregate.Create("MED-OTHER", "Other", "Passenger");
             otherPassenger.TenantId = "mdsw-eep2-3456";
-            var existingTrip = TripAggregate.Create(otherPassenger.Id, "TRIP-107", new BrokerTripFacts(
-                new DateOnly(2026, 9, 16), null, "201 Way", "Phoenix", "101 St", "Mesa", "VALID", false
-            ));
+            var existingTrip = TripAggregate.Create(
+                otherPassenger.Id,
+                "TRIP-107",
+                new BrokerTripData(
+                    new DateOnly(2026, 9, 16),
+                    null,
+                    "201 Way",
+                    "Phoenix",
+                    "101 St",
+                    "Mesa",
+                    "VALID",
+                    false
+                )
+            );
             existingTrip.TenantId = "mdsw-eep2-3456";
             db.AddRange(otherPassenger, existingTrip);
             await db.SaveChangesAsync();
@@ -143,9 +165,20 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         {
             var passenger = PassengerAggregate.Create("MED-OLD", "Old", "Passenger");
             passenger.TenantId = "mdsw-eep2-3456";
-            var trip = TripAggregate.Create(passenger.Id, "TRIP-108", new BrokerTripFacts(
-                new DateOnly(2026, 9, 15), null, "100 St", "Phoenix", "200 Way", "Mesa", "VALID", false
-            ));
+            var trip = TripAggregate.Create(
+                passenger.Id,
+                "TRIP-108",
+                new BrokerTripData(
+                    new DateOnly(2026, 9, 15),
+                    null,
+                    "100 St",
+                    "Phoenix",
+                    "200 Way",
+                    "Mesa",
+                    "VALID",
+                    false
+                )
+            );
             trip.TenantId = "mdsw-eep2-3456";
             db.AddRange(passenger, trip);
             await db.SaveChangesAsync();
@@ -153,7 +186,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
 
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
-        using var previewResponse = await Upload(client, Csv("09/15/2026,200 Way,100 St,09:15,TRIP-108,MED-NEW,VALID,New,Passenger,Phoenix,Mesa,N"));
+        using var previewResponse = await Upload(
+            client,
+            Csv("09/15/2026,200 Way,100 St,09:15,TRIP-108,MED-NEW,VALID,New,Passenger,Phoenix,Mesa,N")
+        );
         previewResponse.EnsureSuccessStatusCode();
         var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
         Assert.NotNull(preview);
@@ -171,7 +207,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         await AddAntiforgeryToken(client);
         var duplicate = Csv(
             "09/15/2026,200 Way,100 St,09:15,TRIP-109,MED-109,VALID,First,Passenger,Phoenix,Mesa,N\n"
-            + "09/16/2026,201 Way,101 St,10:15,TRIP-109,MED-110,VALID,Second,Passenger,Phoenix,Mesa,N"
+                + "09/16/2026,201 Way,101 St,10:15,TRIP-109,MED-110,VALID,Second,Passenger,Phoenix,Mesa,N"
         );
         using var duplicatePreviewResponse = await Upload(client, duplicate);
         duplicatePreviewResponse.EnsureSuccessStatusCode();
@@ -179,8 +215,14 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         Assert.NotNull(duplicatePreview);
         Assert.All(duplicatePreview.Items, item => Assert.Equal("Blocked", item.Disposition));
 
-        using var firstPreviewResponse = await Upload(client, Csv("09/15/2026,200 Way,100 St,09:15,TRIP-110,MED-111,VALID,Test,Passenger,Phoenix,Mesa,N"));
-        using var secondPreviewResponse = await Upload(client, Csv("09/15/2026,200 Way,100 St,09:15,TRIP-110,MED-111,VALID,Test,Passenger,Phoenix,Mesa,N"));
+        using var firstPreviewResponse = await Upload(
+            client,
+            Csv("09/15/2026,200 Way,100 St,09:15,TRIP-110,MED-111,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
+        using var secondPreviewResponse = await Upload(
+            client,
+            Csv("09/15/2026,200 Way,100 St,09:15,TRIP-110,MED-111,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
         firstPreviewResponse.EnsureSuccessStatusCode();
         secondPreviewResponse.EnsureSuccessStatusCode();
         var first = await firstPreviewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
@@ -194,13 +236,15 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         Assert.Equal(HttpStatusCode.Conflict, applySecond.StatusCode);
     }
 
-    private static Task<HttpResponseMessage> Upload(HttpClient client, string csv) => Upload(client, "trips.csv", System.Text.Encoding.UTF8.GetBytes(csv));
+    private static Task<HttpResponseMessage> Upload(HttpClient client, string csv) =>
+        Upload(client, "trips.csv", System.Text.Encoding.UTF8.GetBytes(csv));
 
-    private ApplicationDbContext CreateSeedDb() => new(
-        new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
-            .Options
-    );
+    private ApplicationDbContext CreateSeedDb() =>
+        new(
+            new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+                .Options
+        );
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string fileName, byte[] content)
     {
@@ -208,7 +252,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         return client.PostAsync("/api/trip-imports", form);
     }
 
-    private static string Csv(string row = "09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-100,MED-100,VALID,Synthetic,Passenger,Phoenix,Mesa,N") =>
+    private static string Csv(
+        string row =
+            "09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-100,MED-100,VALID,Synthetic,Passenger,Phoenix,Mesa,N"
+    ) =>
         "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag\n"
         + row;
 
@@ -217,14 +264,31 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var workbook = new XLWorkbook();
         var sheet = workbook.AddWorksheet("Trips");
         var headers = Csv().Split('\n')[0].Split(',');
-        for (var index = 0; index < headers.Length; index++) sheet.Cell(1, index + 1).Value = headers[index];
-        var row = new[] { "09/15/2026", "200 Way", "100 St", "09:15", "TRIP-105", "MED-105", "", "Synthetic", "Passenger", "Phoenix", "Mesa", "N" };
-        for (var index = 0; index < row.Length; index++) sheet.Cell(2, index + 1).Value = row[index];
+        for (var index = 0; index < headers.Length; index++)
+            sheet.Cell(1, index + 1).Value = headers[index];
+        var row = new[]
+        {
+            "09/15/2026",
+            "200 Way",
+            "100 St",
+            "09:15",
+            "TRIP-105",
+            "MED-105",
+            "",
+            "Synthetic",
+            "Passenger",
+            "Phoenix",
+            "Mesa",
+            "N",
+        };
+        for (var index = 0; index < row.Length; index++)
+            sheet.Cell(2, index + 1).Value = row[index];
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return stream.ToArray();
     }
 
     private sealed record TripImportResponse(Guid Id, string Status, List<TripImportItemResponse> Items);
+
     private sealed record TripImportItemResponse(string Disposition, List<string> Messages);
 }

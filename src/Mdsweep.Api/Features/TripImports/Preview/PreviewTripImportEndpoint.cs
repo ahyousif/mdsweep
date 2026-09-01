@@ -1,23 +1,27 @@
+using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Extensions;
-using Mdsweep.Api.Features.Identity;
+using Mdsweep.Application.Common.Extensions;
 using Mdsweep.Application.TripImports.Get;
 using Mdsweep.Application.TripImports.Preview;
-using Mdsweep.Application.Common.Extensions;
 
 namespace Mdsweep.Api.Features.TripImports.Preview;
 
 public sealed class PreviewTripImportEndpoint
 {
     [Tags(TripImportConstants.Tag)]
-    [Authorize(Policy = TenantAuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
     [WolverinePost(TripImportConstants.Route)]
     public static async Task<IResult> Post(IFormFile file, IMessageBus bus, CancellationToken ct)
     {
         await using var content = new MemoryStream();
+
         await file.CopyToAsync(content, ct);
+
         var result = await bus.SendAsync(
-            new PreviewTripImportCommand(file.FileName, file.ContentType, content.ToArray()), ct
+            new PreviewTripImportCommand(file.FileName, file.ContentType, content.ToArray()),
+            ct
         );
+
         return await result.ToEndpointResultAsync(importId => GetResponse(importId, bus, ct, created: true));
     }
 

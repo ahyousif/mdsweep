@@ -34,7 +34,7 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var storedTrip = await db.Trips.IgnoreQueryFilters().SingleAsync(saved => saved.Id == trip.Id);
         Assert.Equal("mdsw-eep2-3456", storedTrip.TenantId);
-        Assert.Equal(trip.BrokerFacts, storedTrip.BrokerFacts);
+        Assert.Equal(trip.BrokerData, storedTrip.BrokerData);
     }
 
     [Fact]
@@ -62,9 +62,20 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", "Synthetic", "Passenger");
         passenger.TenantId = tenantId;
-        var trip = TripAggregate.Create(passenger.Id, brokerTripNumber, new BrokerTripFacts(
-            new DateOnly(2026, 9, 15), new LocalTime(10, 0), "100 Sample St", "Phoenix", "200 Synthetic Way", "Mesa", "VALID", false
-        ));
+        var trip = TripAggregate.Create(
+            passenger.Id,
+            brokerTripNumber,
+            new BrokerTripData(
+                new DateOnly(2026, 9, 15),
+                new LocalTime(10, 0),
+                "100 Sample St",
+                "Phoenix",
+                "200 Synthetic Way",
+                "Mesa",
+                "VALID",
+                false
+            )
+        );
         trip.TenantId = tenantId;
         db.AddRange(passenger, trip);
         await db.SaveChangesAsync();

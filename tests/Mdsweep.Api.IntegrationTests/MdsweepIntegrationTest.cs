@@ -1,7 +1,4 @@
 using System.Net.Http.Json;
-using Mdsweep.Api.Features.Identity;
-using Mdsweep.Domain.Tenants;
-using Mdsweep.Domain.Users;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 
@@ -29,7 +26,8 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
             {
                 services.RemoveAll<IKeycloakUserAdministration>();
                 services.AddSingleton<IKeycloakUserAdministration, TestKeycloakUserAdministration>();
-                services.AddAuthentication("Test")
+                services
+                    .AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
             });
         });
@@ -62,8 +60,16 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 
     protected sealed class TestKeycloakUserAdministration : IKeycloakUserAdministration
     {
-        public Task<string> CreateDriverAsync(string email, string temporaryPassword, string organizationId, CancellationToken cancellationToken) => Task.FromResult($"test-{email}");
-        public Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<string> CreateDriverAsync(
+            string email,
+            string temporaryPassword,
+            string organizationId,
+            CancellationToken cancellationToken
+        ) => Task.FromResult($"test-{email}");
+
+        public Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
         public Task DeleteUserAsync(string subject, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

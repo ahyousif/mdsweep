@@ -66,7 +66,7 @@ Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS
 
 API composition owns ASP.NET Core, BFF authentication, authorization, antiforgery, Wolverine host and discovery configuration, HTTP endpoint mapping, and middleware ordering.
 
-> Assembly discovery is an explicit composition-root responsibility. Moving Wolverine configuration between assemblies can change convention-based discovery behavior. Endpoint and handler assemblies must be explicitly registered rather than relying on the calling assembly.
+> Wolverine assembly discovery is an explicit composition-root responsibility. Moving `UseWolverine` between assemblies can change convention-based discovery because Wolverine may use the calling assembly. MDSweep must explicitly register the assemblies containing HTTP endpoints and message handlers rather than relying on implicit calling-assembly discovery.
 
 Infrastructure owns PostgreSQL, EF Core, Wolverine persistence integration, the `IRepository` implementation, Keycloak administration, typed Options binding, the system clock, file parsing adapters, migrations, and managed-tenant initialization. Runtime services bind typed Options rather than consuming raw `IConfiguration`.
 

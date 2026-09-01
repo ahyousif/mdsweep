@@ -1,3 +1,4 @@
+using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Infrastructure;
@@ -7,13 +8,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddMdsweepInfrastructure(builder.Configuration);
-builder.AddMdsweepApi();
-builder.AddMdsweepMessaging();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.AddApi();
+builder.AddMessaging();
 
 var app = builder.Build();
 
-await app.InitializeMdsweepInfrastructureAsync();
+await app.InitializeInfrastructureAsync();
 
 // Must run before authentication so OIDC generates HTTPS callback URLs
 // correctly when running behind Azure Container Apps ingress.
@@ -35,9 +36,11 @@ app.UseAntiforgery();
 
 app.MapWolverineEndpoints(options =>
 {
+    options.RoutePrefix("api");
+
     options.RequireAuthorizeOnAll();
     options.AutoAntiforgeryOnFormEndpoints();
-    options.TenantId.IsClaimTypeNamed(TenantClaimTypes.ActiveTenantId);
+    options.TenantId.IsClaimTypeNamed(CustomClaimTypes.ActiveTenantId);
     options.TenantId.AssertExists();
 });
 app.MapIdentity();

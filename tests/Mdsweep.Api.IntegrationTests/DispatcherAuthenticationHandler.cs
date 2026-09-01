@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using Mdsweep.Api.Features.Identity;
+using Mdsweep.Api.Common.Authentication;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -16,14 +16,12 @@ public sealed class DispatcherAuthenticationHandler(
             [
                 new Claim("sub", "dispatcher-test"),
                 new Claim(ClaimTypes.Role, "Dispatcher"),
-                new Claim(TenantClaimTypes.ActiveTenantId, "mdsw-eep2-3456"),
+                new Claim(CustomClaimTypes.ActiveTenantId, "mdsw-eep2-3456"),
             ],
             Scheme.Name
         );
         return Task.FromResult(
-            AuthenticateResult.Success(
-                new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name)
-            )
+            AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name))
         );
     }
 }

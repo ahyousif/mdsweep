@@ -1,8 +1,8 @@
 using Mdsweep.Domain.Common.Abstractions;
-using Mdsweep.Domain.TripImports;
-using Mdsweep.Domain.Trips;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
+using Mdsweep.Domain.TripImports;
+using Mdsweep.Domain.Trips;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Infrastructure.Persistence;
@@ -44,7 +44,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
-
 }

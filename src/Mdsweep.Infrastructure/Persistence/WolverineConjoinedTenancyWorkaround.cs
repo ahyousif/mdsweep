@@ -1,8 +1,3 @@
-using JasperFx;
-using Microsoft.Extensions.DependencyInjection;
-using Wolverine;
-using Wolverine.EntityFrameworkCore.Internals;
-
 namespace Mdsweep.Infrastructure.Persistence;
 
 public static class WolverineConjoinedTenancyWorkaround
@@ -18,16 +13,13 @@ public static class WolverineConjoinedTenancyWorkaround
     /// ApplicationDbContext variables (CS0841/CS0136). Remove this workaround when the
     /// upstream Wolverine defect is fixed.
     /// </summary>
-    public static IServiceCollection AddWolverineConjoinedTenancyWorkaround(
-        this IServiceCollection services
-    )
+    public static IServiceCollection AddWolverineConjoinedTenancyWorkaround(this IServiceCollection services)
     {
         services.AddScoped<ApplicationDbContext>(serviceProvider =>
             serviceProvider
                 .GetRequiredService<IDbContextBuilder<ApplicationDbContext>>()
                 .BuildAsync(
-                    serviceProvider.GetRequiredService<IMessageBus>().TenantId
-                        ?? StorageConstants.DefaultTenantId,
+                    serviceProvider.GetRequiredService<IMessageBus>().TenantId ?? StorageConstants.DefaultTenantId,
                     CancellationToken.None
                 )
                 .AsTask()

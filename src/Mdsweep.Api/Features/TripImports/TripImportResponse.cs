@@ -12,7 +12,13 @@ public sealed record TripImportResponse(
 )
 {
     public static TripImportResponse FromModel(TripImportModel model) =>
-        new(model.Id, model.FileName, model.Status, model.AppliedAt, model.Items.Select(TripImportItemResponse.FromModel).ToList());
+        new(
+            model.Id,
+            model.FileName,
+            model.Status,
+            model.AppliedAt,
+            [.. model.Items.Select(TripImportItemResponse.FromModel)]
+        );
 }
 
 public sealed record TripImportItemResponse(
@@ -26,5 +32,13 @@ public sealed record TripImportItemResponse(
 )
 {
     public static TripImportItemResponse FromModel(TripImportItemModel model) =>
-        new(model.RowNumber, model.TripNumber, model.BrokerMemberId, model.Disposition, model.Messages, model.ServiceDate, model.AppointmentTime);
+        new(
+            model.RowNumber,
+            model.TripNumber,
+            model.BrokerMemberId,
+            model.Disposition,
+            model.Messages,
+            model.ServiceDate,
+            model.AppointmentTime
+        );
 }
