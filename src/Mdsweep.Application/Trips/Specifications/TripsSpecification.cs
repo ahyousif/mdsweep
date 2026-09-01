@@ -52,35 +52,41 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
         {
             switch (sortBy, direction)
             {
-                case (TripSortBy.AppointmentTime, SortDirection.Asc):
-                    query.OrderBy(trip => trip.BrokerData.AppointmentTime).ThenBy(trip => trip.Id);
+                case (TripSortBy.AppointmentTime, SortDirection.Ascending):
+                    query
+                        .OrderBy(trip => trip.BrokerData.AppointmentTime)
+                        .ThenBy(trip => trip.BrokerData.ServiceDate)
+                        .ThenBy(trip => trip.Id);
                     break;
 
-                case (TripSortBy.AppointmentTime, SortDirection.Desc):
-                    query.OrderByDescending(trip => trip.BrokerData.AppointmentTime).ThenBy(trip => trip.Id);
+                case (TripSortBy.AppointmentTime, SortDirection.Descending):
+                    query
+                        .OrderByDescending(trip => trip.BrokerData.AppointmentTime)
+                        .ThenByDescending(trip => trip.BrokerData.ServiceDate)
+                        .ThenByDescending(trip => trip.Id);
                     break;
 
-                case (TripSortBy.ServiceDate, SortDirection.Asc):
+                case (TripSortBy.ServiceDate, SortDirection.Ascending):
                     query.OrderBy(trip => trip.BrokerData.ServiceDate).ThenBy(trip => trip.Id);
                     break;
 
-                case (TripSortBy.ServiceDate, SortDirection.Desc):
+                case (TripSortBy.ServiceDate, SortDirection.Descending):
                     query.OrderByDescending(trip => trip.BrokerData.ServiceDate).ThenBy(trip => trip.Id);
                     break;
 
-                case (TripSortBy.BrokerTripNumber, SortDirection.Asc):
+                case (TripSortBy.BrokerTripNumber, SortDirection.Ascending):
                     query.OrderBy(trip => trip.BrokerTripNumber).ThenBy(trip => trip.Id);
                     break;
 
-                case (TripSortBy.BrokerTripNumber, SortDirection.Desc):
+                case (TripSortBy.BrokerTripNumber, SortDirection.Descending):
                     query.OrderByDescending(trip => trip.BrokerTripNumber).ThenBy(trip => trip.Id);
                     break;
 
-                case (TripSortBy.ScheduledPickupTime, SortDirection.Asc):
+                case (TripSortBy.ScheduledPickupTime, SortDirection.Ascending):
                     query.OrderBy(trip => trip.ScheduledPickupTime).ThenBy(trip => trip.Id);
                     break;
 
-                case (TripSortBy.ScheduledPickupTime, SortDirection.Desc):
+                case (TripSortBy.ScheduledPickupTime, SortDirection.Descending):
                     query.OrderByDescending(trip => trip.ScheduledPickupTime).ThenBy(trip => trip.Id);
                     break;
 

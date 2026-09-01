@@ -77,9 +77,17 @@ public sealed class TripListTests : MdsweepIntegrationTest
     private static async Task AssertValidationError(HttpResponseMessage response, string validationKey)
     {
         using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
-        var errors = document.RootElement.GetProperty("errors");
-        Assert.True(errors.TryGetProperty(validationKey, out var messages));
-        Assert.NotEmpty(messages.EnumerateArray());
+        var problem = document.RootElement;
+
+        if (problem.TryGetProperty("errors", out var errors))
+        {
+            Assert.True(errors.TryGetProperty(validationKey, out var messages));
+            Assert.NotEmpty(messages.EnumerateArray());
+            return;
+        }
+
+        Assert.Equal(validationKey, problem.GetProperty("parameter").GetString(), ignoreCase: true);
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("detail").GetString()));
     }
 
     private async Task AddTrip(

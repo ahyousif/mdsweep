@@ -54,7 +54,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public Task<int> CountAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
         where TAggregate : class, IAggregateRoot =>
-        SpecificationEvaluator.Default.GetQuery(Set<TAggregate>().AsQueryable(), specification).CountAsync(ct);
+        SpecificationEvaluator
+            .Default.GetQuery(Set<TAggregate>().AsQueryable(), specification, evaluateCriteriaOnly: true)
+            .CountAsync(ct);
 
     async Task IRepository.AddAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
     {

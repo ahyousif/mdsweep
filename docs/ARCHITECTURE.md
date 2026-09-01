@@ -6,7 +6,7 @@ Build a modular monolith with a slim vertical-slice structure. The deployed prod
 
 ### Delivery state
 
-The system has a shared Azure production-shaped environment for deployment validation, but it is not approved for patient-linked data. Local and deployed data remain synthetic. The checked-in EF Core migration is the schema baseline for a fresh database. A deployment-readiness decision is required before non-synthetic data is introduced; it must define the migration procedure, backups and restore test, Keycloak realm administration, and data-safety approval.
+The system has a shared Azure production-shaped environment for deployment validation, but it is not approved for patient-linked data. Local and deployed data remain synthetic. The foundation refactor intentionally reset the EF Core migration history to one `InitialSchema` baseline for a fresh database. Existing synthetic MDSweep application databases created from the old migration chain must be recreated; this baseline must not be applied over an existing production or real-data database. A deployment-readiness decision is required before non-synthetic data is introduced; it must define and test the production migration procedure, backups and restore, Keycloak realm administration, and data-safety approval.
 
 The application replaces the provider's legacy operations site. MTM integration at both ends is file-based for the MVP:
 
@@ -86,7 +86,7 @@ Application handlers do not receive `ApplicationDbContext`. Aggregate writes use
 
 ## Persistence
 
-PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep continues to use checked-in EF Core migrations for application schema; Wolverine uses its own persistence schema for its conjoined-tenant registry and message persistence. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Tenant-owned changes and retain append-only history for Manifest receipts, Assignments, actual timestamps, outcomes, corrections, and closure.
+PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep uses checked-in EF Core migrations for application schema, with the current single `InitialSchema` migration serving as a reset pre-production baseline rather than an upgrade from the removed chain. Wolverine uses its own persistence schema for its conjoined-tenant registry and message persistence. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Tenant-owned changes and retain append-only history for Manifest receipts, Assignments, actual timestamps, outcomes, corrections, and closure.
 
 New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Tenant IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
 

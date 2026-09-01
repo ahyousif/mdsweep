@@ -60,7 +60,7 @@ Access owns Users, Provider Memberships, role authorization, and Keycloak mappin
 - Continue storing UUIDs in PostgreSQL `uuid` columns; UUIDv7 changes generation and ordering characteristics, not the database type.
 - Configure the Npgsql NodaTime plugin and System.Text.Json NodaTime converters at their respective seams.
 - Keep EF Core inside each owning implementation; do not add repository interfaces.
-- Keep the checked-in EF migration chain and add a schema-replacement migration. No production-data backfill is required.
+- Intentionally reset the checked-in EF migration history to one `InitialSchema` baseline while all MDSweep data is synthetic. Recreate synthetic application databases that used the old migration chain; never apply this baseline over a production or real-data database. A tested production migration, backup, and restore procedure remains required before patient-linked data is introduced.
 
 ## Public interfaces and test seams
 

@@ -1,6 +1,7 @@
 using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Extensions;
 using Mdsweep.Application.Common.Extensions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Mdsweep.Api.Features.Trips.List;
 
@@ -10,7 +11,7 @@ public static class ListTripsEndpoint
     [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
     [WolverineGet(TripConstants.Route)]
     public static async Task<IResult> Get(
-        [AsParameters] ListTripsRequest request,
+        [FromQuery] ListTripsRequest request,
         IMessageBus bus,
         CancellationToken ct
     )

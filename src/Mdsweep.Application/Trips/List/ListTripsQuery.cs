@@ -10,5 +10,5 @@ public sealed record ListTripsQuery(
     int Page = 1,
     int PageSize = 50,
     TripSortBy SortBy = TripSortBy.AppointmentTime,
-    SortDirection SortDirection = SortDirection.Asc
+    SortDirection SortDirection = SortDirection.Ascending
 ) : IQuery<PagedResult<IReadOnlyList<TripModel>>>;

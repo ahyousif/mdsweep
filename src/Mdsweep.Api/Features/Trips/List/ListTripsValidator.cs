@@ -4,12 +4,12 @@ public sealed class ListTripsRequestValidator : AbstractValidator<ListTripsReque
 {
     public ListTripsRequestValidator()
     {
-        RuleFor(x => x.Page).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.Page).GreaterThanOrEqualTo(1).OverridePropertyName("page");
 
-        RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
+        RuleFor(x => x.PageSize).InclusiveBetween(1, 100).OverridePropertyName("pageSize");
 
-        RuleFor(x => x.SortBy).IsInEnum();
+        RuleFor(x => x.SortBy).IsInEnum().OverridePropertyName("sortBy");
 
-        RuleFor(x => x.SortDirection).IsInEnum();
+        RuleFor(x => x.SortDirection).IsInEnum().OverridePropertyName("sortDirection");
     }
 }

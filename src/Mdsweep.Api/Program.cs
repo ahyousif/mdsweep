@@ -38,6 +38,7 @@ app.UseAntiforgery();
 app.MapWolverineEndpoints(options =>
 {
     options.RoutePrefix("api");
+    options.RejectUnparseableQueryValues = true;
     options.UseFluentValidationProblemDetailMiddleware();
 
     options.RequireAuthorizeOnAll();
