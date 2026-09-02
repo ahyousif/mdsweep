@@ -9,7 +9,11 @@ public sealed record TripResponse(
     LocalTime? AppointmentTime,
     string? BrokerStatus,
     bool IsWillCall,
-    LocalTime? ScheduledPickupTime
+    LocalTime? ScheduledPickupTime,
+    string PickupAddress,
+    string PickupCity,
+    string DropoffAddress,
+    string DropoffCity
 )
 {
     public static TripResponse FromModel(TripModel model) =>
@@ -20,6 +24,10 @@ public sealed record TripResponse(
             model.AppointmentTime,
             model.BrokerStatus,
             model.IsWillCall,
-            model.ScheduledPickupTime
+            model.ScheduledPickupTime,
+            model.PickupAddress,
+            model.PickupCity,
+            model.DropoffAddress,
+            model.DropoffCity
         );
 }

@@ -15,7 +15,11 @@ internal sealed class TripModelProjection : Specification<TripAggregate, TripMod
             trip.BrokerData.AppointmentTime,
             trip.BrokerData.BrokerStatus,
             trip.BrokerData.IsWillCall,
-            trip.ScheduledPickupTime
+            trip.ScheduledPickupTime,
+            trip.BrokerData.PickupAddress,
+            trip.BrokerData.PickupCity,
+            trip.BrokerData.DropoffAddress,
+            trip.BrokerData.DropoffCity
         ));
     }
 }

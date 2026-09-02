@@ -3,43 +3,42 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 export type AllTripsTrip = {
-  tripNumber: string;
-  journeyKey: string;
-  memberName: string;
+  id: string;
+  brokerTripNumber: string;
+  serviceDate: string;
+  appointmentTime: string | null;
+  brokerStatus: string | null;
+  isWillCall: boolean;
+  scheduledPickupTime: string | null;
   pickupAddress: string;
   pickupCity: string;
-  deliveryAddress: string;
-  deliveryCity: string;
-  passengerType: string;
-  vehicleType: string;
-  brokerStatus: string;
-  appointmentTime: string;
-  scheduledPickupTime: string | null;
-  isWillCall: boolean;
-  isActive: boolean;
+  dropoffAddress: string;
+  dropoffCity: string;
 };
 
-export type DriverSyncConflict = {
-  tripNumber: string;
-  reason: string;
-  deviceCapturedAt: string;
+export type PagedResponse<T> = {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 @Injectable({ providedIn: 'root' })
 export class AllTripsApi {
   private readonly http = inject(HttpClient);
 
-  getServiceDay(serviceDate: string): Promise<AllTripsTrip[]> {
-    return firstValueFrom(this.http.get<AllTripsTrip[]>(`/api/service-days/${serviceDate}/trips`));
-  }
-
-  getConflicts(): Promise<DriverSyncConflict[]> {
-    return firstValueFrom(this.http.get<DriverSyncConflict[]>('/api/driver-work/conflicts'));
-  }
-
-  setScheduledPickupTime(tripNumber: string, value: string): Promise<void> {
+  getTrips(serviceDate: string, page = 1, pageSize = 50): Promise<PagedResponse<AllTripsTrip>> {
     return firstValueFrom(
-      this.http.put<void>(`/api/trips/${encodeURIComponent(tripNumber)}/scheduled-pickup-time`, {
+      this.http.get<PagedResponse<AllTripsTrip>>('/api/trips', {
+        params: { serviceDate, page, pageSize },
+      }),
+    );
+  }
+
+  setScheduledPickupTime(id: string, value: string): Promise<void> {
+    return firstValueFrom(
+      this.http.put<void>(`/api/trips/${encodeURIComponent(id)}/scheduled-pickup-time`, {
         scheduledPickupTime: value.length === 5 ? `${value}:00` : value,
       }),
     );

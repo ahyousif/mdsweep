@@ -2,35 +2,43 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-export type PreviewRow = {
+export type TripImportItem = {
+  rowNumber: number;
   tripNumber: string;
-  disposition: 'Ready' | 'Warning' | 'Blocked';
-  brokerChange: 'New' | 'BrokerChanged' | 'Unchanged' | 'Blocked';
-  hasProviderOverrides: boolean;
-  isActive: boolean;
+  brokerMemberId: string | null;
+  disposition: 'Ready' | 'Warning' | 'Blocked' | string;
   messages: string[];
+  serviceDate: string | null;
+  appointmentTime: string | null;
 };
 
-export type ManifestPreview = {
-  previewId: string;
-  ready: number;
-  warning: number;
-  blocked: number;
-  serviceDates: string[];
-  rows: PreviewRow[];
+export type TripImport = {
+  id: string;
+  fileName: string;
+  status: string;
+  appliedAt: string | null;
+  items: TripImportItem[];
 };
+
+export function tripImportDispositionCounts(items: TripImportItem[]) {
+  return {
+    ready: items.filter((item) => item.disposition === 'Ready').length,
+    warning: items.filter((item) => item.disposition === 'Warning').length,
+    blocked: items.filter((item) => item.disposition === 'Blocked').length,
+  };
+}
 
 @Injectable({ providedIn: 'root' })
-export class ManifestImportApi {
+export class TripImportApi {
   private readonly http = inject(HttpClient);
 
-  preview(file: File): Promise<ManifestPreview> {
+  preview(file: File): Promise<TripImport> {
     const form = new FormData();
     form.append('file', file);
-    return firstValueFrom(this.http.post<ManifestPreview>('/api/manifest-imports/preview', form));
+    return firstValueFrom(this.http.post<TripImport>('/api/trip-imports', form));
   }
 
-  apply(previewId: string): Promise<void> {
-    return firstValueFrom(this.http.post<void>(`/api/manifest-imports/${previewId}/apply`, {}));
+  apply(id: string): Promise<TripImport> {
+    return firstValueFrom(this.http.post<TripImport>(`/api/trip-imports/${id}/apply`, {}));
   }
 }

@@ -1,19 +1,27 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
-import { injectMutation } from '@tanstack/angular-query-experimental';
+import { injectMutation, injectQueryClient } from '@tanstack/angular-query-experimental';
 import { httpErrorMessage } from '../../../core/api/http-error-message';
-import { ManifestImportApi, ManifestPreview } from './trip-import.api';
+import { tripQueryKeys } from '../all-trips/all-trips.queries';
+import {
+  TripImport,
+  TripImportApi,
+  TripImportItem,
+  tripImportDispositionCounts,
+} from './trip-import.api';
 
 @Component({
   selector: 'app-trip-import-page',
-  imports: [HlmButton, ...HlmAlertImports, ...HlmCardImports],
+  imports: [RouterLink, HlmButton, ...HlmAlertImports, ...HlmCardImports],
   templateUrl: './trip-import-page.html',
 })
 export class TripImportPage {
-  private readonly api = inject(ManifestImportApi);
-  protected readonly preview = signal<ManifestPreview | null>(null);
+  private readonly api = inject(TripImportApi);
+  private readonly queryClient = injectQueryClient();
+  protected readonly preview = signal<TripImport | null>(null);
   protected readonly error = signal('');
   protected readonly previewMutation = injectMutation(() => ({
     mutationFn: (file: File) => this.api.preview(file),
@@ -21,7 +29,11 @@ export class TripImportPage {
     onError: (error) => this.error.set(httpErrorMessage(error, 'Unable to check this Trip Import.')),
   }));
   protected readonly applyMutation = injectMutation(() => ({
-    mutationFn: (previewId: string) => this.api.apply(previewId),
+    mutationFn: (id: string) => this.api.apply(id),
+    onSuccess: (tripImport) => {
+      this.preview.set(tripImport);
+      this.queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
+    },
     onError: (error) => this.error.set(httpErrorMessage(error, 'Unable to import trips.')),
   }));
 
@@ -32,6 +44,15 @@ export class TripImportPage {
 
   protected apply(): void {
     const preview = this.preview();
-    if (preview) this.applyMutation.mutate(preview.previewId);
+    if (preview) this.applyMutation.mutate(preview.id);
+  }
+
+  protected count(disposition: string): number {
+    const counts = tripImportDispositionCounts(this.preview()?.items ?? []);
+    return counts[disposition.toLowerCase() as keyof typeof counts] ?? 0;
+  }
+
+  protected messages(item: TripImportItem): string {
+    return item.messages.join(' ');
   }
 }

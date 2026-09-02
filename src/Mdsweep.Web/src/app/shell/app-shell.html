@@ -26,6 +26,12 @@
         <button hlmBtn type="button" (click)="signIn()">{{ text.signIn }}</button>
       </div>
     </section>
+  } @else if (isDriverOnly()) {
+    <section hlmCard class="mx-auto mt-8 w-full max-w-md">
+      <div hlmCardHeader>
+        <h2 hlmCardTitle>My Trips is not available in this build yet.</h2>
+      </div>
+    </section>
   } @else {
     <router-outlet />
   }

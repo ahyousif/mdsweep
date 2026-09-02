@@ -30,11 +30,10 @@ export class AppShell {
     effect(() => {
       const context = this.sessionQuery.data();
       if (!context) return;
-      const destination = context.roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
-        ? '/trips'
-        : '/trips/mine';
-      if (this.router.url !== destination) {
-        void this.router.navigateByUrl(destination);
+      if (context.roles.some((role) => role === 'Administrator' || role === 'Dispatcher')) {
+        if (this.router.url !== '/trips') {
+          void this.router.navigateByUrl('/trips');
+        }
       }
     });
   }
@@ -46,5 +45,10 @@ export class AppShell {
   protected sessionError(): string {
     const error = this.sessionQuery.error();
     return error instanceof Error && !error.message.includes('401') ? error.message : '';
+  }
+
+  protected isDriverOnly(): boolean {
+    const roles = this.sessionQuery.data()?.roles ?? [];
+    return roles.includes('Driver') && !roles.some((role) => role === 'Administrator' || role === 'Dispatcher');
   }
 }

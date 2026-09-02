@@ -5,37 +5,26 @@
     <p class="text-muted-foreground mt-1">Today’s operational work queue.</p>
   </div>
 
-  @if (conflictsQuery.data()?.length) {
-    <section hlmCard>
-      <div hlmCardHeader>
-        <h3 hlmCardTitle>Driver actions needing review</h3>
-      </div>
-      <div hlmCardContent class="grid gap-3">
-        @for (
-          conflict of conflictsQuery.data();
-          track conflict.tripNumber + conflict.deviceCapturedAt
-        ) {
-          <div class="border-border border-t pt-3 first:border-0 first:pt-0">
-            <strong>{{ conflict.tripNumber }}</strong>
-            <p class="text-muted-foreground mt-1">{{ conflict.reason }}</p>
-            <small class="text-muted-foreground">Captured {{ conflict.deviceCapturedAt }}</small>
-          </div>
-        }
-      </div>
-    </section>
-  }
-
   @if (serviceDayQuery.isPending() && serviceDate()) {
     <div class="text-muted-foreground flex items-center gap-2" role="status">
       <hlm-spinner /> Loading service day
     </div>
   }
 
-  @if (serviceDayQuery.data()?.length) {
+  @if (serviceDayQuery.isSuccess() && !serviceDayQuery.data()?.items?.length) {
+    <section hlmCard>
+      <div hlmCardContent class="pt-6">No trips scheduled for {{ serviceDate() }}.</div>
+    </section>
+  }
+
+  @if (serviceDayQuery.data()?.items?.length) {
     <section hlmCard>
       <div hlmCardHeader>
         <h3 hlmCardTitle>{{ serviceDate() }}</h3>
-        <p hlmCardDescription>Imported trips remain grouped by journey in the underlying data.</p>
+        <p hlmCardDescription>
+          {{ serviceDayQuery.data()?.totalCount }} trips · page {{ serviceDayQuery.data()?.page }} of
+          {{ serviceDayQuery.data()?.totalPages }}
+        </p>
       </div>
       <div hlmCardContent>
         <div hlmTableContainer>
@@ -52,8 +41,8 @@
               }
             </thead>
             <tbody hlmTBody>
-              @for (row of dispatchTable.getRowModel().rows; track row.original.tripNumber) {
-                <tr hlmTr [class.bg-muted]="!row.original.isActive">
+              @for (row of dispatchTable.getRowModel().rows; track row.original.id) {
+                <tr hlmTr>
                   @for (cell of row.getAllCells(); track cell.id) {
                     <td hlmTd>
                       @if (cell.column.id === 'scheduledPickupTime') {
@@ -64,7 +53,7 @@
                             type="time"
                             class="w-28"
                             [value]="row.original.scheduledPickupTime?.slice(0, 5) ?? ''"
-                            [disabled]="busy() || !row.original.isActive"
+                            [disabled]="busy()"
                             [attr.aria-label]="text.scheduledPickup"
                           />
                           <button
@@ -73,20 +62,11 @@
                             size="sm"
                             type="button"
                             (click)="setScheduledPickupTime(row.original, scheduledTime.value)"
-                            [disabled]="busy() || !row.original.isActive || !scheduledTime.value"
+                            [disabled]="busy() || !scheduledTime.value"
                           >
                             {{ text.save }}
                           </button>
                         </div>
-                      } @else if (cell.column.id === 'memberName') {
-                        <strong>{{ row.original.memberName }}</strong>
-                        <small class="text-muted-foreground block">{{
-                          row.original.tripNumber
-                        }}</small>
-                      } @else if (cell.column.id === 'status') {
-                        <span hlmBadge [variant]="row.original.isActive ? 'default' : 'secondary'">
-                          {{ row.original.isActive ? 'Ready' : row.original.brokerStatus }}
-                        </span>
                       } @else {
                         <ng-container *flexRenderCell="cell; let value">{{ value }}</ng-container>
                       }

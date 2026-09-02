@@ -47,13 +47,13 @@ Tests use Angular's unit-test builder with Vitest. The production build emits th
 src/app/
   core/                     Authentication session and shared API behavior
   shell/                    Authenticated application shell
-  features/trips/           All Trips, My Trips, and Trip Import workflows
+  features/trips/           All Trips and Trip Import workflows
   ui/                       Minimal generated Spartan primitives
 ```
 
 Angular code is organized by product capability. Administrator, Dispatcher, and Driver roles
 authorize routes and actions; they do not define top-level domain feature folders. Trips owns All
-Trips, My Trips, and Trip Import experiences. TanStack Query owns non-persisted server state and
+Trips and Trip Import experiences. My Trips is a target Driver workflow and is not implemented in this build. TanStack Query owns non-persisted server state and
 invalidation. TanStack Table powers the dense Trip table. The Driver action queue remains a separate durable browser
 workflow and must not be replaced by or persisted through the general query cache.
 

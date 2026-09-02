@@ -85,14 +85,6 @@ public static class ApiExtensions
                     )
             );
             options.AddPolicy(
-                AuthorizationPolicies.TripsViewAssigned,
-                policy => policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Driver))
-            );
-            options.AddPolicy(
-                AuthorizationPolicies.TripsRecordProgress,
-                policy => policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Driver))
-            );
-            options.AddPolicy(
                 AuthorizationPolicies.PassengersManage,
                 policy =>
                     policy.AddRequirements(

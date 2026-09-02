@@ -20,9 +20,30 @@
     <section hlmCard>
       <div hlmCardHeader>
         <h3 hlmCardTitle>Check trips</h3>
-        <p hlmCardDescription>{{ result.ready }} ready · {{ result.warning }} need review · {{ result.blocked }} blocked</p>
+        <p hlmCardDescription>
+          {{ count('Ready') }} ready · {{ count('Warning') }} need review · {{ count('Blocked') }} blocked
+        </p>
       </div>
-      <div hlmCardFooter><button hlmBtn type="button" (click)="apply()" [disabled]="applyMutation.isPending()">Import {{ result.ready + result.warning }} trips</button></div>
+      <div hlmCardContent>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead><tr><th>Row</th><th>Trip</th><th>Broker member ID</th><th>Service date</th><th>Appointment</th><th>Disposition</th><th>Messages</th></tr></thead>
+            <tbody>
+              @for (item of result.items; track item.rowNumber) {
+                <tr><td>{{ item.rowNumber }}</td><td>{{ item.tripNumber }}</td><td>{{ item.brokerMemberId }}</td><td>{{ item.serviceDate }}</td><td>{{ item.appointmentTime }}</td><td>{{ item.disposition }}</td><td>{{ messages(item) }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div hlmCardFooter>
+        @if (result.appliedAt) {
+          <span>Applied.</span>
+          <a hlmBtn variant="outline" routerLink="/trips">Return to All Trips</a>
+        } @else {
+          <button hlmBtn type="button" (click)="apply()" [disabled]="applyMutation.isPending()">Apply import</button>
+        }
+      </div>
     </section>
   }
   @if (error()) { <div hlmAlert variant="destructive"><h3 hlmAlertTitle>Action needed</h3><p hlmAlertDescription>{{ error() }}</p></div> }

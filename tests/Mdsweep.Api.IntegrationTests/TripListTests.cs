@@ -28,6 +28,9 @@ public sealed class TripListTests : MdsweepIntegrationTest
         var serviceDate = await GetTrips(client, "/api/trips?serviceDate=2026-09-15");
         Assert.Equal(3, serviceDate.TotalCount);
         Assert.All(serviceDate.Items, trip => Assert.Equal("2026-09-15", trip.ServiceDate));
+        var tripA = serviceDate.Items.Single(trip => trip.BrokerTripNumber == "TRIP-A");
+        Assert.Equal("100 Sample St", tripA.PickupAddress);
+        Assert.Equal("Mesa", tripA.DropoffCity);
 
         var combinedFilters = await GetTrips(
             client,
@@ -126,5 +129,13 @@ public sealed class TripListTests : MdsweepIntegrationTest
 
     private sealed record PagedTripResponse(List<TripResponse> Items, int TotalCount, int Page, int PageSize);
 
-    private sealed record TripResponse(Guid Id, string BrokerTripNumber, string ServiceDate);
+    private sealed record TripResponse(
+        Guid Id,
+        string BrokerTripNumber,
+        string ServiceDate,
+        string PickupAddress,
+        string PickupCity,
+        string DropoffAddress,
+        string DropoffCity
+    );
 }
