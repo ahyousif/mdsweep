@@ -65,6 +65,17 @@ MTM warns that it will not approve a Claim or Claim appeal when the associated D
 
 After submission, packet feedback includes success and failure counts plus requires-action and rejected states. The guide does not say whether successful rows from a partially failed packet remain submitted, whether a corrected packet can reuse a name, or how duplicate Trip Numbers behave. (PDF p. 11)
 
+## Confirmed MVP decisions and client questions
+
+Vehicles used for billing must be registered in MTM. A Dispatcher manually maintains MDSweep's reference list of those Vehicles by display label, VIN, and active state. MDSweep records the Tenant's confirmation but cannot independently verify current MTM registration. A Dispatcher may designate an effective-dated Primary Vehicle before the Driver has any Trip Assignments. It automatically supplies the Performed Vehicle for that Driver's Trips, so ordinary Trips require no confirmation. The Dispatcher records only exceptions, individually or across selected Trips. Each closed Trip retains its own VIN snapshot for billing. Drivers do not select Vehicles. The existing generic signature-document upload remains a manual step in MTM Link and signature-document storage is outside the MVP.
+
+Ask the client:
+
+1. Which Trip outcomes are submitted for payment, and which of those require a VIN? Ask specifically about completed, passenger no-show, cancelled, and turned-back Trips.
+2. What does the biller enter today for pickup arrival versus pickup performed, and drop-off arrival versus drop-off performed? Are these captured as four separate events, duplicated from two timestamps, or supplied by another record?
+
+The second question matters because arrival and performance can be different facts: a Driver may arrive at pickup at 9:00, board the Passenger at 9:07, arrive at the destination at 9:30, and complete drop-off at 9:34. The current one-tap pickup/drop-off concept captures only two of those four facts.
+
 ## Mapping to the current repository
 
 This comparison reflects the current Manifest Import model in `src/Mdsweep.Domain/ManifestImports/ManifestModels.cs` and the synthetic manifest shape in `tests/Mdsweep.Api.IntegrationTests/Fixtures/mtm-manifest.csv`.
@@ -73,18 +84,18 @@ This comparison reflects the current Manifest Import model in `src/Mdsweep.Domai
 |---|---|---|
 | `Trip Number` | `Trip.TripNumber` | Available as broker-original data. |
 | `Driver` | Manifest has `Driver Name`, but it is not imported; there is no Driver domain entity or MTM Driver Number | **Missing.** Issue #5 must capture the MTM identifier separately from a display name and retain assignment history. Numeric workbook storage raises a leading-zero question to test. |
-| `Vehicle` | `Trip.VehicleType`; manifest also has a `Vehicle` column that is not imported | **Missing.** Vehicle type is not a VIN. Add a provider-owned Vehicle record with its MTM-recognized VIN and assignment relationship. |
+| `Vehicle` | None | **Missing.** Add a manually maintained reference list of Vehicles confirmed by the Tenant as registered in MTM plus effective-dated Driver Primary Vehicle designations. Resolve the Performed Vehicle automatically, allow Dispatcher exceptions, and preserve its VIN as historical Trip data. |
 | `ScheduledPickupTime` | Planned in the MVP, not yet modeled | **Missing.** Add the provider-owned Scheduled Pickup Time in Dispatch; repeat manifest imports must not overwrite it. |
 | `ReportedPickupArriveTime` | None | **Missing.** The agreed one-tap Actual Pickup Time alone cannot satisfy both pickup arrival and pickup performed fields. Decide which Driver action or deterministic policy captures each event. Do not silently duplicate a timestamp without validating that MTM permits it. |
 | `ReportedPickupPerformTime` | Planned Actual Pickup Time, not yet modeled | **Missing today.** The future Actual Pickup Time is the likely semantic source, subject to confirmation. Preserve the original Driver event and any correction history. |
 | `ScheduledDropoffTime` | `Trip.AppointmentTime` is broker-original appointment time | **Not safely mapped.** The terms differ. Establish a documented rule—possibly appointment time for outbound legs, but not necessarily return/will-call Trips—and keep it separate from broker facts. |
 | `ReportedDropoffArriveTime` | None | **Missing.** The agreed one-tap Actual Drop-off Time does not distinguish arrival from performance. |
 | `ReportedDropoffPerformTime` | Planned Actual Drop-off Time, not yet modeled | **Missing today.** The future Actual Drop-off Time is the likely semantic source, subject to confirmation and append-only correction history. |
-| `TripLogSignature` | None; the MVP spec explicitly deferred signatures unless required by the contract | **Now required by the supplied guide.** Capture whether the Trip Log was signed and retain the evidence/attestation history. Exact accepted workbook tokens remain unresolved. |
+| `TripLogSignature` | The client currently uploads a generic signature document that MTM accepts | The MVP continues that manual portal workflow and does not store signature documents. Export the accepted signed-log indication for claim rows; verify the exact cell token during the synthetic portal trial. |
 
-The submission step also requires a **Claim Packet Name** and **Signature Document(s)**, neither of which is currently modeled. Because the application will not automate MTM Link, the MVP can generate the Claims Sheet and give the Dispatcher a concise handoff checklist. Whether it should store signature documents is a separate privacy, retention, and security decision; the workbook itself carries only the yes/no field. (PDF p. 10)
+The submission step also requires a **Claim Packet Name** and **Signature Document(s)**, neither of which needs to be modeled. The application will not automate MTM Link or store signature documents. It generates the Claims Sheet and gives the Dispatcher a concise handoff checklist for the existing generic signature upload. (PDF p. 10)
 
-An export-readiness rule will need to require, at minimum, a claimable completed/closed Trip, compliant assigned Driver and Vehicle identifiers, the six ordered time values, and a resolved Trip Log signature value. “Claimable completed/closed” is an application inference from the operational model, not wording supplied by these artifacts.
+An export-readiness rule will need to require, at minimum, a claimable completed/closed Trip, an assigned Driver identifier, a Performed Vehicle selected from the active MTM-registered reference list, its VIN snapshot, the six ordered time values, and the accepted Trip Log signature value. MDSweep records the Tenant's confirmation of MTM registration but does not independently verify it or a Driver/Vehicle combination; MTM Link remains authoritative during the manual upload. “Claimable completed/closed” is an application inference from the operational model, not wording supplied by these artifacts.
 
 ## Unknowns requiring a synthetic portal trial
 
@@ -93,13 +104,12 @@ Do not infer these from the sample workbook:
 - Whether `Sheet1` is a required worksheet name and whether extra sheets are rejected.
 - Whether header order and capitalization are strictly matched.
 - Whether `.xlsx` is the only accepted file type, plus file-size and row-count limits.
-- Whether all ten cells are required for every Trip, especially will-call, cancelled, no-show, or cross-midnight Trips.
+- Whether a VIN and all ten cells are required for every Trip outcome, especially will-call, cancelled, no-show, or cross-midnight Trips. Confirm the operational rule with the client and portal behavior synthetically.
 - Exact time semantics: service timezone, date association, seconds handling, equal timestamps, and overnight ordering.
-- The exact accepted `TripLogSignature` tokens.
+- The exact accepted `TripLogSignature` token for the client's existing generic-signature workflow.
 - Driver Number type/length and whether leading zeroes are significant.
-- VIN validation details and whether the portal accepts only preconfigured Driver/Vehicle pairs.
+- VIN validation details. MDSweep records the Tenant's confirmation that a Vehicle is registered but does not verify MTM state or pre-approved Driver/Vehicle pairings; any related rejection remains part of the manual portal review.
 - Duplicate Trip Number behavior and whether an already-claimed Trip can be uploaded again.
-- Signature-document file types, count, size limits, naming rules, and whether documents cover a packet or individual Trips.
 - Whether successful rows survive a partially failed submission and how requires-action rows are corrected and resubmitted.
 
 Use synthetic Trip, Driver, Vehicle, and signature-document data for this trial. Record the results before implementing production export validation.

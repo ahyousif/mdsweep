@@ -26,6 +26,16 @@ A Tenant Membership role allowed to view assigned Trips and record when their pa
 **Driver Profile**:
 The Tenant-owned operational record that makes a User eligible for Assignment and retains the broker identifier used for that Driver.
 
+**Vehicle**:
+The Tenant's means of transportation registered with MTM and identified by its VIN. MTM remains authoritative for the Vehicle's registration.
+_Avoid_: Car
+
+**Primary Vehicle**:
+The Vehicle a Dispatcher designates as a Driver's usual Vehicle for an effective period. It may be designated before the Driver has any Trip Assignments and supplies the default for their Trips during that period.
+
+**Performed Vehicle**:
+The Vehicle attributed to a performed Trip for billing, normally derived from the Driver's Primary Vehicle unless a Dispatcher records an exception. Its VIN is retained as historical Trip information.
+
 **Passenger**:
 The person for whom transportation is arranged and performed. A Passenger belongs to one Tenant and may be created independently of a Trip. A broker-specific member identifier distinguishes the Passenger within broker records. For the initial MTM template, the `Medicaid Number` identifies that Passenger.
 _Avoid_: Patient, Client, Member
@@ -79,7 +89,7 @@ A trip for which the driver has recorded the physical transportation outcome and
 A Trip whose terminal outcome and required operational information have been reviewed and accepted by the Dispatcher. Closure does not by itself establish billing eligibility.
 
 **Assignment**:
-The dispatcher's selection of the driver responsible for a trip. Only one assignment is active at a time, while previous assignments remain part of the trip's history.
+The dispatcher's selection of the Driver responsible for a Trip. Only one Assignment is active at a time, while previous Assignments remain part of the Trip's history; the Performed Vehicle is recorded separately.
 
 **Billing Readiness**:
 The result of validating whether a Closed Trip contains the information required for billing.

@@ -30,13 +30,13 @@ Passengers owns Tenant-scoped Passenger identity and broker-specific member iden
 
 **Interface:** review and accept a Manifest, plan and assign Trips, record Trip outcomes and actual timestamps, review and close Trips, and prepare a billing file.
 
-Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Tenant planning decisions, Assignment history, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
+Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Tenant planning decisions, Assignment history, the Tenant's MTM-registered Vehicle reference list, Driver Primary Vehicle designations, Performed Vehicle snapshots, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
 
 CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Tenant-owned changes, or discard earlier broker-provided details.
 
 TripImports is a sibling feature to Trips. It owns the retained preview and application lifecycle for one uploaded broker file; Trips owns the resulting Trip aggregate and its operational state.
 
-The Dispatcher and Driver experiences are separate HTTP and web adapters over Trips. Driver-facing queries disclose only assigned Trips, and Driver actions remain authorized against the active Assignment. Vehicle management and Vehicle Assignment are outside the MVP.
+The Dispatcher and Driver experiences are separate HTTP and web adapters over Trips. Driver-facing queries disclose only assigned Trips, and Driver actions remain authorized against the active Assignment. A Dispatcher manually maintains a small reference list of Vehicles registered in MTM; MDSweep does not register or independently verify them. Effective-dated Primary Vehicle designations may exist before any Trip Assignment and supply the default for the Driver's service-day Trips. Ordinary Trips require no Vehicle confirmation. A Dispatcher records only exceptions, individually or across selected Trips. At closure, Trips snapshots the resolved Performed Vehicle VIN for billing. Drivers do not select Vehicles, and broader Vehicle management remains outside the MVP.
 
 Billing-file writers translate billing-ready Trip data into the MTM workbook and retain the generated Billing Batch. The Dispatcher continues the manual MTM Link review and submission workflow.
 
@@ -86,7 +86,7 @@ Application handlers do not receive `ApplicationDbContext`. Aggregate writes use
 
 ## Persistence
 
-PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep uses checked-in EF Core migrations for application schema, with the current single `InitialSchema` migration serving as a reset pre-production baseline rather than an upgrade from the removed chain. Wolverine uses its own persistence schema for its conjoined-tenant registry and message persistence. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Tenant-owned changes and retain append-only history for Manifest receipts, Assignments, actual timestamps, outcomes, corrections, and closure.
+PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep uses checked-in EF Core migrations for application schema, with the current single `InitialSchema` migration serving as a reset pre-production baseline rather than an upgrade from the removed chain. Wolverine uses its own persistence schema for its conjoined-tenant registry and message persistence. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Tenant-owned changes and retain append-only history for Manifest receipts, Assignments, Performed Vehicle snapshots, actual timestamps, outcomes, corrections, and closure.
 
 New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Tenant IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
 
