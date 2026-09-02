@@ -1,17 +1,22 @@
-import { provideHttpClient, withXhr, withXsrfConfiguration } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptors,
+  withXhr,
+  withXsrfConfiguration,
+} from '@angular/common/http';
 import {
   ApplicationConfig,
+  ErrorHandler,
   isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
-import {
-  provideTanStackQuery,
-  QueryClient,
-} from '@tanstack/angular-query-experimental';
+import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { routes } from './app.routes';
+import { applicationErrorInterceptor } from './core/errors/application-error.interceptor';
+import { GlobalErrorHandler } from './core/errors/global-error.handler';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,6 +25,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(
       withXhr(),
+      withInterceptors([applicationErrorInterceptor]),
       withXsrfConfiguration({
         cookieName: 'XSRF-TOKEN',
         headerName: 'X-XSRF-TOKEN',
@@ -37,6 +43,7 @@ export const appConfig: ApplicationConfig = {
         },
       }),
     ),
+    { provide: ErrorHandler, useExisting: GlobalErrorHandler },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

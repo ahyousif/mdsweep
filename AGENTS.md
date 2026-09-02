@@ -53,3 +53,11 @@ This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See
 ## Completion
 
 A feature is complete when its acceptance criteria pass through its public interface, authorization is covered, relevant history is retained, failures are actionable to the user, and the repository's formatting, tests, and build checks pass.
+
+## Angular frontend guidance
+
+- Use inline Tailwind utilities and semantic application tokens in feature templates; do not use literal palette utilities. Spartan primitives belong in `src/Mdsweep.Web/src/app/ui`.
+- Organize frontend code by business feature. Use `dispatcher`, `trip-import`, and `driver` terminology; retain legacy API route names only where they are the server contract.
+- TanStack Query owns server state and typed query keys. Signals and feature stores own client/UI state only; preserve the Driver's durable offline queue separately.
+- Presentational components use signal `input()`/`output()` and do not inject API, Router, or QueryClient dependencies. Keep contextual recovery, especially Driver offline fallback, while generic errors are centralized.
+- Use `@Service()` only for suitable root singleton services using `inject()`; otherwise select `@Injectable()` based on lifetime. Consult the Angular skill/MCP guidance before generating Angular code.

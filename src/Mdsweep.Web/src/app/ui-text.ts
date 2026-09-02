@@ -8,7 +8,8 @@ export const uiText = {
   signIn: 'Sign in',
   signingIn: 'Signing in…',
   uploadTitle: 'Upload MTM Manifest',
-  uploadHelp: 'Choose the CSV or Excel file downloaded from MTM. You can review problems before importing.',
+  uploadHelp:
+    'Choose the CSV or Excel file downloaded from MTM. You can review problems before importing.',
   chooseManifest: 'Choose Manifest',
   needsReview: 'Needs review',
   newTrips: 'new',

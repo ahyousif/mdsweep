@@ -46,10 +46,9 @@ Tests use Angular's unit-test builder with Vitest. The production build emits th
 ```text
 src/app/
   core/                     Authentication session and shared API behavior
-  features/dispatch/        Dispatcher board and management workflows
-  features/manifest-import/ Manifest data access
-  features/driver-work/     Driver UI and durable offline action queue
-  shared/ui/                Minimal generated Spartan primitives
+  features/dispatcher/      Dispatcher day board and Trip Import workflows
+  features/driver/          Driver trips and durable offline action queue
+  ui/                       Minimal generated Spartan primitives
 ```
 
 TanStack Query owns non-persisted server state and invalidation. TanStack Table powers the dense

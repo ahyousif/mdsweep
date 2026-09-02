@@ -1,0 +1,191 @@
+<section class="grid gap-4">
+  <div>
+    <span class="text-primary text-xs font-bold tracking-widest uppercase"
+      >Dispatcher workspace</span
+    >
+    <h2 class="mt-1 text-2xl font-semibold">Manifest Import and Service Day</h2>
+    <p class="text-muted-foreground mt-1">
+      Review MTM changes before importing, then schedule the service day.
+    </p>
+  </div>
+
+  @if (conflictsQuery.data()?.length) {
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h3 hlmCardTitle>Driver actions needing review</h3>
+      </div>
+      <div hlmCardContent class="grid gap-3">
+        @for (
+          conflict of conflictsQuery.data();
+          track conflict.tripNumber + conflict.deviceCapturedAt
+        ) {
+          <div class="border-border border-t pt-3 first:border-0 first:pt-0">
+            <strong>{{ conflict.tripNumber }}</strong>
+            <p class="text-muted-foreground mt-1">{{ conflict.reason }}</p>
+            <small class="text-muted-foreground">Captured {{ conflict.deviceCapturedAt }}</small>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <section hlmCard>
+    <div hlmCardHeader class="sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 hlmCardTitle>{{ text.uploadTitle }}</h3>
+        <p hlmCardDescription>{{ text.uploadHelp }}</p>
+      </div>
+      <label
+        class="relative inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 has-disabled:pointer-events-none has-disabled:opacity-50"
+      >
+        {{ text.chooseManifest }}
+        <input
+          class="absolute size-px opacity-0"
+          type="file"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          (change)="chooseFile($event)"
+          [disabled]="busy()"
+        />
+      </label>
+    </div>
+  </section>
+
+  @if (preview(); as result) {
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h3 hlmCardTitle>Manifest check</h3>
+        <div class="mt-2 flex flex-wrap gap-2" aria-label="Manifest check summary">
+          <span hlmBadge>{{ result.ready }} ready</span>
+          <span hlmBadge variant="secondary">{{ result.warning }} warning</span>
+          <span hlmBadge variant="destructive">{{ result.blocked }} blocked</span>
+        </div>
+        <p hlmCardDescription class="mt-2">
+          {{ countBrokerChanges('New') }} {{ text.newTrips }} ·
+          {{ countBrokerChanges('BrokerChanged') }} {{ text.brokerChanged }} ·
+          {{ countBrokerChanges('Unchanged') }} {{ text.unchanged }} ·
+          {{ countProviderOverrides() }} {{ text.locallyOverridden }} · {{ countInactive() }}
+          {{ text.inactive }}
+        </p>
+      </div>
+      <div hlmCardContent>
+        <div hlmTableContainer>
+          <table hlmTable>
+            <thead hlmTHead>
+              @for (headerGroup of previewTable.getHeaderGroups(); track headerGroup.id) {
+                <tr hlmTr>
+                  @for (header of headerGroup.headers; track header.id) {
+                    <th hlmTh>
+                      <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                    </th>
+                  }
+                </tr>
+              }
+            </thead>
+            <tbody hlmTBody>
+              @for (row of previewTable.getRowModel().rows; track row.id) {
+                <tr hlmTr>
+                  @for (cell of row.getAllCells(); track cell.id) {
+                    <td hlmTd class="max-w-md whitespace-normal">
+                      <ng-container *flexRenderCell="cell; let value">{{ value }}</ng-container>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div hlmCardFooter>
+        <button hlmBtn type="button" (click)="apply()" [disabled]="busy()">
+          @if (applyMutation.isPending()) {
+            <hlm-spinner aria-label="Importing" />
+          }
+          Import {{ result.ready + result.warning }} trips
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (serviceDayQuery.isPending() && serviceDate()) {
+    <div class="text-muted-foreground flex items-center gap-2" role="status">
+      <hlm-spinner /> Loading service day
+    </div>
+  }
+
+  @if (serviceDayQuery.data()?.length) {
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h3 hlmCardTitle>{{ serviceDate() }}</h3>
+        <p hlmCardDescription>Imported trips remain grouped by journey in the underlying data.</p>
+      </div>
+      <div hlmCardContent>
+        <div hlmTableContainer>
+          <table hlmTable>
+            <thead hlmTHead>
+              @for (headerGroup of dispatchTable.getHeaderGroups(); track headerGroup.id) {
+                <tr hlmTr>
+                  @for (header of headerGroup.headers; track header.id) {
+                    <th hlmTh>
+                      <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                    </th>
+                  }
+                </tr>
+              }
+            </thead>
+            <tbody hlmTBody>
+              @for (row of dispatchTable.getRowModel().rows; track row.original.tripNumber) {
+                <tr hlmTr [class.bg-muted]="!row.original.isActive">
+                  @for (cell of row.getAllCells(); track cell.id) {
+                    <td hlmTd>
+                      @if (cell.column.id === 'scheduledPickupTime') {
+                        <div class="flex min-w-48 items-center gap-2">
+                          <input
+                            #scheduledTime
+                            hlmInput
+                            type="time"
+                            class="w-28"
+                            [value]="row.original.scheduledPickupTime?.slice(0, 5) ?? ''"
+                            [disabled]="busy() || !row.original.isActive"
+                            [attr.aria-label]="text.scheduledPickup"
+                          />
+                          <button
+                            hlmBtn
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            (click)="setScheduledPickupTime(row.original, scheduledTime.value)"
+                            [disabled]="busy() || !row.original.isActive || !scheduledTime.value"
+                          >
+                            {{ text.save }}
+                          </button>
+                        </div>
+                      } @else if (cell.column.id === 'memberName') {
+                        <strong>{{ row.original.memberName }}</strong>
+                        <small class="text-muted-foreground block">{{
+                          row.original.tripNumber
+                        }}</small>
+                      } @else if (cell.column.id === 'status') {
+                        <span hlmBadge [variant]="row.original.isActive ? 'default' : 'secondary'">
+                          {{ row.original.isActive ? 'Ready' : row.original.brokerStatus }}
+                        </span>
+                      } @else {
+                        <ng-container *flexRenderCell="cell; let value">{{ value }}</ng-container>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (error()) {
+    <div hlmAlert variant="destructive">
+      <h4 hlmAlertTitle>Action needed</h4>
+      <p hlmAlertDescription>{{ error() }}</p>
+    </div>
+  }
+</section>

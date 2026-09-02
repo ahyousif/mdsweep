@@ -10,13 +10,7 @@ import { uiText } from './ui-text';
 
 @Component({
   selector: 'app-root',
-  imports: [
-    RouterOutlet,
-    HlmButton,
-    HlmSpinner,
-    ...HlmAlertImports,
-    ...HlmCardImports,
-  ],
+  imports: [RouterOutlet, HlmButton, HlmSpinner, ...HlmAlertImports, ...HlmCardImports],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -26,7 +20,7 @@ export class App {
 
   protected readonly text = uiText;
   protected readonly sessionQuery = injectQuery(() => ({
-    queryKey: ['session'],
+    queryKey: ['auth', 'session'],
     queryFn: () => this.auth.establish(),
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
@@ -49,8 +43,6 @@ export class App {
 
   protected sessionError(): string {
     const error = this.sessionQuery.error();
-    return error instanceof Error && !error.message.includes('401')
-      ? error.message
-      : '';
+    return error instanceof Error && !error.message.includes('401') ? error.message : '';
   }
 }
