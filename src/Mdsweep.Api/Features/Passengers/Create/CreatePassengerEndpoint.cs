@@ -8,7 +8,7 @@ namespace Mdsweep.Api.Features.Passengers.Create;
 public sealed class CreatePassengerEndpoint
 {
     [Tags(PassengerConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.PassengersManage)]
     [WolverinePost(PassengerConstants.Route)]
     public static async Task<IResult> Post(CreatePassengerRequest request, IMessageBus bus, CancellationToken ct)
     {

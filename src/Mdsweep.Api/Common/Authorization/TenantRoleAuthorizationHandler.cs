@@ -19,11 +19,13 @@ public sealed class TenantRoleAuthorizationHandler(ITenantAccess tenantAccess)
             return;
         }
 
-        var hasRole = await tenantAccess.HasRoleAsync(userSubject, tenantId, requirement.Role, CancellationToken.None);
-
-        if (hasRole)
+        foreach (var role in requirement.Roles)
         {
-            context.Succeed(requirement);
+            if (await tenantAccess.HasRoleAsync(userSubject, tenantId, role, CancellationToken.None))
+            {
+                context.Succeed(requirement);
+                return;
+            }
         }
     }
 }

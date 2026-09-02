@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Service, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 export type DriverEvent =
   | 'ArrivedAtPickup'
@@ -12,6 +12,7 @@ export type QueuedDriverAction = {
   id: string;
   tripNumber: string;
   event: {
+    clientEventId: string;
     type: DriverEvent;
     deviceCapturedAt: string;
     tripLogSigned: boolean | null;
@@ -21,8 +22,8 @@ export type QueuedDriverAction = {
   state: 'WaitingToSync' | 'NeedsAttention';
 };
 
-@Service()
-export class DriverActionQueueStore {
+@Injectable({ providedIn: 'root' })
+export class OfflineActionQueue {
   private readonly key = 'mdsweep.driver-actions';
   readonly actions = signal<QueuedDriverAction[]>(this.read());
 
@@ -44,15 +45,14 @@ export class DriverActionQueueStore {
     if (!navigator.onLine) return;
     for (const action of this.actions().filter((item) => item.state === 'WaitingToSync')) {
       this.http
-        .post(`/api/driver-work/events/sync`, {
-          actionId: action.id,
+        .post(`/api/trips/progress-events/sync`, {
           tripNumber: action.tripNumber,
           event: action.event,
         })
         .subscribe({
           next: () => this.update(this.actions().filter((item) => item.id !== action.id)),
           error: (response) => {
-            if (response.status >= 400 && response.status < 500 && response.status !== 401) {
+            if (response.status >= 400 && response.status < 500) {
               this.update(
                 this.actions().map((item) =>
                   item.id === action.id ? { ...item, state: 'NeedsAttention' } : item,

@@ -9,7 +9,7 @@ namespace Mdsweep.Api.Features.TripImports.Preview;
 public sealed class PreviewTripImportEndpoint
 {
     [Tags(TripImportConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.TripsImport)]
     [WolverinePost(TripImportConstants.Route)]
     public static async Task<IResult> Post(IFormFile file, IMessageBus bus, CancellationToken ct)
     {

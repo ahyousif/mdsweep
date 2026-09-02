@@ -5,16 +5,16 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { injectQuery } from '@tanstack/angular-query-experimental';
-import { AuthSessionService } from './core/auth/auth-session.service';
-import { uiText } from './ui-text';
+import { AuthSessionService } from '../core/auth/auth-session.service';
+import { uiText } from '../ui-text';
 
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, HlmButton, HlmSpinner, ...HlmAlertImports, ...HlmCardImports],
-  templateUrl: './app.html',
+  templateUrl: './app-shell.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class App {
+export class AppShell {
   private readonly auth = inject(AuthSessionService);
   private readonly router = inject(Router);
 
@@ -30,7 +30,9 @@ export class App {
     effect(() => {
       const context = this.sessionQuery.data();
       if (!context) return;
-      const destination = context.role === 'Driver' ? '/driver' : '/dispatch';
+      const destination = context.roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
+        ? '/trips'
+        : '/trips/mine';
       if (this.router.url !== destination) {
         void this.router.navigateByUrl(destination);
       }

@@ -61,12 +61,43 @@ public static class ApiExtensions
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy(
-                AuthorizationPolicies.Dispatcher,
+                AuthorizationPolicies.TripsViewAll,
                 policy =>
                 {
                     policy.RequireAuthenticatedUser();
-                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Dispatcher));
+                    policy.AddRequirements(
+                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
+                    );
                 }
+            );
+            options.AddPolicy(
+                AuthorizationPolicies.TripsManage,
+                policy =>
+                    policy.AddRequirements(
+                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
+                    )
+            );
+            options.AddPolicy(
+                AuthorizationPolicies.TripsImport,
+                policy =>
+                    policy.AddRequirements(
+                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
+                    )
+            );
+            options.AddPolicy(
+                AuthorizationPolicies.TripsViewAssigned,
+                policy => policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Driver))
+            );
+            options.AddPolicy(
+                AuthorizationPolicies.TripsRecordProgress,
+                policy => policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Driver))
+            );
+            options.AddPolicy(
+                AuthorizationPolicies.PassengersManage,
+                policy =>
+                    policy.AddRequirements(
+                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
+                    )
             );
         });
 

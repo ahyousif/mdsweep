@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-export type DispatchTrip = {
+export type AllTripsTrip = {
   tripNumber: string;
   journeyKey: string;
   memberName: string;
@@ -26,11 +26,11 @@ export type DriverSyncConflict = {
 };
 
 @Injectable({ providedIn: 'root' })
-export class DispatchApi {
+export class AllTripsApi {
   private readonly http = inject(HttpClient);
 
-  getServiceDay(serviceDate: string): Promise<DispatchTrip[]> {
-    return firstValueFrom(this.http.get<DispatchTrip[]>(`/api/service-days/${serviceDate}/trips`));
+  getServiceDay(serviceDate: string): Promise<AllTripsTrip[]> {
+    return firstValueFrom(this.http.get<AllTripsTrip[]>(`/api/service-days/${serviceDate}/trips`));
   }
 
   getConflicts(): Promise<DriverSyncConflict[]> {

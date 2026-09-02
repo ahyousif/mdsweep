@@ -8,7 +8,7 @@ namespace Mdsweep.Api.Features.TripImports.Get;
 public sealed class GetTripImportEndpoint
 {
     [Tags(TripImportConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.TripsImport)]
     [WolverineGet(TripImportConstants.IdRoute)]
     public static async Task<IResult> Get(Guid id, IMessageBus bus, CancellationToken ct)
     {

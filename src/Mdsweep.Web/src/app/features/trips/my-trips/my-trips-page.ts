@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmBadge } from '@spartan-ng/helm/badge';
@@ -17,19 +16,14 @@ import {
 import { httpErrorMessage } from '../../../core/api/http-error-message';
 import { ApplicationError } from '../../../core/errors/application-error';
 import { ProviderContext } from '../../../core/auth/auth-session.service';
-import { DriverActionQueueStore, DriverEvent } from '../offline/driver-action-queue.store';
-import { DriverTrip, DriverTripsApi, RecordDriverEvent } from './driver-trips.api';
-import { driverQueryKeys, driverTripsQueryOptions } from './driver-trips.queries';
+import { OfflineActionQueue, DriverEvent } from './offline-action-queue';
+import { MyTrip, MyTripsApi, RecordDriverEvent } from './my-trips.api';
+import { tripQueryKeys } from '../all-trips/all-trips.queries';
+import { myTripsQueryOptions } from './my-trips.queries';
 
-type RecordVariables = { trip: DriverTrip; event: RecordDriverEvent };
-type CorrectionVariables = {
-  tripNumber: string;
-  deviceCapturedAt: string;
-  reason: string;
-};
-
+type RecordVariables = { trip: MyTrip; event: RecordDriverEvent };
 @Component({
-  selector: 'app-driver-trips-page',
+  selector: 'app-my-trips-page',
   imports: [
     HlmBadge,
     HlmButton,
@@ -42,27 +36,28 @@ type CorrectionVariables = {
     ...HlmAlertImports,
     ...HlmCardImports,
   ],
-  templateUrl: './driver-trips-page.html',
+  templateUrl: './my-trips-page.html',
 })
-export class DriverTripsPage {
-  private readonly api = inject(DriverTripsApi);
+export class MyTripsPage {
+  private readonly api = inject(MyTripsApi);
   private readonly queryClient = injectQueryClient();
-  private readonly driverActionQueue = inject(DriverActionQueueStore);
+  private readonly driverActionQueue = inject(OfflineActionQueue);
 
   protected readonly error = signal('');
+  protected readonly serviceDate = new Date().toISOString().slice(0, 10);
   protected readonly queuedDriverActions = this.driverActionQueue.actions;
 
   protected readonly tripsQuery = injectQuery(() =>
-    driverTripsQueryOptions(this.api, this.storageKey()),
+    myTripsQueryOptions(this.api, this.serviceDate, this.storageKey()),
   );
 
   protected readonly recordMutation = injectMutation(() => ({
     mutationFn: ({ trip, event }: RecordVariables) => this.api.recordEvent(trip.tripNumber, event),
-    onSuccess: () => this.queryClient.invalidateQueries({ queryKey: driverQueryKeys.trips() }),
+    onSuccess: () => this.queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
     onError: (error, { trip, event }) => {
       if (error instanceof ApplicationError && error.status === 0) {
         this.driverActionQueue.enqueue({ tripNumber: trip.tripNumber, event });
-        this.queryClient.setQueryData<DriverTrip[]>(driverQueryKeys.trips(), (trips = []) =>
+        this.queryClient.setQueryData<MyTrip[]>(tripQueryKeys.assignedToMe(new Date().toISOString().slice(0, 10)), (trips = []) =>
           trips.map((current) =>
             current.tripNumber === trip.tripNumber
               ? {
@@ -81,27 +76,12 @@ export class DriverTripsPage {
     },
   }));
 
-  protected readonly correctionMutation = injectMutation(() => ({
-    mutationFn: ({ tripNumber, deviceCapturedAt, reason }: CorrectionVariables) =>
-      this.api.correctLatestEvent(tripNumber, deviceCapturedAt, reason),
-    onSuccess: () => this.error.set('Correction saved. The original timestamp remains in history.'),
-    onError: (error) =>
-      this.error.set(
-        httpErrorMessage(
-          error,
-          error instanceof Error
-            ? error.message
-            : 'This event can no longer be corrected by a Driver.',
-        ),
-      ),
-  }));
-
   protected navigationUrl(address: string, city: string): string {
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${address}, ${city}`)}`;
   }
 
   protected recordDriverEvent(
-    trip: DriverTrip,
+    trip: MyTrip,
     type: DriverEvent,
     outcomeReason?: string | null,
     note?: string,
@@ -110,6 +90,7 @@ export class DriverTripsPage {
     this.recordMutation.mutate({
       trip,
       event: {
+        clientEventId: crypto.randomUUID(),
         type,
         deviceCapturedAt: new Date().toISOString(),
         tripLogSigned: type === 'DroppedOff' ? !!trip.tripLogSigned : null,
@@ -120,27 +101,11 @@ export class DriverTripsPage {
   }
 
   protected setTripLogSigned(tripNumber: string, signed: boolean): void {
-    this.queryClient.setQueryData<DriverTrip[]>(driverQueryKeys.trips(), (trips = []) =>
+    this.queryClient.setQueryData<MyTrip[]>(tripQueryKeys.assignedToMe(new Date().toISOString().slice(0, 10)), (trips = []) =>
       trips.map((trip) =>
         trip.tripNumber === tripNumber ? { ...trip, tripLogSigned: signed } : trip,
       ),
     );
-  }
-
-  protected correctLatestEvent(trip: DriverTrip): void {
-    const reason = window.prompt('Why is this timestamp being corrected?');
-    if (!reason?.trim()) return;
-    const capturedAt = window.prompt('Correct device time (ISO 8601)', new Date().toISOString());
-    if (!capturedAt || Number.isNaN(Date.parse(capturedAt))) {
-      this.error.set('Enter a valid timestamp to correct the event.');
-      return;
-    }
-
-    this.correctionMutation.mutate({
-      tripNumber: trip.tripNumber,
-      deviceCapturedAt: capturedAt,
-      reason: reason.trim(),
-    });
   }
 
   private storageKey(): string {
