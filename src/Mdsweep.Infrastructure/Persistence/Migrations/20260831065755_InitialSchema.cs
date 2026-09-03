@@ -12,13 +12,15 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase().Annotation("Npgsql:PostgresExtension:citext", ",,");
+
             migrationBuilder.CreateTable(
                 name: "passengers",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<string>(type: "text", nullable: false),
-                    broker_member_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    broker_member_id = table.Column<string>(type: "citext", maxLength: 100, nullable: true),
                     first_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
                 },
@@ -77,7 +79,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
                     passenger_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    broker_trip_number = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    broker_trip_number = table.Column<string>(type: "citext", maxLength: 100, nullable: false),
                     service_date = table.Column<DateOnly>(type: "date", nullable: false),
                     appointment_time = table.Column<LocalTime>(type: "time", nullable: true),
                     pickup_address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -166,9 +168,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_tenant_id_user_id",
+                name: "IX_tenant_memberships_tenant_id_user_id_role",
                 table: "tenant_memberships",
-                columns: new[] { "tenant_id", "user_id" },
+                columns: new[] { "tenant_id", "user_id", "role" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

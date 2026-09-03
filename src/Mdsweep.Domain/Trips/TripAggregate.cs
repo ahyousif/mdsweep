@@ -28,7 +28,7 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         Guard.Against.NullOrWhiteSpace(brokerTripNumber, nameof(brokerTripNumber));
         Guard.Against.Null(brokerData, nameof(brokerData));
 
-        var trip = new TripAggregate(Guid.CreateVersion7(), passengerId, brokerTripNumber, brokerData);
+        var trip = new TripAggregate(Guid.CreateVersion7(), passengerId, brokerTripNumber.ToUpperInvariant(), brokerData);
 
         trip.AddDomainEvent(new TripCreatedDomainEvent(trip.Id, trip.PassengerId, trip.BrokerTripNumber));
 

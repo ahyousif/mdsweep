@@ -51,6 +51,10 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
                 || item.FirstName is null
                 || item.LastName is null
                 || item.ServiceDate is null
+                || string.IsNullOrWhiteSpace(item.PickupAddress)
+                || string.IsNullOrWhiteSpace(item.PickupCity)
+                || string.IsNullOrWhiteSpace(item.DropoffAddress)
+                || string.IsNullOrWhiteSpace(item.DropoffCity)
             )
                 return Result.Invalid(
                     new ValidationError
@@ -89,10 +93,10 @@ public sealed class ApplyTripImportHandler(ITripImportLookup lookup, IRepository
             var brokerFacts = new BrokerTripData(
                 item.ServiceDate!.Value,
                 item.AppointmentTime,
-                item.PickupAddress ?? string.Empty,
-                item.PickupCity ?? string.Empty,
-                item.DropoffAddress ?? string.Empty,
-                item.DropoffCity ?? string.Empty,
+                item.PickupAddress,
+                item.PickupCity,
+                item.DropoffAddress,
+                item.DropoffCity,
                 item.BrokerStatus,
                 item.IsWillCall
             );

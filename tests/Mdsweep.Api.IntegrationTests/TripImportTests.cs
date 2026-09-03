@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
+using NodaTime;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -84,6 +85,96 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             Csv("09/15/2026,\"unterminated,100 St,09:15,TRIP-104,MED-104,VALID,Test,Passenger,Phoenix,Mesa,N")
         );
         Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("0930", 9, 30)]
+    [InlineData("1430", 14, 30)]
+    public async Task Csv_compact_mtm_appointment_times_are_parsed(string sourceTime, int hour, int minute)
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var previewResponse = await Upload(
+            client,
+            Csv($"09/15/2026,200 Way,100 St,{sourceTime},TRIP-TIME-{sourceTime},MED-TIME-{sourceTime},VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
+        previewResponse.EnsureSuccessStatusCode();
+        var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
+        Assert.NotNull(preview);
+        Assert.Equal("Ready", preview.Items[0].Disposition);
+
+        using var applyResponse = await client.PostAsync($"/api/trip-imports/{preview.Id}/apply", null);
+        applyResponse.EnsureSuccessStatusCode();
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var trip = await db.Trips.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(new LocalTime(hour, minute), trip.BrokerData.AppointmentTime);
+    }
+
+    [Fact]
+    public async Task Missing_route_address_is_blocked_in_preview_and_cannot_create_an_unroutable_trip()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var previewResponse = await Upload(
+            client,
+            Csv("09/15/2026,200 Way,,09:15,TRIP-ROUTE,MED-ROUTE,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
+        previewResponse.EnsureSuccessStatusCode();
+        var preview = await previewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
+        Assert.NotNull(preview);
+        Assert.Equal("Blocked", preview.Items[0].Disposition);
+        Assert.Contains("Pickup Address is required for routing.", preview.Items[0].Messages);
+
+        using var applyResponse = await client.PostAsync($"/api/trip-imports/{preview.Id}/apply", null);
+        applyResponse.EnsureSuccessStatusCode();
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Empty(await db.Trips.IgnoreQueryFilters().ToListAsync());
+    }
+
+    [Fact]
+    public async Task Import_matches_broker_trip_and_member_identifiers_regardless_of_casing()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var firstPreviewResponse = await Upload(
+            client,
+            Csv("09/15/2026,200 Way,100 St,09:15,TRIP-CASE,MED-CASE,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
+        var first = await firstPreviewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
+        Assert.NotNull(first);
+        using var firstApply = await client.PostAsync($"/api/trip-imports/{first.Id}/apply", null);
+        firstApply.EnsureSuccessStatusCode();
+
+        using var secondPreviewResponse = await Upload(
+            client,
+            Csv("09/16/2026,201 Way,101 St,10:15,trip-case,med-case,VALID,Test,Passenger,Phoenix,Mesa,N")
+        );
+        var second = await secondPreviewResponse.Content.ReadFromJsonAsync<TripImportResponse>();
+        Assert.NotNull(second);
+        Assert.Equal("Ready", second.Items[0].Disposition);
+        using var secondApply = await client.PostAsync($"/api/trip-imports/{second.Id}/apply", null);
+        secondApply.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Single(await db.Trips.IgnoreQueryFilters().ToListAsync());
+        Assert.Single(await db.Passengers.IgnoreQueryFilters().ToListAsync());
+    }
+
+    [Fact]
+    public async Task Tenant_memberships_allow_distinct_roles_but_reject_duplicates()
+    {
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var dispatcherMembership = await db.TenantMemberships.SingleAsync();
+        db.TenantMemberships.Add(TenantMembership.Create(dispatcherMembership.TenantId, dispatcherMembership.UserId, "Driver"));
+        await db.SaveChangesAsync();
+        Assert.Equal(2, await db.TenantMemberships.CountAsync());
+
+        db.TenantMemberships.Add(TenantMembership.Create(dispatcherMembership.TenantId, dispatcherMembership.UserId, "Driver"));
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
 
     [Fact]

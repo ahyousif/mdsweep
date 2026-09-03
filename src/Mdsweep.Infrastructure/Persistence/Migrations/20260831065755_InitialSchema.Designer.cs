@@ -23,7 +23,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "10.0.4")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63)
+                .HasAnnotation("Npgsql:PostgresExtension:citext", ",,");
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
@@ -35,7 +36,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("BrokerMemberId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("citext");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -107,7 +108,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("TenantId", "UserId")
+                    b.HasIndex("TenantId", "UserId", "Role")
                         .IsUnique();
 
                     b.ToTable("tenant_memberships", (string)null);
@@ -161,7 +162,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.Property<string>("BrokerTripNumber")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("citext");
 
                     b.Property<Guid>("PassengerId")
                         .HasColumnType("uuid");

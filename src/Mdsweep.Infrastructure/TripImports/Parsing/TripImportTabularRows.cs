@@ -6,7 +6,7 @@ namespace Mdsweep.Infrastructure.TripImports.Parsing;
 internal static class TripImportTabularRows
 {
     private static readonly string[] AppointmentDateFormats = ["M/d/yyyy", "MM/dd/yyyy", "M/d/yy", "yyyy-MM-dd"];
-    private static readonly string[] AppointmentTimeFormats = ["H:mm", "HH:mm", "H:mm:ss", "HH:mm:ss", "h:mm tt", "hh:mm tt", "h:mm:ss tt", "hh:mm:ss tt"];
+    private static readonly string[] AppointmentTimeFormats = ["HHmm", "H:mm", "HH:mm", "H:mm:ss", "HH:mm:ss", "h:mm tt", "hh:mm tt", "h:mm:ss tt", "hh:mm:ss tt"];
     private static readonly string[] RequiredHeaders =
     [
         "Trip Number", "Medicaid Number", "Appointment Date", "Member's First Name", "Member's Last Name"

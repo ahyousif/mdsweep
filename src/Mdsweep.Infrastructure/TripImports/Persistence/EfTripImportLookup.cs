@@ -15,9 +15,17 @@ public sealed class EfTripImportLookup(ApplicationDbContext db) : ITripImportLoo
 
     public async Task<IReadOnlyList<PassengerAggregate>> FindPassengersAsync(
         IReadOnlyCollection<string> brokerMemberIds, CancellationToken ct
-    ) => await db.Passengers.Where(passenger => brokerMemberIds.Contains(passenger.BrokerMemberId!)).ToListAsync(ct);
+    )
+    {
+        var normalizedIds = brokerMemberIds.Select(id => id.ToUpperInvariant()).ToArray();
+        return await db.Passengers.Where(passenger => normalizedIds.Contains(passenger.BrokerMemberId!)).ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<TripAggregate>> FindTripsAsync(
         IReadOnlyCollection<string> brokerTripNumbers, CancellationToken ct
-    ) => await db.Trips.Where(trip => brokerTripNumbers.Contains(trip.BrokerTripNumber)).ToListAsync(ct);
+    )
+    {
+        var normalizedNumbers = brokerTripNumbers.Select(number => number.ToUpperInvariant()).ToArray();
+        return await db.Trips.Where(trip => normalizedNumbers.Contains(trip.BrokerTripNumber)).ToListAsync(ct);
+    }
 }

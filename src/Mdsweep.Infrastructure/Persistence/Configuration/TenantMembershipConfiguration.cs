@@ -13,7 +13,7 @@ public sealed class TenantMembershipConfiguration : IEntityTypeConfiguration<Ten
         builder.Property(membership => membership.TenantId).HasColumnName("tenant_id").HasMaxLength(14);
         builder.Property(membership => membership.UserId).HasColumnName("user_id");
         builder.Property(membership => membership.Role).HasColumnName("role").HasMaxLength(40);
-        builder.HasIndex(membership => new { membership.TenantId, membership.UserId }).IsUnique();
+        builder.HasIndex(membership => new { membership.TenantId, membership.UserId, membership.Role }).IsUnique();
         builder
             .HasOne<TenantAggregate>()
             .WithMany()

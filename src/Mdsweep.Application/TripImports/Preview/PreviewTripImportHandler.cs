@@ -124,6 +124,14 @@ public sealed class PreviewTripImportHandler(
             messages.Add("Member's First Name is required.");
         if (string.IsNullOrWhiteSpace(item.LastName))
             messages.Add("Member's Last Name is required.");
+        if (string.IsNullOrWhiteSpace(item.PickupAddress))
+            messages.Add("Pickup Address is required for routing.");
+        if (string.IsNullOrWhiteSpace(item.PickupCity))
+            messages.Add("Pickup City is required for routing.");
+        if (string.IsNullOrWhiteSpace(item.DropoffAddress))
+            messages.Add("Delivery Address is required for routing.");
+        if (string.IsNullOrWhiteSpace(item.DropoffCity))
+            messages.Add("Delivery City is required for routing.");
         if (hasDuplicateTripNumber)
             messages.Add("Trip Number occurs more than once in this import.");
         if (belongsToDifferentPassenger)
