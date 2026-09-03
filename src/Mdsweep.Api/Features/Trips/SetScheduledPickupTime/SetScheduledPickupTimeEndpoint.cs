@@ -8,7 +8,7 @@ namespace Mdsweep.Api.Features.Trips.SetScheduledPickupTime;
 public static class SetScheduledPickupTimeEndpoint
 {
     [Tags(TripConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.TripsManage)]
     [WolverinePut(TripConstants.ScheduledPickupTimeRoute)]
     public static async Task<IResult> Put(
         Guid id,

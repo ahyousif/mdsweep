@@ -1,7 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { ApplicationError } from '../errors/application-error';
 
 export function httpErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
-    ? error.error.message
-    : fallback;
+  return error instanceof ApplicationError ? error.message : fallback;
 }

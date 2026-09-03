@@ -7,5 +7,9 @@ public sealed record TripModel(
     LocalTime? AppointmentTime,
     string? BrokerStatus,
     bool IsWillCall,
-    LocalTime? ScheduledPickupTime
+    LocalTime? ScheduledPickupTime,
+    string PickupAddress,
+    string PickupCity,
+    string DropoffAddress,
+    string DropoffCity
 );

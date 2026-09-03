@@ -1,6 +1,6 @@
 # MDSweep Web
 
-This project is the Angular 22 PWA for MDSweep's Dispatcher and Driver workflows. The preferred
+This project is the Angular 22 PWA for MDSweep's Trips workflows. The preferred
 development entry point is the repository's Aspire AppHost, which starts this project after the
 API, PostgreSQL, and Keycloak are ready. See the [root README](../../README.md) for complete setup,
 credentials, and troubleshooting.
@@ -46,14 +46,15 @@ Tests use Angular's unit-test builder with Vitest. The production build emits th
 ```text
 src/app/
   core/                     Authentication session and shared API behavior
-  features/dispatch/        Dispatcher board and management workflows
-  features/manifest-import/ Manifest data access
-  features/driver-work/     Driver UI and durable offline action queue
-  shared/ui/                Minimal generated Spartan primitives
+  shell/                    Authenticated application shell
+  features/trips/           All Trips and Trip Import workflows
+  ui/                       Minimal generated Spartan primitives
 ```
 
-TanStack Query owns non-persisted server state and invalidation. TanStack Table powers the dense
-Manifest and service-day tables. The Driver action queue remains a separate durable browser
+Angular code is organized by product capability. Administrator, Dispatcher, and Driver roles
+authorize routes and actions; they do not define top-level domain feature folders. Trips owns All
+Trips and Trip Import experiences. My Trips is a target Driver workflow and is not implemented in this build. TanStack Query owns non-persisted server state and
+invalidation. TanStack Table powers the dense Trip table. The Driver action queue remains a separate durable browser
 workflow and must not be replaced by or persisted through the general query cache.
 
 Authentication remains server-owned: Angular calls same-origin endpoints with the ASP.NET Core

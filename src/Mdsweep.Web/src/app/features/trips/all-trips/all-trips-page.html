@@ -1,0 +1,117 @@
+<section class="grid gap-4">
+  <div>
+    <span class="text-primary text-xs font-bold tracking-widest uppercase">Trips</span>
+    <h2 class="mt-1 text-2xl font-semibold">All trips</h2>
+    <p class="text-muted-foreground mt-1">Review and schedule trips for a selected service date.</p>
+  </div>
+
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <label class="grid gap-1" for="service-date-filter">
+      <span class="text-sm font-medium">Service date filter</span>
+      <input
+        hlmInput
+        id="service-date-filter"
+        type="date"
+        [value]="serviceDateFilter()"
+        (input)="setServiceDateFilter($any($event.target).value)"
+      />
+    </label>
+    <a hlmBtn routerLink="/trips/import">Import trips</a>
+  </div>
+
+  @if (!serviceDateFilter()) {
+    <section hlmCard>
+      <div hlmCardContent class="pt-6">Select a service date to view its trips.</div>
+    </section>
+  }
+
+  @if (tripsQuery.isPending() && serviceDateFilter()) {
+    <div class="text-muted-foreground flex items-center gap-2" role="status">
+      <hlm-spinner /> Loading trips
+    </div>
+  }
+
+  @if (tripsQuery.isError()) {
+    <div hlmAlert variant="destructive">
+      <h3 hlmAlertTitle>Trips could not be loaded</h3>
+      <p hlmAlertDescription>{{ tripsQueryError() }}</p>
+    </div>
+  }
+
+  @if (tripsQuery.isSuccess() && !tripsQuery.data()?.items?.length) {
+    <section hlmCard>
+      <div hlmCardContent class="pt-6">No trips scheduled for {{ serviceDateFilter() }}.</div>
+    </section>
+  }
+
+  @if (tripsQuery.data()?.items?.length) {
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h3 hlmCardTitle>{{ serviceDateFilter() }}</h3>
+        <p hlmCardDescription>
+          {{ tripsQuery.data()?.totalCount }} trips · page {{ tripsQuery.data()?.page }} of
+          {{ tripsQuery.data()?.totalPages }}
+        </p>
+      </div>
+      <div hlmCardContent>
+        <div hlmTableContainer>
+          <table hlmTable>
+            <thead hlmTHead>
+              @for (headerGroup of dispatchTable.getHeaderGroups(); track headerGroup.id) {
+                <tr hlmTr>
+                  @for (header of headerGroup.headers; track header.id) {
+                    <th hlmTh>
+                      <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                    </th>
+                  }
+                </tr>
+              }
+            </thead>
+            <tbody hlmTBody>
+              @for (row of dispatchTable.getRowModel().rows; track row.original.id) {
+                <tr hlmTr>
+                  @for (cell of row.getAllCells(); track cell.id) {
+                    <td hlmTd>
+                      @if (cell.column.id === 'scheduledPickupTime') {
+                        <div class="flex min-w-48 items-center gap-2">
+                          <input
+                            #scheduledTime
+                            hlmInput
+                            type="time"
+                            class="w-28"
+                            [value]="row.original.scheduledPickupTime?.slice(0, 5) ?? ''"
+                            [disabled]="busy()"
+                            [attr.aria-label]="text.scheduledPickup"
+                          />
+                          <button
+                            hlmBtn
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            (click)="setScheduledPickupTime(row.original, scheduledTime.value)"
+                            [disabled]="busy() || !scheduledTime.value"
+                          >
+                            {{ text.save }}
+                          </button>
+                        </div>
+                      } @else {
+                        <ng-container *flexRenderCell="cell; let value">{{ value }}</ng-container>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (scheduleError()) {
+    <div hlmAlert variant="destructive">
+      <h4 hlmAlertTitle>Action needed</h4>
+      <p hlmAlertDescription>{{ scheduleError() }}</p>
+    </div>
+  }
+</section>

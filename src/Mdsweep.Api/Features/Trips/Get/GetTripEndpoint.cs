@@ -8,7 +8,7 @@ namespace Mdsweep.Api.Features.Trips.Get;
 public static class GetTripEndpoint
 {
     [Tags(TripConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.TripsViewAll)]
     [WolverineGet(TripConstants.IdRoute)]
     public static async Task<IResult> Get(Guid id, IMessageBus bus, CancellationToken ct)
     {

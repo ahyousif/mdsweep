@@ -46,10 +46,13 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 32. As a Dispatcher, I want Driver actions, corrections, Manifest receipts, and Assignments retained, so that Operational History lasts beyond one week.
 33. As a Dispatcher, I want terminal Trips reviewed and explicitly closed, so that unresolved operational information is not exported accidentally.
 34. As a Dispatcher, I want Closed Trips validated for billing, so that missing required data is found before MTM upload.
-35. As a Dispatcher, I want one MTM-compatible billing file, so that I do not open and enter every Trip individually.
-36. As a Dispatcher, I want to download a daily operational spreadsheet when needed, so that operations have a simple fallback.
-37. As the Provider, I want the normal workflow to remain usable in English initially, so that language support does not delay validation.
-38. As the product team, we want to measure hands-on processing time before and after adoption, so that claimed savings are honest and Provider-specific.
+35. As a Dispatcher, I want to maintain the Tenant's list of Vehicles registered in MTM, so that billing uses known VINs without retyping them for every Trip.
+36. As a Dispatcher, I want to designate a Driver's Primary Vehicle before assigning Trips, so that their usual Vehicle can be reused across Trips on a service date.
+37. As a Dispatcher, I want each billable Trip to use the Driver's Primary Vehicle automatically unless I record an exception, so that billing reflects performed work without repetitive confirmation.
+38. As a Dispatcher, I want one MTM-compatible billing file, so that I do not open and enter every Trip individually.
+39. As a Dispatcher, I want to download a daily operational spreadsheet when needed, so that operations have a simple fallback.
+40. As the Provider, I want the normal workflow to remain usable in English initially, so that language support does not delay validation.
+41. As the product team, we want to measure hands-on processing time before and after adoption, so that claimed savings are honest and Provider-specific.
 
 ## Implementation Decisions
 
@@ -69,11 +72,17 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 - Timestamp corrections preserve the original time and require a reason. Who may correct a timestamp and for how long remain deliberately unresolved.
 - A Trip may be closed after its terminal outcome and required operational information have been reviewed and accepted. Closure and billing readiness remain separate decisions.
 - Users receive Driver and Dispatcher roles through Provider Membership; a User may hold both roles. A Driver Profile contains the operational information needed for Assignment, while Dispatcher remains a role.
-- Vehicle management and Vehicle Assignment are deferred.
+- Maintain a minimal Tenant-owned reference list of Vehicles that a Dispatcher confirms are registered in MTM. Each Vehicle has a display label, VIN, and active state; registering the Vehicle with MTM remains an external process.
+- A Dispatcher may designate one active Vehicle as a Driver Profile's Primary Vehicle before the Driver has Trip Assignments. Primary Vehicle changes are effective-dated and retained so the correct default can be resolved for each Trip's service date.
+- A Trip uses the assigned Driver's Primary Vehicle for its service date as the Performed Vehicle unless a Dispatcher records an exception. Ordinary Trips require no per-Trip Vehicle confirmation.
+- The Dispatcher can override the Vehicle for one Trip or apply an exception across selected Trips. A missing Driver, missing Primary Vehicle, or inactive Vehicle places the Trip in Needs Review instead of guessing.
+- When a Trip is closed, preserve the resolved Performed Vehicle VIN as historical Trip data so later Vehicle edits, deactivation, or Primary Vehicle changes cannot rewrite prior work or claims. Drivers do not select Vehicles.
+- MDSweep records the Tenant's confirmation but does not independently verify current MTM registration or Driver/Vehicle eligibility. MTM Link remains authoritative during manual upload.
 - ASP.NET Core endpoints enforce that Drivers access only their assignments and Dispatchers access Provider-wide operations.
 - EF Core accesses PostgreSQL directly inside the owning feature; there is no generic repository layer.
 - MTM input and billing output remain user-initiated file workflows.
-- Billing Export remains behaviorally blocked until the authoritative MTM bulk-upload template and training establish required fields, evidence, validation, duplicate handling, and rejection behavior.
+- Billing Export uses the supplied MTM bulk-upload template, but production compatibility remains gated on the bounded synthetic portal trial. Client confirmation is still required for which Trip outcomes require a VIN and whether outbound and return Trips may use different Vehicles.
+- MDSweep does not store or manage signature documents in the MVP. The Dispatcher continues uploading the generic signature document accepted by the current MTM Link workflow, and exported claim rows use the accepted signed-log indication.
 - Wolverine PostgreSQL persistence/transport, durable queues, a separate automation worker, and MTM-specific Playwright automation are deferred until an authorized durable automation workflow exists. In-process Wolverine HTTP dispatch and EF Core unit-of-work handling do not change this deferral.
 - Development, tests, issues, logs, and screenshots use synthetic Passenger data.
 - Production hosting targets a small BAA-covered Linux deployment with encrypted off-machine backups and a tested restore, under an initial infrastructure target of $75 per month.
@@ -100,12 +109,12 @@ The repository has no existing application tests. Synthetic Manifest fixtures an
 - Route optimization
 - App Store or Play Store distribution
 - Live GPS tracking unless later shown to be required for the billing file
-- Signatures or extra Driver events unless the MTM bulk-upload contract requires them
+- Signature-document storage or management; the existing generic signature remains a manual MTM Link upload
 - Arabic or additional UI translations
 - Other brokers
 - Payment reconciliation
 - Payroll, fleet maintenance, credential management, or general NEMT management
-- Vehicle management and Vehicle Assignment
+- Per-Trip vehicle optimization; registering Vehicles with MTM from MDSweep; and broader Vehicle management such as maintenance, inspections, insurance, credentials, capacity planning, and location tracking
 - Multiple Providers and tenant administration
 - Managed PostgreSQL migration
 - Broad Playwright coverage, visual snapshots, and coverage-percentage targets
@@ -115,6 +124,6 @@ The repository has no existing application tests. Synthetic Manifest fixtures an
 Two inputs remain intentionally pinned rather than guessed:
 
 1. Observe 5–10 representative scheduling decisions to derive the initial pickup-time policy and worked test cases.
-2. Review MTM's bulk-upload training and template before specifying or implementing Billing Export.
+2. Confirm the remaining billing questions with the client and through a bounded synthetic MTM Link trial before implementing production Billing Export validation.
 
 The first usable tracer bullet is: upload a synthetic MTM Manifest, preview its validation summary, accept it, and display the resulting Passengers and Trips without spreadsheet repair.

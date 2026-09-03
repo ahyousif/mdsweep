@@ -8,7 +8,7 @@ namespace Mdsweep.Api.Features.Trips.List;
 public static class ListTripsEndpoint
 {
     [Tags(TripConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.TripsViewAll)]
     [WolverineGet(TripConstants.Route)]
     public static async Task<IResult> Get(
         [FromQuery] ListTripsRequest request,

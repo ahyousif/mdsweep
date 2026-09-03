@@ -1,30 +1,51 @@
-import { provideHttpClient, withXhr, withXsrfConfiguration } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptors,
+  withXhr,
+  withXsrfConfiguration,
+} from '@angular/common/http';
 import {
   ApplicationConfig,
+  ErrorHandler,
   isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideServiceWorker } from '@angular/service-worker';
 import {
-  provideTanStackQuery,
-  QueryClient,
-} from '@tanstack/angular-query-experimental';
+  provideRouter,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+  withViewTransitions,
+} from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
+import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { routes } from './app.routes';
+import { API_BASE_PATH } from '@app/core/api/api-client';
+import { applicationErrorInterceptor } from './core/errors/application-error.interceptor';
+import { GlobalErrorHandler } from './core/errors/global-error.handler';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'enabled',
+        anchorScrolling: 'enabled',
+      }),
+      withViewTransitions(),
+    ),
     provideHttpClient(
       withXhr(),
+      withInterceptors([applicationErrorInterceptor]),
       withXsrfConfiguration({
         cookieName: 'XSRF-TOKEN',
         headerName: 'X-XSRF-TOKEN',
       }),
     ),
+    { provide: API_BASE_PATH, useValue: '/api' },
     provideTanStackQuery(
       new QueryClient({
         defaultOptions: {
@@ -37,6 +58,7 @@ export const appConfig: ApplicationConfig = {
         },
       }),
     ),
+    { provide: ErrorHandler, useExisting: GlobalErrorHandler },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

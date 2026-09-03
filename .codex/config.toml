@@ -2,6 +2,10 @@
 command = "/usr/local/share/nvm/current/bin/npx"
 args = ["-y", "@spartan-ng/mcp"]
 
+[mcp_servers.angular-cli]
+command = "/usr/local/share/nvm/current/bin/npx"
+args = ["-y", "@angular/cli", "mcp"]
+
 [mcp_servers.keycloak]
 command = "uvx"
 args = ["--from", "git+https://github.com/paoloamato2/keycloak-mcp-server.git@d602e32455dd018984a442f72aa0e06b8884551a", "keycloak-mcp-server"]

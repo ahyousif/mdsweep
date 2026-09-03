@@ -2,17 +2,9 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
-    path: 'dispatch',
-    loadComponent: () =>
-      import('./features/dispatch/dispatch-page').then((module) => module.DispatchPage),
+    path: 'trips',
+    loadChildren: () => import('./features/trips/trips.routes'),
   },
-  {
-    path: 'driver',
-    loadComponent: () =>
-      import('./features/driver-work/driver-work-page').then(
-        (module) => module.DriverWorkPage,
-      ),
-  },
-  { path: '', pathMatch: 'full', redirectTo: 'dispatch' },
-  { path: '**', redirectTo: 'dispatch' },
+  { path: '', pathMatch: 'full', redirectTo: 'trips' },
+  { path: '**', redirectTo: 'trips' },
 ];

@@ -1,3 +1,3 @@
 namespace Mdsweep.Api.Common.Authorization;
 
-public sealed record TenantRoleRequirement(string Role) : IAuthorizationRequirement;
+public sealed record TenantRoleRequirement(params string[] Roles) : IAuthorizationRequirement;

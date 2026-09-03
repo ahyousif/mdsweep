@@ -8,7 +8,7 @@ namespace Mdsweep.Api.Features.TripImports.Apply;
 public sealed class ApplyTripImportEndpoint
 {
     [Tags(TripImportConstants.Tag)]
-    [Authorize(Policy = AuthorizationPolicies.Dispatcher)]
+    [Authorize(Policy = AuthorizationPolicies.TripsImport)]
     [WolverinePost(TripImportConstants.ApplyRoute)]
     public static async Task<IResult> Post(Guid id, IMessageBus bus, CancellationToken ct)
     {

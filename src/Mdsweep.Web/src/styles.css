@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-primary: #087b68;
@@ -9,6 +9,13 @@
   --color-muted-foreground: #50616a;
   --color-accent: #e5f6ec;
   --color-accent-foreground: #17643d;
+  --color-success: #17643d;
+  --color-success-foreground: #ffffff;
+  --color-warning: #8a4b00;
+  --color-warning-foreground: #ffffff;
+  --color-info: #075985;
+  --color-info-foreground: #ffffff;
+  --color-link: #075985;
   --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
   --color-background: #f5f7f8;
@@ -21,6 +28,35 @@
   --radius-sm: 0.4rem;
   --radius-md: 0.6rem;
   --radius-lg: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #5eead4;
+    --color-primary-foreground: #062b2a;
+    --color-secondary: #17313a;
+    --color-secondary-foreground: #e5f1f3;
+    --color-muted: #1c2b31;
+    --color-muted-foreground: #b5c5ca;
+    --color-accent: #183e31;
+    --color-accent-foreground: #b8f3cf;
+    --color-success: #4ade80;
+    --color-success-foreground: #082f18;
+    --color-warning: #fbbf24;
+    --color-warning-foreground: #3b2500;
+    --color-info: #7dd3fc;
+    --color-info-foreground: #082f49;
+    --color-link: #7dd3fc;
+    --color-destructive: #f87171;
+    --color-destructive-foreground: #450a0a;
+    --color-background: #101a1e;
+    --color-foreground: #edf7f8;
+    --color-card: #16252a;
+    --color-card-foreground: #edf7f8;
+    --color-border: #32454c;
+    --color-input: #91a7af;
+    --color-ring: #5eead4;
+  }
 }
 
 @layer base {
