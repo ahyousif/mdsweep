@@ -1,51 +1,40 @@
-import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { HlmAlertImports } from '@spartan-ng/helm/alert';
-import { HlmButton } from '@spartan-ng/helm/button';
-import { HlmCardImports } from '@spartan-ng/helm/card';
-import { HlmSpinner } from '@spartan-ng/helm/spinner';
-import { injectQuery } from '@tanstack/angular-query-experimental';
-import { AuthSessionService } from '@app/core/auth/auth-session.service';
-import { ApplicationError } from '@app/core/errors/application-error';
-import { uiText } from '@app/ui-text';
+import { Component, inject, input } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideMonitor, lucideMoon, lucideRoute, lucideSun } from '@ng-icons/lucide';
+import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
+import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
+import { AuthSessionService, type ProviderContext } from '@app/core/auth/auth-session.service';
+import { type ThemePreference, ThemeService } from '@app/core/theme/theme.service';
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet, HlmButton, HlmSpinner, ...HlmAlertImports, ...HlmCardImports],
+  selector: 'app-shell',
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    NgIcon,
+    ...HlmDropdownMenuImports,
+    ...HlmSidebarImports,
+  ],
+  providers: [provideIcons({ lucideMonitor, lucideMoon, lucideRoute, lucideSun })],
   templateUrl: './app-shell.html',
 })
 export class AppShell {
   private readonly auth = inject(AuthSessionService);
+  readonly theme = inject(ThemeService);
 
-  readonly text = uiText;
+  readonly session = input.required<ProviderContext>();
 
-  readonly sessionQuery = injectQuery(() => ({
-    queryKey: ['auth', 'session'],
-    queryFn: () => this.auth.establish(),
-    retry: false,
-    staleTime: Number.POSITIVE_INFINITY,
-  }));
+  readonly navigation = [
+    { label: 'Trips', route: '/trips', icon: 'lucideRoute' },
+  ];
 
-  signIn(): void {
-    this.auth.signIn();
+  setTheme(theme: ThemePreference): void {
+    this.theme.setTheme(theme);
   }
 
-  sessionError(): string {
-    const error = this.sessionQuery.error();
-
-    if (error instanceof ApplicationError && error.status === 401) {
-      return '';
-    }
-
-    return error instanceof Error ? error.message : '';
-  }
-
-  isDriverOnly(): boolean {
-    const roles = this.sessionQuery.data()?.roles ?? [];
-
-    return (
-      roles.includes('Driver') &&
-      !roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
-    );
+  signOut(): void {
+    void this.auth.signOut();
   }
 }

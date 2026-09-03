@@ -2,7 +2,7 @@ export const uiText = {
   productContext: 'NEMT operations',
   pageTitle: 'Today’s trips',
   signInTitle: 'Sign in',
-  signInHelp: 'Use your Dispatcher account to manage today’s trips.',
+  signInHelp: 'Use your MDSweep account to continue.',
   email: 'Email',
   password: 'Password',
   signIn: 'Sign in',

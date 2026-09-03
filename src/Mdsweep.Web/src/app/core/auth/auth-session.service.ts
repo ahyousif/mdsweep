@@ -68,4 +68,9 @@ export class AuthSessionService {
   signIn(): void {
     window.location.assign(this.api.url('auth/login'));
   }
+
+  async signOut(): Promise<void> {
+    await firstValueFrom(this.api.http.post<void>(this.api.url('auth/logout'), {}));
+    window.location.assign('/');
+  }
 }

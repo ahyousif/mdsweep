@@ -2,7 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Web</title>
+    <script>
+      (() => {
+        const storedPreference =
+          localStorage.getItem('mdsweep.theme') ?? localStorage.getItem('mdsweep.appearance') ?? 'system';
+        const preference =
+          storedPreference === 'light' || storedPreference === 'dark' || storedPreference === 'system'
+            ? storedPreference
+            : 'system';
+        const dark =
+          preference === 'dark' ||
+          (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+        document.documentElement.classList.toggle('dark', dark);
+      })();
+    </script>
+    <title>MDSweep</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />

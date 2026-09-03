@@ -1,71 +1,187 @@
-@import 'tailwindcss';
+@layer theme, base, components, utilities;
 
-@theme {
-  --color-primary: #087b68;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #eef4f5;
-  --color-secondary-foreground: #163d4d;
-  --color-muted: #f5f7f8;
-  --color-muted-foreground: #50616a;
-  --color-accent: #e5f6ec;
-  --color-accent-foreground: #17643d;
-  --color-success: #17643d;
-  --color-success-foreground: #ffffff;
-  --color-warning: #8a4b00;
-  --color-warning-foreground: #ffffff;
-  --color-info: #075985;
-  --color-info-foreground: #ffffff;
-  --color-link: #075985;
-  --color-destructive: #b42318;
-  --color-destructive-foreground: #ffffff;
-  --color-background: #f5f7f8;
-  --color-foreground: #17222b;
-  --color-card: #ffffff;
-  --color-card-foreground: #17222b;
-  --color-border: #dce3e6;
-  --color-input: #9aaab1;
-  --color-ring: #087b68;
-  --radius-sm: 0.4rem;
-  --radius-md: 0.6rem;
-  --radius-lg: 0.75rem;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+@import '@spartan-ng/brain/hlm-tailwind-preset.css';
+
+:root {
+  color-scheme: light;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans',
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  --radius: 0.625rem;
+
+  /*
+   * MDSweep Calm — Light
+   *
+   * Warm, quiet surfaces with a restrained teal brand color.
+   */
+
+  --background: oklch(0.977 0.003 146);
+  --foreground: oklch(0.262 0.015 182);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.262 0.015 182);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.262 0.015 182);
+
+  --primary: oklch(0.512 0.083 180);
+  --primary-foreground: oklch(0.994 0.008 177);
+
+  --secondary: oklch(0.959 0.007 174);
+  --secondary-foreground: oklch(0.351 0.03 179);
+
+  --muted: oklch(0.967 0.005 165);
+  --muted-foreground: oklch(0.523 0.021 175);
+
+  --accent: oklch(0.938 0.019 176);
+  --accent-foreground: oklch(0.403 0.054 176);
+
+  --destructive: oklch(0.522 0.157 27);
+  --destructive-foreground: oklch(0.984 0.008 27);
+
+  --border: oklch(0.901 0.012 170);
+  --input: oklch(0.901 0.012 170);
+  --ring: oklch(0.58 0.093 178);
+
+  /*
+   * Operational states.
+   * Color must never be the only indication of state in the UI.
+   */
+
+  --success: oklch(0.531 0.098 159);
+  --success-foreground: oklch(0.992 0.011 162);
+
+  --warning: oklch(0.554 0.117 75);
+  --warning-foreground: oklch(0.986 0.014 85);
+
+  --info: oklch(0.517 0.089 238);
+  --info-foreground: oklch(0.985 0.008 242);
+
+  /*
+   * Application shell.
+   */
+
+  --sidebar: oklch(0.963 0.006 170);
+  --sidebar-foreground: oklch(0.298 0.021 177);
+
+  --sidebar-primary: oklch(0.512 0.083 180);
+  --sidebar-primary-foreground: oklch(0.994 0.008 177);
+
+  --sidebar-accent: oklch(0.93 0.017 174);
+  --sidebar-accent-foreground: oklch(0.368 0.045 178);
+
+  --sidebar-border: oklch(0.901 0.012 170);
+  --sidebar-ring: oklch(0.58 0.093 178);
+
+  /*
+   * Keep Spartan's chart slots available even though MDSweep
+   * does not currently have a charts-first dashboard.
+   */
+
+  --chart-1: oklch(0.512 0.083 180);
+  --chart-2: oklch(0.531 0.098 159);
+  --chart-3: oklch(0.517 0.089 238);
+  --chart-4: oklch(0.554 0.117 75);
+  --chart-5: oklch(0.522 0.157 27);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-primary: #5eead4;
-    --color-primary-foreground: #062b2a;
-    --color-secondary: #17313a;
-    --color-secondary-foreground: #e5f1f3;
-    --color-muted: #1c2b31;
-    --color-muted-foreground: #b5c5ca;
-    --color-accent: #183e31;
-    --color-accent-foreground: #b8f3cf;
-    --color-success: #4ade80;
-    --color-success-foreground: #082f18;
-    --color-warning: #fbbf24;
-    --color-warning-foreground: #3b2500;
-    --color-info: #7dd3fc;
-    --color-info-foreground: #082f49;
-    --color-link: #7dd3fc;
-    --color-destructive: #f87171;
-    --color-destructive-foreground: #450a0a;
-    --color-background: #101a1e;
-    --color-foreground: #edf7f8;
-    --color-card: #16252a;
-    --color-card-foreground: #edf7f8;
-    --color-border: #32454c;
-    --color-input: #91a7af;
-    --color-ring: #5eead4;
-  }
+:root.dark {
+  color-scheme: dark;
+
+  /*
+   * MDSweep Calm — Dark
+   *
+   * Soft charcoal rather than black.
+   * Teal is deliberately subdued rather than neon.
+   */
+
+  --background: oklch(0.224 0.009 184);
+  --foreground: oklch(0.945 0.01 165);
+
+  --card: oklch(0.268 0.012 179);
+  --card-foreground: oklch(0.945 0.01 165);
+
+  --popover: oklch(0.268 0.012 179);
+  --popover-foreground: oklch(0.945 0.01 165);
+
+  --primary: oklch(0.726 0.079 178);
+  --primary-foreground: oklch(0.22 0.022 175);
+
+  --secondary: oklch(0.287 0.015 175);
+  --secondary-foreground: oklch(0.906 0.013 172);
+
+  --muted: oklch(0.307 0.015 175);
+  --muted-foreground: oklch(0.768 0.016 171);
+
+  --accent: oklch(0.328 0.03 175);
+  --accent-foreground: oklch(0.906 0.03 176);
+
+  --destructive: oklch(0.65 0.133 24);
+  --destructive-foreground: oklch(0.206 0.049 24);
+
+  --border: oklch(0.37 0.018 180);
+  --input: oklch(0.37 0.018 180);
+  --ring: oklch(0.775 0.081 178);
+
+  --success: oklch(0.707 0.108 159);
+  --success-foreground: oklch(0.227 0.033 160);
+
+  --warning: oklch(0.741 0.117 80);
+  --warning-foreground: oklch(0.244 0.044 76);
+
+  --info: oklch(0.701 0.082 236);
+  --info-foreground: oklch(0.222 0.031 240);
+
+  --sidebar: oklch(0.244 0.011 176);
+  --sidebar-foreground: oklch(0.925 0.012 170);
+
+  --sidebar-primary: oklch(0.726 0.079 178);
+  --sidebar-primary-foreground: oklch(0.22 0.022 175);
+
+  --sidebar-accent: oklch(0.311 0.02 176);
+  --sidebar-accent-foreground: oklch(0.912 0.022 175);
+
+  --sidebar-border: oklch(0.37 0.018 180);
+  --sidebar-ring: oklch(0.775 0.081 178);
+
+  --chart-1: oklch(0.726 0.079 178);
+  --chart-2: oklch(0.707 0.108 159);
+  --chart-3: oklch(0.701 0.082 236);
+  --chart-4: oklch(0.741 0.117 80);
+  --chart-5: oklch(0.65 0.133 24);
+}
+
+/*
+ * These are MDSweep-specific semantic colors, so register them
+ * with Tailwind. Spartan already registers its standard theme tokens.
+ */
+@theme inline {
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
   }
 
   body {
-    @apply m-0 min-h-screen bg-background text-foreground antialiased;
-    font-family: system-ui, sans-serif;
+    @apply min-h-screen bg-background text-foreground antialiased;
+    margin: 0;
+    font-family: var(--font-sans);
   }
 }

@@ -29,9 +29,8 @@ describe('AllTripsPage', () => {
     api.getTrips.mockRejectedValue(new ApplicationError('Trips are temporarily unavailable.', 503));
     fixture.detectChanges();
 
-    const filter = fixture.nativeElement.querySelector('#service-date-filter') as HTMLInputElement;
-    filter.value = '2026-09-02';
-    filter.dispatchEvent(new Event('input'));
+    expect(fixture.nativeElement.querySelector('hlm-date-picker')).not.toBeNull();
+    fixture.componentInstance.setServiceDateFilter(new Date(2026, 8, 2));
     fixture.detectChanges();
 
     await vi.waitFor(() => {

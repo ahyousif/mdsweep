@@ -1,0 +1,37 @@
+@if (sessionQuery.isPending()) {
+  <main class="grid min-h-svh place-items-center p-4">
+    <div class="text-muted-foreground flex items-center gap-2" role="status">
+      <hlm-spinner /> Establishing your secure session
+    </div>
+  </main>
+} @else if (sessionQuery.isError()) {
+  <main class="grid min-h-svh place-items-center p-4">
+    <div class="grid w-full max-w-md gap-4">
+      @if (sessionError()) {
+        <div hlmAlert variant="destructive">
+          <h1 hlmAlertTitle>Provider selection required</h1>
+          <p hlmAlertDescription>{{ sessionError() }}</p>
+        </div>
+      }
+      <section hlmCard>
+        <div hlmCardHeader>
+          <h1 hlmCardTitle>{{ text.signInTitle }}</h1>
+          <p hlmCardDescription>{{ text.signInHelp }}</p>
+        </div>
+        <div hlmCardFooter>
+          <button hlmBtn type="button" (click)="signIn()">{{ text.signIn }}</button>
+        </div>
+      </section>
+    </div>
+  </main>
+} @else if (isDriverOnly()) {
+  <main class="grid min-h-svh place-items-center p-4">
+    <section hlmCard class="w-full max-w-md">
+      <div hlmCardHeader>
+        <h1 hlmCardTitle>My Trips is not available in this build yet.</h1>
+      </div>
+    </section>
+  </main>
+} @else if (sessionQuery.data(); as session) {
+  <app-shell [session]="session" />
+}

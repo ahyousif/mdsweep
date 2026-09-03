@@ -48,6 +48,42 @@
       ],
       "@app/*": [
         "./src/app/*"
+      ],
+      "@spartan-ng/helm/sidebar": [
+        "./src/app/ui/sidebar/src/index.ts"
+      ],
+      "@spartan-ng/helm/separator": [
+        "./src/app/ui/separator/src/index.ts"
+      ],
+      "@spartan-ng/helm/sheet": [
+        "./src/app/ui/sheet/src/index.ts"
+      ],
+      "@spartan-ng/helm/skeleton": [
+        "./src/app/ui/skeleton/src/index.ts"
+      ],
+      "@spartan-ng/helm/tooltip": [
+        "./src/app/ui/tooltip/src/index.ts"
+      ],
+      "@spartan-ng/helm/dropdown-menu": [
+        "./src/app/ui/dropdown-menu/src/index.ts"
+      ],
+      "@spartan-ng/helm/date-picker": [
+        "./src/app/ui/date-picker/src/index.ts"
+      ],
+      "@spartan-ng/helm/calendar": [
+        "./src/app/ui/calendar/src/index.ts"
+      ],
+      "@spartan-ng/helm/select": [
+        "./src/app/ui/select/src/index.ts"
+      ],
+      "@spartan-ng/helm/popover": [
+        "./src/app/ui/popover/src/index.ts"
+      ],
+      "@spartan-ng/helm/input-group": [
+        "./src/app/ui/input-group/src/index.ts"
+      ],
+      "@spartan-ng/helm/textarea": [
+        "./src/app/ui/textarea/src/index.ts"
       ]
     }
   },

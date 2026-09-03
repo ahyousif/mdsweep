@@ -18,14 +18,16 @@ import {
   withViewTransitions,
 } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
+import { API_BASE_PATH } from '@app/core/api/api-client';
+import { provideSpartanHlm } from '@spartan-ng/helm/utils';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { routes } from './app.routes';
-import { API_BASE_PATH } from '@app/core/api/api-client';
 import { applicationErrorInterceptor } from './core/errors/application-error.interceptor';
 import { GlobalErrorHandler } from './core/errors/global-error.handler';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideSpartanHlm(),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(

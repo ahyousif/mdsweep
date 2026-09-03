@@ -1,8 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { AuthSessionService } from '@app/core/auth/auth-session.service';
-import { ApplicationError } from '@app/core/errors/application-error';
 import { AppShell } from './app-shell';
 
 describe('AppShell', () => {
@@ -11,28 +9,32 @@ describe('AppShell', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        provideTanStackQuery(new QueryClient()),
         provideRouter([]),
         {
           provide: AuthSessionService,
-          useValue: {
-            establish: () => Promise.reject(new ApplicationError('Unauthenticated.', 401)),
-            signIn: () => undefined,
-          },
+          useValue: { signOut: () => Promise.resolve() },
         },
       ],
     });
     fixture = TestBed.createComponent(AppShell);
+    fixture.componentRef.setInput('session', {
+      appUserId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
+      providerId: 'acme-transport',
+      roles: ['Dispatcher', 'Administrator'],
+    });
   });
 
-  it('presents a 401 as the normal sign-in state without a provider-selection error', async () => {
+  it('renders role-neutral authenticated application chrome', () => {
     fixture.detectChanges();
 
-    await vi.waitFor(() => {
-      fixture.detectChanges();
-      const page = fixture.nativeElement.textContent as string;
-      expect(page).toContain('Sign in');
-      expect(page).not.toContain('Provider selection required');
-    });
+    const page = fixture.nativeElement.textContent as string;
+    expect(page).toContain('MDSweep');
+    expect(page).toContain('Trips');
+    expect(page).toContain('d449d57a-8f51-4a2a-9624-d6d474aaa6e7');
+    expect(page).not.toContain('Workspace');
+    expect(page).not.toContain('Import manifest');
+    expect(page).not.toContain('Appearance');
+    expect(page).not.toContain('Account');
+    expect(fixture.nativeElement.querySelector('[aria-label="Open user menu"]')).not.toBeNull();
   });
 });

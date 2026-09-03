@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
+import { HlmDatePickerImports } from '@spartan-ng/helm/date-picker';
 import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { HlmTableImports } from '@spartan-ng/helm/table';
@@ -46,6 +47,7 @@ const allTripsColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
   imports: [
     FlexRender,
     HlmButton,
+    ...HlmDatePickerImports,
     HlmInput,
     HlmSpinner,
     ...HlmAlertImports,
@@ -62,6 +64,9 @@ export default class AllTripsPage {
   readonly text = uiText;
   readonly serviceDateFilter = signal('');
   readonly scheduleError = signal('');
+  readonly selectedServiceDate = computed(() => this.toDate(this.serviceDateFilter()));
+  readonly formatServiceDate = (date: Date): string =>
+    new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);
 
   readonly tripsQuery = injectQuery(() =>
     allTripsQueryOptions(this.#api, this.serviceDateFilter()),
@@ -86,8 +91,8 @@ export default class AllTripsPage {
     data: this.tripsQuery.data()?.items ?? [],
   }));
 
-  setServiceDateFilter(value: string): void {
-    this.serviceDateFilter.set(value);
+  setServiceDateFilter(date: Date | null): void {
+    this.serviceDateFilter.set(date ? this.toIsoDate(date) : '');
   }
 
   tripsQueryError(): string {
@@ -98,5 +103,19 @@ export default class AllTripsPage {
     if (!value) return;
     this.scheduleError.set('');
     this.scheduleMutation.mutate({ id: trip.id, value });
+  }
+
+  private toDate(value: string): Date | undefined {
+    const [year, month, day] = value.split('-').map(Number);
+
+    return year && month && day ? new Date(year, month - 1, day) : undefined;
+  }
+
+  private toIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 }
