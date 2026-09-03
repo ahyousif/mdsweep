@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Ardalis.GuardClauses" />
+    <PackageReference Include="NodaTime" />
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+</Project>

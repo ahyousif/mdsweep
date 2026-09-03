@@ -6,69 +6,99 @@ Build a modular monolith with a slim vertical-slice structure. The deployed prod
 
 ### Delivery state
 
-The system has a shared Azure production-shaped environment for deployment validation, but it is not approved for patient-linked data. Local and deployed data remain synthetic. The checked-in EF Core migration is the schema baseline for a fresh database. A deployment-readiness decision is required before non-synthetic data is introduced; it must define the migration procedure, backups and restore test, Keycloak realm administration, and data-safety approval.
+The system has a shared Azure production-shaped environment for deployment validation, but it is not approved for patient-linked data. Local and deployed data remain synthetic. The foundation refactor intentionally reset the EF Core migration history to one `InitialSchema` baseline for a fresh database. Existing synthetic MDSweep application databases created from the old migration chain must be recreated; this baseline must not be applied over an existing production or real-data database. A deployment-readiness decision is required before non-synthetic data is introduced; it must define and test the production migration procedure, backups and restore, Keycloak realm administration, and data-safety approval.
 
 The application replaces the provider's legacy operations site. MTM integration at both ends is file-based for the MVP:
 
 ```text
-MTM manifest → import → dispatch → driver completion → billing export → MTM portal
+MTM manifest → Trips → billing file → MTM portal
 ```
 
-The user downloads the manifest and uploads the billing file manually. Browser automation, Wolverine messaging, and an automation worker enter the architecture only when an authorized durable automation workflow exists.
+The user downloads the manifest and uploads the billing file manually. Wolverine is used only as an in-process command/query dispatcher, HTTP endpoint model, and lightweight EF Core unit of work. Durable queues, inboxes, outboxes, scheduled jobs, browser automation, and an automation worker enter the architecture only when an authorized durable workflow exists.
 
 ## Modules
 
-Each module owns a workflow and presents a small interface through its HTTP endpoints and application commands. Business rules, persistence, validation, and audit recording remain local to the slice that owns the behavior.
+Each module presents a small interface through its HTTP endpoints and application commands. Business rules, persistence, validation, and history remain local to the module that owns the behavior.
 
-### Manifest Import
+### Passengers
 
-**Interface:** upload a manifest, inspect its validation summary, and apply the accepted import.
+**Interface:** create, find, maintain, and inspect a Passenger's Trip history.
 
-The implementation hides CSV/XLSX parsing, normalization, duplicate detection, A/B Journey grouping, broker-status handling, repeat-import comparison, and preservation of operational overrides. Applying the same source data repeatedly must not duplicate Trips or erase provider-owned changes.
+Passengers owns Tenant-scoped Passenger identity and broker-specific member identifiers. A Passenger may exist before any Manifest or Trip. Trips references a Passenger; it does not own Passenger identity. Manifest adapters reconcile broker-provided Passenger details through this module without overwriting Tenant-owned information.
 
-### Dispatch
+### Trips
 
-**Interface:** view a service day, apply pickup-time suggestions, and assign a Driver to a Journey or Trip.
+**Interface:** review and accept a Manifest, plan and assign Trips, record Trip outcomes and actual timestamps, review and close Trips, and prepare a billing file.
 
-The implementation hides bulk suggestion policy, exception classification, Journey-wide assignment, individual-leg reassignment, conflict warnings, and assignment history. Driver assignment remains a human decision.
+Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Tenant planning decisions, Assignment history, the Tenant's MTM-registered Vehicle reference list, Driver Primary Vehicle designations, Performed Vehicle snapshots, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
 
-### Driver Work
+CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Tenant-owned changes, or discard earlier broker-provided details.
 
-**Interface:** load the authenticated Driver's assigned Trips and record a Trip Outcome or actual timestamp.
+TripImports is a sibling feature to Trips. It owns the retained preview and application lifecycle for one uploaded broker file; Trips owns the resulting Trip aggregate and its operational state.
 
-The implementation hides authorization, valid event order, offline idempotency, correction windows, conflict detection, and audit history. Device capture time and server receipt time remain distinct facts.
+The Dispatcher experience is an implemented HTTP and web adapter over Trips. My Trips remains a target Driver workflow and is not implemented yet. Its future queries must disclose only assigned Trips, and its future actions must be authorized against the active Assignment. A Dispatcher manually maintains a small reference list of Vehicles registered in MTM; MDSweep does not register or independently verify them. Effective-dated Primary Vehicle designations may exist before any Trip Assignment and supply the default for a Driver's Trips on the applicable service date. Ordinary Trips require no Vehicle confirmation. A Dispatcher records only exceptions, individually or across selected Trips. At closure, Trips snapshots the resolved Performed Vehicle VIN for billing. Drivers do not select Vehicles, and broader Vehicle management remains outside the MVP.
 
-### Billing Export
+Billing-file writers translate billing-ready Trip data into the MTM workbook and retain the generated Billing Batch. The Dispatcher continues the manual MTM Link review and submission workflow.
 
-**Interface:** validate Closed Trips and generate one MTM-compatible billing file.
+The exact file implementation generates the ten-column `.xlsx` Claims Sheet documented in `docs/research/mtm-bulk-claim-upload.md`. Production compatibility remains gated on a bounded synthetic portal trial for the unresolved validation, duplicate, correction, signature-document, and partial-failure behavior recorded in the research note.
 
-The implementation generates the exact ten-column `.xlsx` Claims Sheet documented in `docs/research/mtm-bulk-claim-upload.md`, validates claim readiness before export, and records the export and included Trips in Operational History. The Dispatcher continues the manual MTM Link review and submission workflow.
+### Access
 
-The file shape is established, but production compatibility remains gated on a bounded synthetic portal trial for the unresolved validation, duplicate, correction, signature-document, and partial-failure behavior recorded in the research note.
+Access owns Users, Tenant Memberships, and role authorization. Keycloak owns external identities, credentials, and sessions. One MDSweep Keycloak realm serves each production environment; a Tenant maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
 
-### Identity
+ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API maps Keycloak's immutable `sub` to the local User ID, returns allowed Tenant memberships from `/api/auth/me`, and accepts a membership-verified selection at `/api/auth/tenant-context`. The selected Tenant ID is stored in the signed application cookie as `mdsweep_tenant_id`; Wolverine detects it globally for conjoined tenancy. Reusable authorization policies verify the User's membership and role for protected resources. The application never trusts a client-supplied Tenant ID.
 
-Keycloak owns user identities, credentials, sessions, and coarse membership roles. One MDSweep Keycloak realm serves each production environment; a Provider maps to a Keycloak Organization, not to a dedicated realm by default. A dedicated realm is reserved for an exceptional enterprise tenant that requires hard IAM isolation.
+### Tenant-owned slice convention
 
-ASP.NET Core is the OpenID Connect client and backend-for-frontend: it establishes the HttpOnly application cookie after authorization code authentication with Keycloak. Angular calls same-origin application endpoints and never receives or manages Keycloak tokens. The API resolves an App User and allowed Provider context server-side, maps Keycloak's immutable `sub` to the local App User ID, and enforces Provider/resource authorization itself. Every Provider-owned entity stores the local `ProviderId`; the application stores the ProviderId-to-Keycloak-Organization mapping and never trusts a client-supplied ProviderId without membership verification.
+Passenger is the reference vertical slice for new Tenant-owned behavior:
+
+```text
+HTTP endpoint → Dispatcher policy → IMessageBus.SendAsync → Application handler → aggregate → IRepository
+```
+
+Wolverine HTTP derives the ambient Tenant from the authenticated active-Tenant claim. Endpoints do not accept or pass Tenant IDs, `ClaimsPrincipal`, or `ITenantAccess` merely to establish Tenant or role context; reusable ASP.NET Core policies perform that authorization. Commands and queries remain Tenant-free, while conjoined EF tenancy applies query filtering and Tenant stamping. Legacy Dispatch and DriverWork code is not a template for new slices.
+
+### CQRS and composition
+
+Application messages use `ICommand<T>` or `IQuery<T>` solely to communicate CQRS intent. These markers do not control Wolverine transactions; Application handlers have no Wolverine transaction attributes. HTTP request shape is validated at the API boundary with FluentValidation before Wolverine dispatch; Application handlers and Domain aggregates retain business rules and invariants. Aggregate mutation uses the non-generic Application `IRepository`, and Wolverine's lightweight EF middleware with `AutoApplyTransactions()` owns successful-handler persistence. Its generic operations are intentionally implemented directly by `ApplicationDbContext` so Wolverine can retain `WithDbContextAbstraction<IRepository, ApplicationDbContext>()`. Ordinary filtered and paged lists use typed Application query contracts, code-defined Ardalis specifications, `IRepository`, and EF Core. Projection-heavy reads may later use a dedicated Application query abstraction and Dapper directly when that is the natural implementation, without changing the HTTP query contract or forcing SQL through specifications.
+
+### Host configuration ownership
+
+API composition owns ASP.NET Core, BFF authentication, authorization, antiforgery, Wolverine host and discovery configuration, HTTP endpoint mapping, and middleware ordering.
+
+> Wolverine assembly discovery is an explicit composition-root responsibility. Moving `UseWolverine` between assemblies can change convention-based discovery because Wolverine may use the calling assembly. MDSweep must explicitly register the assemblies containing HTTP endpoints and message handlers rather than relying on implicit calling-assembly discovery.
+
+Infrastructure owns PostgreSQL, EF Core, Wolverine persistence integration, the `IRepository` implementation, Keycloak administration, typed Options binding, the system clock, file parsing adapters, migrations, and managed-tenant initialization. Runtime services bind typed Options rather than consuming raw `IConfiguration`.
 
 ## Seams and adapters
 
 ### Travel-time estimation
 
-Dispatch owns a narrow travel-time interface: estimate travel duration for a pickup, destination, and relevant departure context. Its first production adapter uses configured route or city presets. A future mapping adapter may replace it after contractual and privacy review. Tests use a deterministic adapter.
+Trips owns a narrow travel-time interface: estimate travel duration for a pickup, destination, and relevant departure context. Its first production adapter uses configured route or city presets. A future mapping adapter may replace it after contractual and privacy review. Tests use a deterministic adapter.
 
-The interface returns an estimate or an actionable failure. It does not assign Drivers or decide the Scheduled Pickup Time; Dispatch combines the estimate with configured arrival and loading buffers.
+The interface returns an estimate or an actionable failure. It does not assign Drivers or decide the Scheduled Pickup Time; Trips combines the estimate with configured arrival and loading buffers.
 
 ### Time
 
-Timestamp-sensitive Driver Work behavior receives time from an injected clock. Production uses system time and tests use a controlled clock so correction windows and event ordering are deterministic.
+Timestamp-sensitive Trips behavior receives time from an injected clock. Production uses system time and tests use a controlled clock so offline receipt and event ordering are deterministic. Correction authorization and timing remain unresolved product policy.
 
-Avoid seams for EF Core persistence. Each slice uses the application's DbContext directly; test observable workflow behavior against PostgreSQL rather than wrapping it in a generic repository.
+Application handlers do not receive `ApplicationDbContext`. Aggregate writes use the common `IRepository`, which Wolverine maps to the scoped EF Core DbContext for its lightweight transaction. Narrow query ports are permitted only where a feature requires a query EF Core cannot expose through that write convention.
 
 ## Persistence
 
-PostgreSQL is the single durable store. Use EF Core mappings near the owning feature. Preserve broker-original data separately from operational overrides and retain append-only history for imports, assignments, driver events, corrections, and closure.
+PostgreSQL hosts one MDSweep application database and the existing separate Keycloak database. MDSweep uses checked-in EF Core migrations for application schema, with the current single `InitialSchema` migration serving as a reset pre-production baseline rather than an upgrade from the removed chain. Wolverine uses its own persistence schema for its conjoined-tenant registry and message persistence. Use EF Core mappings near the owning feature. Preserve broker-provided details separately from Tenant-owned changes and retain append-only history for Manifest receipts, Assignments, Performed Vehicle snapshots, actual timestamps, outcomes, corrections, and closure.
+
+New domain and application code uses NodaTime: `Instant` for timeline events, `LocalDate` for service dates, and `LocalTime` for local scheduled or appointment times. Time-zone conversion requires an explicit Tenant IANA time zone and never inherits the server time zone. New entity and idempotent-action identifiers use UUIDv7 through `Guid.CreateVersion7()` while remaining PostgreSQL `uuid` columns.
+
+Domain factories enforce preconditions with Ardalis Guard Clauses, including repository `GuardClauseExtensions` where they express the invariant. Factories do not silently trim, normalize, or otherwise rewrite supplied values: invalid input is rejected and valid input is preserved as supplied.
+
+Wolverine's lightweight EF Core transaction middleware calls one `SaveChangesAsync` at the end of a successful EF-backed handler. `AutoApplyTransactions()` infers this from `IRepository`; commands and queries do not use Wolverine transaction attributes. Driver access creation remains an explicit-save command so a failed local commit can compensate by deleting the new Keycloak user. Assignment also saves explicitly so a uniqueness race can retain the established HTTP 409 conflict response. These two commands do not use Wolverine transaction middleware.
+
+`WolverineConjoinedTenancyWorkaround` is temporary technical debt. Managed conjoined tenancy resolves normal DI `ApplicationDbContext` instances against the main/default tenant, so Lightweight handlers using `IRepository` need its scoped active-message-tenant context factory. Eager mode cannot replace it while Wolverine 6.30.3 generates colliding concrete `ApplicationDbContext` variables with `WithDbContextAbstraction<IRepository, ApplicationDbContext>()`. Remove the workaround when that upstream defect is fixed; do not replace it with command Tenant IDs, tenant middleware, a UnitOfWork, or a custom transaction policy.
+
+## Web application
+
+Angular is organized as a small authenticated shell with lazy Trips routes. Angular code is organized by product capability: Administrator, Dispatcher, and Driver roles authorize routes and actions; they do not define top-level domain feature folders. Trips owns All Trips, My Trips, and Trip Import experiences. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Trip management tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local Trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
 
 The pilot may colocate PostgreSQL with the application on one small Linux host when the chosen BAA-covered environment and backup design permit it. Encrypted off-machine backups and a tested restore are required before real data is used.
 
@@ -76,22 +106,22 @@ The pilot may colocate PostgreSQL with the application on one small Linux host w
 
 ```text
 src/
-  AppHost/
-  Api/
+  Mdsweep.Api/
     Features/
-      ManifestImports/
-      Dispatch/
-      DriverWork/
-      BillingExports/
-      Identity/
-    Infrastructure/
-  Web/
+      Trips/
+      Access/
+  Mdsweep.Application/
+  Mdsweep.Domain/
+  Mdsweep.Infrastructure/
+  Mdsweep.AppHost/
+  Mdsweep.ServiceDefaults/
+  Mdsweep.Web/
 tests/
-  Api.IntegrationTests/
-  Web.E2ETests/
+  Mdsweep.Api.IntegrationTests/
+  Mdsweep.Web.E2ETests/
 ```
 
-Organize endpoints, commands, validation, mappings, and tests by behavior inside each feature. Shared code must represent a stable cross-feature concept; proximity alone is not a reason to create a shared abstraction.
+HTTP endpoints remain in `Mdsweep.Api`, command/query contracts in `Mdsweep.Application`, domain state and rules in `Mdsweep.Domain`, and EF/file/Keycloak handlers and adapters in `Mdsweep.Infrastructure`. Organize each project vertically by behavior. Shared code must represent a stable cross-feature concept; proximity alone is not a reason to create a shared abstraction.
 
 ## Verification
 
@@ -110,6 +140,5 @@ The pilot acceptance path is: import a representative manifest without spreadshe
 - Any authorized MTM API or browser automation
 - Live mapping provider
 - Managed PostgreSQL migration
-- Multitenancy
 - Arabic and other translations
 - Automatic assignment and route optimization

@@ -36,10 +36,10 @@ This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See
 
 ## Working rules
 
-- Organize application code by vertical feature under `src/Api/Features`; keep rules, persistence mapping, validation, and endpoints close to the behavior they implement.
-- Use EF Core directly inside a feature. Introduce a seam when multiple adapters are real, including a production adapter and a materially different deterministic test adapter.
+- Organize HTTP boundaries by vertical feature under `src/Mdsweep.Api/Features`; keep domain rules in `Mdsweep.Domain`, contracts in `Mdsweep.Application`, and EF/file handlers close to the behavior under `Mdsweep.Infrastructure`.
+- For aggregate mutations, follow `HTTP → Wolverine → Application handler → Domain aggregate → IRepository → EF Core`. Application handlers must not receive `ApplicationDbContext`; aggregate writes use the common `IRepository`, whose EF Core implementation belongs in Infrastructure. Direct EF Core usage is appropriate inside Infrastructure implementations, not Application handlers. A projection-heavy read may later choose a different strategy such as Dapper, but that is not the current default and does not justify generic reader or repository abstractions.
 - Test through the feature's interface and observable database or HTTP outcomes. Use PostgreSQL for persistence integration tests.
-- Preserve broker-original Trip facts, provider overrides, and append-only operational history as distinct data.
+- Preserve broker-original Trip facts, Tenant-owned operational decisions, and append-only operational history as distinct data.
 - Make repeat imports and offline Driver actions idempotent.
 - Keep Billing Export pinned until an authoritative MTM bulk-upload contract is available.
 - Use Playwright for this application's end-to-end tests. Add MTM portal automation only after written authorization and a defined durable workflow.
@@ -53,3 +53,11 @@ This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See
 ## Completion
 
 A feature is complete when its acceptance criteria pass through its public interface, authorization is covered, relevant history is retained, failures are actionable to the user, and the repository's formatting, tests, and build checks pass.
+
+## Angular frontend guidance
+
+- Use inline Tailwind utilities and semantic application tokens in feature templates; do not use literal palette utilities. Spartan primitives belong in `src/Mdsweep.Web/src/app/ui`.
+- Organize frontend code by business feature. Use `dispatcher`, `trip-import`, and `driver` terminology; retain legacy API route names only where they are the server contract.
+- TanStack Query owns server state and typed query keys. Signals and feature stores own client/UI state only; preserve the Driver's durable offline queue separately.
+- Presentational components use signal `input()`/`output()` and do not inject API, Router, or QueryClient dependencies. Keep contextual recovery, especially Driver offline fallback, while generic errors are centralized.
+- Use `@Service()` only for suitable root singleton services using `inject()`; otherwise select `@Injectable()` based on lifetime. Consult the Angular skill/MCP guidance before generating Angular code.

@@ -1,6 +1,0 @@
-@Mdsweep.Api_HostAddress = http://localhost:0
-
-GET {{Mdsweep.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

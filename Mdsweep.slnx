@@ -1,10 +1,13 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Api/Mdsweep.Api.csproj" />
-    <Project Path="src/AppHost/Mdsweep.AppHost.csproj" />
-    <Project Path="src/ServiceDefaults/Mdsweep.ServiceDefaults.csproj" />
+    <Project Path="src/Mdsweep.Api/Mdsweep.Api.csproj" />
+    <Project Path="src/Mdsweep.Application/Mdsweep.Application.csproj" />
+    <Project Path="src/Mdsweep.AppHost/Mdsweep.AppHost.csproj" />
+    <Project Path="src/Mdsweep.Domain/Mdsweep.Domain.csproj" />
+    <Project Path="src/Mdsweep.Infrastructure/Mdsweep.Infrastructure.csproj" />
+    <Project Path="src/Mdsweep.ServiceDefaults/Mdsweep.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Api.IntegrationTests/Mdsweep.Api.IntegrationTests.csproj" />
+    <Project Path="tests/Mdsweep.Api.IntegrationTests/Mdsweep.Api.IntegrationTests.csproj" />
   </Folder>
 </Solution>
