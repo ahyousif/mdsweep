@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ApiClient } from '../../../core/api/api-client';
+import { ApiClient } from '@app/core/api/api-client';
 
 export type TripImportItem = {
   rowNumber: number;

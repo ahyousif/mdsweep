@@ -45,6 +45,9 @@
       ],
       "@spartan-ng/helm/spinner": [
         "./src/app/ui/spinner/src/index.ts"
+      ],
+      "@app/*": [
+        "./src/app/*"
       ]
     }
   },

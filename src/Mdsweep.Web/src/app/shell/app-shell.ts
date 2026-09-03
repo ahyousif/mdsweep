@@ -5,9 +5,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { injectQuery } from '@tanstack/angular-query-experimental';
-import { AuthSessionService } from '../core/auth/auth-session.service';
-import { ApplicationError } from '../core/errors/application-error';
-import { uiText } from '../ui-text';
+import { AuthSessionService } from '@app/core/auth/auth-session.service';
+import { ApplicationError } from '@app/core/errors/application-error';
+import { uiText } from '@app/ui-text';
 
 @Component({
   selector: 'app-root',

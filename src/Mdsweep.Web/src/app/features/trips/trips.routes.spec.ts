@@ -4,7 +4,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { AllTripsApi } from './all-trips/all-trips.api';
 import { TripImportApi } from './trip-import/trip-import.api';
-import { routes } from '../../app.routes';
+import { routes } from '@app/app.routes';
 
 describe('Trips routes', () => {
   it('preserves the Trip Import route and can return to All Trips', async () => {

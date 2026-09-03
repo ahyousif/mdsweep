@@ -5,7 +5,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { injectMutation } from '@tanstack/angular-query-experimental';
 import { QueryClient } from '@tanstack/query-core';
-import { httpErrorMessage } from '../../../core/api/http-error-message';
+import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { tripQueryKeys } from '../all-trips/all-trips.queries';
 import {
   TripImport,

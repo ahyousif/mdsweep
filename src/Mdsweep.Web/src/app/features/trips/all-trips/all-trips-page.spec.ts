@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { ApplicationError } from '../../../core/errors/application-error';
+import { ApplicationError } from '@app/core/errors/application-error';
 import { AllTripsApi } from './all-trips.api';
 import AllTripsPage from './all-trips-page';
 

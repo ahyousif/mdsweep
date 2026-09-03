@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ApiClient } from '../../../core/api/api-client';
-import { PagedResponse } from '../../../core/api/paged-response';
+import { ApiClient } from '@app/core/api/api-client';
+import { PagedResponse } from '@app/core/api/paged-response';
 
 export type AllTripsTrip = {
   id: string;

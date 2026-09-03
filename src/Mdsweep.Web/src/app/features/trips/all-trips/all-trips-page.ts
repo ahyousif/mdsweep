@@ -9,8 +9,8 @@ import { HlmTableImports } from '@spartan-ng/helm/table';
 import { injectMutation, injectQuery } from '@tanstack/angular-query-experimental';
 import { ColumnDef, FlexRender, injectTable, tableFeatures } from '@tanstack/angular-table';
 import { QueryClient } from '@tanstack/query-core';
-import { httpErrorMessage } from '../../../core/api/http-error-message';
-import { uiText } from '../../../ui-text';
+import { httpErrorMessage } from '@app/core/api/http-error-message';
+import { uiText } from '@app/ui-text';
 import { AllTripsApi, AllTripsTrip } from './all-trips.api';
 import { allTripsQueryOptions, tripQueryKeys } from './all-trips.queries';
 

@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { AuthSessionService } from '../core/auth/auth-session.service';
-import { ApplicationError } from '../core/errors/application-error';
+import { AuthSessionService } from '@app/core/auth/auth-session.service';
+import { ApplicationError } from '@app/core/errors/application-error';
 import { AppShell } from './app-shell';
 
 describe('AppShell', () => {
