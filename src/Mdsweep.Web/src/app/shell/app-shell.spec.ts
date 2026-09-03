@@ -19,7 +19,8 @@ describe('AppShell', () => {
     fixture = TestBed.createComponent(AppShell);
     fixture.componentRef.setInput('session', {
       appUserId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
-      providerId: 'acme-transport',
+      displayName: 'Synthetic Dispatcher',
+      tenantId: 'acme-transport',
       roles: ['Dispatcher', 'Administrator'],
     });
   });
@@ -30,7 +31,8 @@ describe('AppShell', () => {
     const page = fixture.nativeElement.textContent as string;
     expect(page).toContain('MDSweep');
     expect(page).toContain('Trips');
-    expect(page).toContain('d449d57a-8f51-4a2a-9624-d6d474aaa6e7');
+    expect(page).toContain('Synthetic Dispatcher');
+    expect(page).not.toContain('d449d57a-8f51-4a2a-9624-d6d474aaa6e7');
     expect(page).not.toContain('Workspace');
     expect(page).not.toContain('Import manifest');
     expect(page).not.toContain('Appearance');

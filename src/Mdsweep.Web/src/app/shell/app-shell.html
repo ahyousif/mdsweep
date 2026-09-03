@@ -42,7 +42,7 @@
           M
         </span>
         <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden">
-          <span class="w-full truncate text-sm font-medium">{{ session().appUserId }}</span>
+          <span class="w-full truncate text-sm font-medium">{{ session().displayName }}</span>
           <span class="w-full truncate text-sm text-muted-foreground">{{ session().roles.join(' · ') }}</span>
         </span>
       </button>
@@ -63,7 +63,7 @@
 
 <ng-template #userMenu>
   <div hlmDropdownMenu class="w-64">
-    <span hlmDropdownMenuLabel>{{ session().appUserId }}</span>
+    <span hlmDropdownMenuLabel>{{ session().displayName }}</span>
     <span hlmDropdownMenuLabel>{{ session().roles.join(' · ') }}</span>
     <div hlmDropdownMenuSeparator></div>
     <span hlmDropdownMenuLabel>Theme</span>

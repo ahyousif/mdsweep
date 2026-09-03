@@ -23,9 +23,17 @@ describe('AuthSessionService', () => {
     const currentUser = http.expectOne('/api/auth/me');
     expect(currentUser.request.method).toBe('GET');
     currentUser.flush([
-      { userId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7', tenantId: 'acme-transport', role: 'Dispatcher' },
       {
         userId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
+        firstName: 'Synthetic',
+        lastName: 'Dispatcher',
+        tenantId: 'acme-transport',
+        role: 'Dispatcher',
+      },
+      {
+        userId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
+        firstName: 'Synthetic',
+        lastName: 'Dispatcher',
         tenantId: 'acme-transport',
         role: 'Administrator',
       },
@@ -49,7 +57,8 @@ describe('AuthSessionService', () => {
 
     await expect(establishing).resolves.toEqual({
       appUserId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
-      providerId: 'acme-transport',
+      displayName: 'Synthetic Dispatcher',
+      tenantId: 'acme-transport',
       roles: ['Dispatcher', 'Administrator'],
     });
   });

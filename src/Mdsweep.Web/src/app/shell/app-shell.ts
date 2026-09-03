@@ -4,7 +4,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideMonitor, lucideMoon, lucideRoute, lucideSun } from '@ng-icons/lucide';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
-import { AuthSessionService, type ProviderContext } from '@app/core/auth/auth-session.service';
+import { AuthSessionService, type TenantSession } from '@app/core/auth/auth-session.service';
 import { type ThemePreference, ThemeService } from '@app/core/theme/theme.service';
 
 @Component({
@@ -24,7 +24,7 @@ export class AppShell {
   private readonly auth = inject(AuthSessionService);
   readonly theme = inject(ThemeService);
 
-  readonly session = input.required<ProviderContext>();
+  readonly session = input.required<TenantSession>();
 
   readonly navigation = [
     { label: 'Trips', route: '/trips', icon: 'lucideRoute' },

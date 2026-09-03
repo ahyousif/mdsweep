@@ -13,7 +13,13 @@ public sealed class TenantAccess(ApplicationDbContext db) : ITenantAccess
             from user in db.Users
             join membership in db.TenantMemberships on user.Id equals membership.UserId
             where user.KeycloakUserId == userSubject
-            select new TenantMembershipInfo(user.Id, membership.TenantId, membership.Role)
+            select new TenantMembershipInfo(
+                user.Id,
+                user.FirstName,
+                user.LastName,
+                membership.TenantId,
+                membership.Role
+            )
         ).ToListAsync(cancellationToken);
 
     public async Task<bool> HasRoleAsync(

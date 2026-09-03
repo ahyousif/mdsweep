@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideChevronLeft, lucideChevronRight } from '@ng-icons/lucide';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -16,6 +18,29 @@ import { AllTripsApi, AllTripsTrip } from './all-trips.api';
 import { allTripsQueryOptions, tripQueryKeys } from './all-trips.queries';
 
 const features = tableFeatures({});
+const serviceDateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+const serviceDateEmptyStateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'long',
+  day: 'numeric',
+});
+
+function toServiceDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function toLocalDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+
+  return new Date(year, month - 1, day);
+}
 
 const allTripsColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
   {
@@ -46,6 +71,7 @@ const allTripsColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
   selector: 'app-all-trips-page',
   imports: [
     FlexRender,
+    NgIcon,
     HlmButton,
     ...HlmDatePickerImports,
     HlmInput,
@@ -55,6 +81,7 @@ const allTripsColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
     ...HlmTableImports,
     RouterLink,
   ],
+  providers: [provideIcons({ lucideChevronLeft, lucideChevronRight })],
   templateUrl: './all-trips-page.html',
 })
 export default class AllTripsPage {
@@ -62,14 +89,22 @@ export default class AllTripsPage {
   readonly #queryClient = inject(QueryClient);
 
   readonly text = uiText;
-  readonly serviceDateFilter = signal('');
+  readonly serviceDate = signal(toServiceDate(new Date()));
   readonly scheduleError = signal('');
-  readonly selectedServiceDate = computed(() => this.toDate(this.serviceDateFilter()));
+  readonly selectedServiceDate = computed(() => toLocalDate(this.serviceDate()));
+  readonly isToday = computed(() => this.serviceDate() === toServiceDate(new Date()));
+  readonly emptyStateText = computed(() =>
+    this.isToday()
+      ? 'No trips scheduled for today.'
+      : `No trips scheduled for ${serviceDateEmptyStateFormatter.format(this.selectedServiceDate())}.`,
+  );
   readonly formatServiceDate = (date: Date): string =>
-    new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);
+    toServiceDate(date) === toServiceDate(new Date())
+      ? `Today · ${serviceDateFormatter.format(date)}`
+      : serviceDateFormatter.format(date);
 
   readonly tripsQuery = injectQuery(() =>
-    allTripsQueryOptions(this.#api, this.serviceDateFilter()),
+    allTripsQueryOptions(this.#api, this.serviceDate()),
   );
 
   readonly scheduleMutation = injectMutation(() => ({
@@ -77,7 +112,7 @@ export default class AllTripsPage {
       this.#api.setScheduledPickupTime(id, value),
     onSuccess: () =>
       this.#queryClient.invalidateQueries({
-        queryKey: tripQueryKeys.serviceDate(this.serviceDateFilter()),
+        queryKey: tripQueryKeys.serviceDate(this.serviceDate()),
       }),
     onError: (error) =>
       this.scheduleError.set(httpErrorMessage(error, this.text.scheduleSaveError)),
@@ -91,8 +126,20 @@ export default class AllTripsPage {
     data: this.tripsQuery.data()?.items ?? [],
   }));
 
-  setServiceDateFilter(date: Date | null): void {
-    this.serviceDateFilter.set(date ? this.toIsoDate(date) : '');
+  setServiceDate(date: Date | null): void {
+    if (date) {
+      this.serviceDate.set(toServiceDate(date));
+    }
+  }
+
+  moveServiceDate(days: number): void {
+    const date = this.selectedServiceDate();
+    date.setDate(date.getDate() + days);
+    this.serviceDate.set(toServiceDate(date));
+  }
+
+  goToToday(): void {
+    this.serviceDate.set(toServiceDate(new Date()));
   }
 
   tripsQueryError(): string {
@@ -105,17 +152,4 @@ export default class AllTripsPage {
     this.scheduleMutation.mutate({ id: trip.id, value });
   }
 
-  private toDate(value: string): Date | undefined {
-    const [year, month, day] = value.split('-').map(Number);
-
-    return year && month && day ? new Date(year, month - 1, day) : undefined;
-  }
-
-  private toIsoDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  }
 }

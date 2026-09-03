@@ -2,16 +2,19 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '../api/api-client';
 
-export type ProviderContext = {
+export type TenantSession = {
   appUserId: string;
-  providerId: string;
+  displayName: string;
+  tenantId: string;
   roles: Array<'Administrator' | 'Dispatcher' | 'Driver'>;
 };
 
 type Membership = {
   userId: string;
+  firstName: string;
+  lastName: string;
   tenantId: string;
-  role: ProviderContext['roles'][number];
+  role: TenantSession['roles'][number];
 };
 
 type AntiforgeryResponse = {
@@ -22,29 +25,30 @@ type AntiforgeryResponse = {
 export class AuthSessionService {
   private readonly api = inject(ApiClient);
 
-  async establish(): Promise<ProviderContext> {
+  async establish(): Promise<TenantSession> {
     const memberships = await firstValueFrom(this.api.http.get<Membership[]>(this.api.url('auth/me')));
 
-    const contexts = new Map<string, ProviderContext>();
+    const sessions = new Map<string, TenantSession>();
 
     for (const membership of memberships) {
-      const context = contexts.get(membership.tenantId) ?? {
+      const session = sessions.get(membership.tenantId) ?? {
         appUserId: membership.userId,
-        providerId: membership.tenantId,
+        displayName: `${membership.firstName} ${membership.lastName}`.trim(),
+        tenantId: membership.tenantId,
         roles: [],
       };
 
-      context.roles.push(membership.role);
-      contexts.set(membership.tenantId, context);
+      session.roles.push(membership.role);
+      sessions.set(membership.tenantId, session);
     }
 
-    const availableContexts = [...contexts.values()];
+    const availableSessions = [...sessions.values()];
 
-    if (availableContexts.length !== 1) {
-      throw new Error('Choose a Provider before using MDSweep.');
+    if (availableSessions.length !== 1) {
+      throw new Error('Choose a tenant before using MDSweep.');
     }
 
-    const context = availableContexts[0];
+    const session = availableSessions[0];
 
     // Required before the protected POST.
     await firstValueFrom(
@@ -53,7 +57,7 @@ export class AuthSessionService {
 
     await firstValueFrom(
       this.api.http.post<void>(this.api.url('auth/tenant-context'), {
-        tenantId: context.providerId,
+        tenantId: session.tenantId,
       }),
     );
 
@@ -62,7 +66,7 @@ export class AuthSessionService {
       this.api.http.get<AntiforgeryResponse>(this.api.url('auth/antiforgery')),
     );
 
-    return context;
+    return session;
   }
 
   signIn(): void {

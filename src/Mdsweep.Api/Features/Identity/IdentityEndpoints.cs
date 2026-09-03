@@ -55,6 +55,8 @@ public static class IdentityEndpoints
         return Results.Ok(
             memberships.Select(membership => new TenantMembershipResponse(
                 membership.UserId,
+                membership.FirstName,
+                membership.LastName,
                 membership.TenantId,
                 membership.Role
             ))
@@ -145,7 +147,13 @@ public static class IdentityEndpoints
 
     private sealed record SelectTenantContextRequest(string TenantId);
 
-    private sealed record TenantMembershipResponse(Guid UserId, string TenantId, string Role);
+    private sealed record TenantMembershipResponse(
+        Guid UserId,
+        string FirstName,
+        string LastName,
+        string TenantId,
+        string Role
+    );
 
     private sealed record AntiforgeryTokenResponse(string Token);
 }
