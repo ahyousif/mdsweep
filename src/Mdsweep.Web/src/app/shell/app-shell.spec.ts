@@ -37,6 +37,9 @@ describe('AppShell', () => {
     expect(page).not.toContain('Import manifest');
     expect(page).not.toContain('Appearance');
     expect(page).not.toContain('Account');
+    expect(
+      fixture.nativeElement.querySelector('button[hlmSidebarRail][aria-label="Toggle navigation"]'),
+    ).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[aria-label="Open user menu"]')).not.toBeNull();
   });
 });

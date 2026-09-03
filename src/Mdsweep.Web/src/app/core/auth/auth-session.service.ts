@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '../api/api-client';
@@ -23,10 +24,13 @@ type AntiforgeryResponse = {
 
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
-  private readonly api = inject(ApiClient);
+  readonly #api = inject(ApiClient);
+  readonly #document = inject(DOCUMENT);
 
   async establish(): Promise<TenantSession> {
-    const memberships = await firstValueFrom(this.api.http.get<Membership[]>(this.api.url('auth/me')));
+    const memberships = await firstValueFrom(
+      this.#api.http.get<Membership[]>(this.#api.url('auth/me')),
+    );
 
     const sessions = new Map<string, TenantSession>();
 
@@ -52,29 +56,43 @@ export class AuthSessionService {
 
     // Required before the protected POST.
     await firstValueFrom(
-      this.api.http.get<AntiforgeryResponse>(this.api.url('auth/antiforgery')),
+      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
     );
 
     await firstValueFrom(
-      this.api.http.post<void>(this.api.url('auth/tenant-context'), {
+      this.#api.http.post<void>(this.#api.url('auth/tenant-context'), {
         tenantId: session.tenantId,
       }),
     );
 
     // Refresh the token after the authentication cookie gains the tenant claim.
     await firstValueFrom(
-      this.api.http.get<AntiforgeryResponse>(this.api.url('auth/antiforgery')),
+      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
     );
 
     return session;
   }
 
   signIn(): void {
-    window.location.assign(this.api.url('auth/login'));
+    window.location.assign(this.#api.url('auth/login'));
   }
 
   async signOut(): Promise<void> {
-    await firstValueFrom(this.api.http.post<void>(this.api.url('auth/logout'), {}));
-    window.location.assign('/');
+    const antiforgery = await firstValueFrom(
+      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
+    );
+
+    const form = this.#document.createElement('form');
+    form.method = 'post';
+    form.action = this.#api.url('auth/logout');
+
+    const token = this.#document.createElement('input');
+    token.type = 'hidden';
+    token.name = '__RequestVerificationToken';
+    token.value = antiforgery.token;
+    form.append(token);
+
+    this.#document.body.append(form);
+    form.submit();
   }
 }

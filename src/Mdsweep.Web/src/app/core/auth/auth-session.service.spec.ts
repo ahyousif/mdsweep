@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { AuthSessionService } from './auth-session.service';
 
 describe('AuthSessionService', () => {
@@ -61,5 +62,27 @@ describe('AuthSessionService', () => {
       tenantId: 'acme-transport',
       roles: ['Dispatcher', 'Administrator'],
     });
+  });
+
+  it('starts OIDC logout with a browser form post protected by an antiforgery token', async () => {
+    const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => undefined);
+
+    const signingOut = service.signOut();
+
+    const antiforgery = http.expectOne('/api/auth/antiforgery');
+    expect(antiforgery.request.method).toBe('GET');
+    antiforgery.flush({ token: 'sign-out-token' });
+
+    await signingOut;
+
+    const form = submit.mock.instances[0] as HTMLFormElement;
+    expect(form.getAttribute('method')).toBe('post');
+    expect(form.getAttribute('action')).toBe('/api/auth/logout');
+    expect(form.querySelector('input[name="__RequestVerificationToken"]')?.getAttribute('value')).toBe(
+      'sign-out-token',
+    );
+
+    form.remove();
+    submit.mockRestore();
   });
 });
