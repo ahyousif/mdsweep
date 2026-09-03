@@ -1,17 +1,21 @@
+import { DOCUMENT } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '../api/api-client';
 
-export type ProviderContext = {
+export type TenantSession = {
   appUserId: string;
-  providerId: string;
+  displayName: string;
+  tenantId: string;
   roles: Array<'Administrator' | 'Dispatcher' | 'Driver'>;
 };
 
 type Membership = {
   userId: string;
+  firstName: string;
+  lastName: string;
   tenantId: string;
-  role: ProviderContext['roles'][number];
+  role: TenantSession['roles'][number];
 };
 
 type AntiforgeryResponse = {
@@ -20,52 +24,75 @@ type AntiforgeryResponse = {
 
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
-  private readonly api = inject(ApiClient);
+  readonly #api = inject(ApiClient);
+  readonly #document = inject(DOCUMENT);
 
-  async establish(): Promise<ProviderContext> {
-    const memberships = await firstValueFrom(this.api.http.get<Membership[]>(this.api.url('auth/me')));
+  async establish(): Promise<TenantSession> {
+    const memberships = await firstValueFrom(
+      this.#api.http.get<Membership[]>(this.#api.url('auth/me')),
+    );
 
-    const contexts = new Map<string, ProviderContext>();
+    const sessions = new Map<string, TenantSession>();
 
     for (const membership of memberships) {
-      const context = contexts.get(membership.tenantId) ?? {
+      const session = sessions.get(membership.tenantId) ?? {
         appUserId: membership.userId,
-        providerId: membership.tenantId,
+        displayName: `${membership.firstName} ${membership.lastName}`.trim(),
+        tenantId: membership.tenantId,
         roles: [],
       };
 
-      context.roles.push(membership.role);
-      contexts.set(membership.tenantId, context);
+      session.roles.push(membership.role);
+      sessions.set(membership.tenantId, session);
     }
 
-    const availableContexts = [...contexts.values()];
+    const availableSessions = [...sessions.values()];
 
-    if (availableContexts.length !== 1) {
-      throw new Error('Choose a Provider before using MDSweep.');
+    if (availableSessions.length !== 1) {
+      throw new Error('Choose an organization before using MDSweep.');
     }
 
-    const context = availableContexts[0];
+    const session = availableSessions[0];
 
     // Required before the protected POST.
     await firstValueFrom(
-      this.api.http.get<AntiforgeryResponse>(this.api.url('auth/antiforgery')),
+      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
     );
 
     await firstValueFrom(
-      this.api.http.post<void>(this.api.url('auth/tenant-context'), {
-        tenantId: context.providerId,
+      this.#api.http.post<void>(this.#api.url('auth/tenant-context'), {
+        tenantId: session.tenantId,
       }),
     );
 
     // Refresh the token after the authentication cookie gains the tenant claim.
     await firstValueFrom(
-      this.api.http.get<AntiforgeryResponse>(this.api.url('auth/antiforgery')),
+      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
     );
 
-    return context;
+    return session;
   }
 
   signIn(): void {
-    window.location.assign(this.api.url('auth/login'));
+    window.location.assign(this.#api.url('auth/login'));
+  }
+
+  async signOut(): Promise<void> {
+    const antiforgery = await firstValueFrom(
+      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
+    );
+
+    const form = this.#document.createElement('form');
+    form.method = 'post';
+    form.action = this.#api.url('auth/logout');
+
+    const token = this.#document.createElement('input');
+    token.type = 'hidden';
+    token.name = '__RequestVerificationToken';
+    token.value = antiforgery.token;
+    form.append(token);
+
+    this.#document.body.append(form);
+    form.submit();
   }
 }

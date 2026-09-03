@@ -25,20 +25,26 @@ describe('AllTripsPage', () => {
     fixture = TestBed.createComponent(AllTripsPage);
   });
 
-  it('uses the selected service date as a filter and shows a query failure separately', async () => {
+  it('starts at today, supports day navigation, and shows a query failure separately', async () => {
     api.getTrips.mockRejectedValue(new ApplicationError('Trips are temporarily unavailable.', 503));
     fixture.detectChanges();
 
-    const filter = fixture.nativeElement.querySelector('#service-date-filter') as HTMLInputElement;
-    filter.value = '2026-09-02';
-    filter.dispatchEvent(new Event('input'));
+    expect(fixture.nativeElement.querySelector('hlm-date-picker')).not.toBeNull();
+    const today = fixture.componentInstance.serviceDate();
+    expect(fixture.componentInstance.isToday()).toBe(true);
+    fixture.componentInstance.setServiceDate(new Date(2026, 8, 2));
+    fixture.componentInstance.moveServiceDate(1);
+    expect(fixture.componentInstance.serviceDate()).toBe('2026-09-03');
     fixture.detectChanges();
 
     await vi.waitFor(() => {
       fixture.detectChanges();
-      expect(api.getTrips).toHaveBeenCalledWith('2026-09-02');
+      expect(api.getTrips).toHaveBeenCalledWith('2026-09-03');
       expect(fixture.nativeElement.textContent).toContain('Trips could not be loaded');
       expect(fixture.nativeElement.textContent).toContain('Trips are temporarily unavailable.');
     });
+
+    fixture.componentInstance.goToToday();
+    expect(fixture.componentInstance.serviceDate()).toBe(today);
   });
 });

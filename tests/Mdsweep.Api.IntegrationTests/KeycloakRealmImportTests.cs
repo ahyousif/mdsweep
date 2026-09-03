@@ -10,6 +10,39 @@ namespace Mdsweep.Api.IntegrationTests;
 public sealed class KeycloakRealmImportTests
 {
     [Fact]
+    public void Development_realm_registers_the_oidc_sign_in_and_sign_out_callbacks()
+    {
+        var realmPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Fixtures",
+            "keycloak",
+            "mdsweep-realm.json"
+        );
+        using var realm = JsonDocument.Parse(File.ReadAllText(realmPath));
+        var redirectUris = realm.RootElement
+            .GetProperty("clients")
+            .EnumerateArray()
+            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+            .GetProperty("redirectUris")
+            .EnumerateArray()
+            .Select(uri => uri.GetString())
+            .ToList();
+
+        Assert.Contains("http://localhost:4200/signin-oidc", redirectUris);
+        Assert.Contains("http://localhost:4200/signout-callback-oidc", redirectUris);
+
+        var postLogoutRedirectUris = realm.RootElement
+            .GetProperty("clients")
+            .EnumerateArray()
+            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+            .GetProperty("attributes")
+            .GetProperty("post.logout.redirect.uris")
+            .GetString();
+
+        Assert.Equal("http://localhost:4200/signout-callback-oidc", postLogoutRedirectUris);
+    }
+
+    [Fact]
     public async Task Development_realm_supports_the_application_administration_workflow()
     {
         var importDirectory = Path.Combine(AppContext.BaseDirectory, "Fixtures", "keycloak");

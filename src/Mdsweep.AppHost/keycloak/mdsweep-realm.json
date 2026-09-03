@@ -25,7 +25,13 @@
       "secret": "Development-only-secret",
       "protocol": "openid-connect",
       "standardFlowEnabled": true,
-      "redirectUris": ["http://localhost:4200/signin-oidc"],
+      "redirectUris": [
+        "http://localhost:4200/signin-oidc",
+        "http://localhost:4200/signout-callback-oidc"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:4200/signout-callback-oidc"
+      },
       "webOrigins": ["http://localhost:4200"],
       "protocolMappers": [
         {

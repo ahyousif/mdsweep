@@ -1,38 +1,120 @@
-<header class="bg-secondary px-4 py-8 text-secondary-foreground sm:px-8 lg:px-16">
-  <span class="text-primary text-xs font-bold tracking-widest uppercase">
-    {{ text.productContext }}
-  </span>
-  <h1 class="mt-1 text-3xl font-semibold">{{ text.pageTitle }}</h1>
-</header>
+<div hlmSidebarWrapper>
+  <hlm-sidebar>
+    <button hlmSidebarRail type="button" aria-label="Toggle navigation"></button>
 
-<main class="mx-auto grid max-w-7xl gap-4 p-4 sm:p-6">
-  @if (sessionQuery.isPending()) {
-    <div class="text-muted-foreground flex items-center justify-center gap-2 py-16" role="status">
-      <hlm-spinner /> Establishing your secure session
+    <div hlmSidebarHeader>
+      <a routerLink="/trips" class="flex items-center gap-3 rounded-md px-2 py-2">
+        <span
+          class="bg-sidebar-primary text-sidebar-primary-foreground grid size-8 place-items-center rounded-md text-sm font-bold"
+        >
+          M
+        </span>
+        <span class="truncate text-base font-semibold group-data-[collapsible=icon]:hidden"
+          >MDSweep</span
+        >
+      </a>
     </div>
-  } @else if (sessionQuery.isError()) {
-    @if (sessionError()) {
-      <div hlmAlert variant="destructive">
-        <h2 hlmAlertTitle>Provider selection required</h2>
-        <p hlmAlertDescription>{{ sessionError() }}</p>
-      </div>
+
+    <div hlmSidebarContent>
+      <ul hlmSidebarMenu class="px-2">
+        @for (item of navigation; track item.route) {
+          <li hlmSidebarMenuItem>
+            <a
+              hlmSidebarMenuButton
+              size="lg"
+              [routerLink]="item.route"
+              routerLinkActive
+              #active="routerLinkActive"
+              [isActive]="active.isActive"
+              [variant]="active.isActive ? 'outline' : 'default'"
+            >
+              <ng-icon [name]="item.icon" />
+              <span>{{ item.label }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div hlmSidebarFooter>
+      <button
+        hlmSidebarMenuButton
+        size="lg"
+        type="button"
+        [hlmDropdownMenuTrigger]="userMenu"
+        aria-label="Open user menu"
+      >
+        <span
+          class="bg-sidebar-accent text-sidebar-accent-foreground grid size-8 shrink-0 place-items-center rounded-md text-sm font-semibold"
+        >
+          M
+        </span>
+        <span
+          class="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden"
+        >
+          <span class="w-full truncate text-sm font-medium">{{ session().displayName }}</span>
+          <span class="w-full truncate text-sm text-muted-foreground">{{
+            session().roles.join(' · ')
+          }}</span>
+        </span>
+      </button>
+    </div>
+
+    @if (signOutError()) {
+      <p class="text-destructive px-2 text-sm" role="alert">
+        {{ signOutError() }}
+      </p>
     }
-    <section hlmCard class="mx-auto mt-8 w-full max-w-md">
-      <div hlmCardHeader>
-        <h2 hlmCardTitle>{{ text.signInTitle }}</h2>
-        <p hlmCardDescription>{{ text.signInHelp }}</p>
-      </div>
-      <div hlmCardFooter>
-        <button hlmBtn type="button" (click)="signIn()">{{ text.signIn }}</button>
-      </div>
-    </section>
-  } @else if (isDriverOnly()) {
-    <section hlmCard class="mx-auto mt-8 w-full max-w-md">
-      <div hlmCardHeader>
-        <h2 hlmCardTitle>My Trips is not available in this build yet.</h2>
-      </div>
-    </section>
-  } @else {
-    <router-outlet />
-  }
-</main>
+  </hlm-sidebar>
+
+  <main hlmSidebarInset class="min-w-0">
+    <header class="border-border flex h-14 items-center gap-3 border-b px-4 md:hidden">
+      <button hlmSidebarTrigger type="button"></button>
+      <span class="text-base font-semibold">MDSweep</span>
+    </header>
+
+    <div class="min-h-0 min-w-0 flex-1 overflow-auto p-4 sm:p-6">
+      <router-outlet />
+    </div>
+  </main>
+</div>
+
+<ng-template #userMenu>
+  <div hlmDropdownMenu class="w-64">
+    <span hlmDropdownMenuLabel>{{ session().displayName }}</span>
+    <span hlmDropdownMenuLabel>{{ session().roles.join(' · ') }}</span>
+    <div hlmDropdownMenuSeparator></div>
+    <span hlmDropdownMenuLabel>Theme</span>
+    <button
+      hlmDropdownMenuCheckbox
+      [checked]="theme.preference() === 'system'"
+      (triggered)="setTheme('system')"
+    >
+      <ng-icon name="lucideMonitor" />
+      <span>System</span>
+      <hlm-dropdown-menu-checkbox-indicator />
+    </button>
+    <button
+      hlmDropdownMenuCheckbox
+      [checked]="theme.preference() === 'light'"
+      (triggered)="setTheme('light')"
+    >
+      <ng-icon name="lucideSun" />
+      <span>Light</span>
+      <hlm-dropdown-menu-checkbox-indicator />
+    </button>
+    <button
+      hlmDropdownMenuCheckbox
+      [checked]="theme.preference() === 'dark'"
+      (triggered)="setTheme('dark')"
+    >
+      <ng-icon name="lucideMoon" />
+      <span>Dark</span>
+      <hlm-dropdown-menu-checkbox-indicator />
+    </button>
+    <div hlmDropdownMenuSeparator></div>
+    <button hlmDropdownMenuItem type="button" [disabled]="signOutPending()" (triggered)="signOut()">
+      {{ signOutPending() ? 'Signing out…' : 'Sign out' }}
+    </button>
+  </div>
+</ng-template>

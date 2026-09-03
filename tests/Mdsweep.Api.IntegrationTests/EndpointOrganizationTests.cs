@@ -1,10 +1,21 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Routing;
 
 namespace Mdsweep.Api.IntegrationTests;
 
 public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
 {
+    [Fact]
+    public void Oidc_authentication_persists_the_id_token_needed_for_Keycloak_sign_out()
+    {
+        var oidc = Application.Services
+            .GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
+            .Get(OpenIdConnectDefaults.AuthenticationScheme);
+
+        Assert.True(oidc.SaveTokens);
+    }
+
     [Fact]
     public void Identity_and_dispatch_routes_are_registered_once_with_expected_authorization()
     {

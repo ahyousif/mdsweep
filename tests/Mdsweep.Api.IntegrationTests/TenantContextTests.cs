@@ -16,6 +16,8 @@ public sealed class TenantContextTests : MdsweepIntegrationTest
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var membership = document.RootElement[0];
+        Assert.Equal("Synthetic", membership.GetProperty("firstName").GetString());
+        Assert.Equal("Dispatcher", membership.GetProperty("lastName").GetString());
         Assert.Equal("mdsw-eep2-3456", membership.GetProperty("tenantId").GetString());
         Assert.Equal("Dispatcher", membership.GetProperty("role").GetString());
     }
