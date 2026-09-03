@@ -4,10 +4,14 @@
 
     <div hlmSidebarHeader>
       <a routerLink="/trips" class="flex items-center gap-3 rounded-md px-2 py-2">
-        <span class="bg-sidebar-primary text-sidebar-primary-foreground grid size-8 place-items-center rounded-md text-sm font-bold">
+        <span
+          class="bg-sidebar-primary text-sidebar-primary-foreground grid size-8 place-items-center rounded-md text-sm font-bold"
+        >
           M
         </span>
-        <span class="truncate text-base font-semibold group-data-[collapsible=icon]:hidden">MDSweep</span>
+        <span class="truncate text-base font-semibold group-data-[collapsible=icon]:hidden"
+          >MDSweep</span
+        >
       </a>
     </div>
 
@@ -40,15 +44,27 @@
         [hlmDropdownMenuTrigger]="userMenu"
         aria-label="Open user menu"
       >
-        <span class="bg-sidebar-accent text-sidebar-accent-foreground grid size-8 shrink-0 place-items-center rounded-md text-sm font-semibold">
+        <span
+          class="bg-sidebar-accent text-sidebar-accent-foreground grid size-8 shrink-0 place-items-center rounded-md text-sm font-semibold"
+        >
           M
         </span>
-        <span class="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden">
+        <span
+          class="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden"
+        >
           <span class="w-full truncate text-sm font-medium">{{ session().displayName }}</span>
-          <span class="w-full truncate text-sm text-muted-foreground">{{ session().roles.join(' · ') }}</span>
+          <span class="w-full truncate text-sm text-muted-foreground">{{
+            session().roles.join(' · ')
+          }}</span>
         </span>
       </button>
     </div>
+
+    @if (signOutError()) {
+      <p class="text-destructive px-2 text-sm" role="alert">
+        {{ signOutError() }}
+      </p>
+    }
   </hlm-sidebar>
 
   <main hlmSidebarInset class="min-w-0">
@@ -97,6 +113,8 @@
       <hlm-dropdown-menu-checkbox-indicator />
     </button>
     <div hlmDropdownMenuSeparator></div>
-    <button hlmDropdownMenuItem type="button" (triggered)="signOut()">Sign out</button>
+    <button hlmDropdownMenuItem type="button" [disabled]="signOutPending()" (triggered)="signOut()">
+      {{ signOutPending() ? 'Signing out…' : 'Sign out' }}
+    </button>
   </div>
 </ng-template>

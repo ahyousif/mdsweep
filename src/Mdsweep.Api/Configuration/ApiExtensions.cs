@@ -51,7 +51,7 @@ public static class ApiExtensions
                     oidc.ClientId = configuration.ClientId;
                     oidc.ClientSecret = configuration.ClientSecret;
                     oidc.ResponseType = OpenIdConnectResponseType.Code;
-                    oidc.SaveTokens = false;
+                    oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";
                     oidc.TokenValidationParameters.RoleClaimType = "roles";
