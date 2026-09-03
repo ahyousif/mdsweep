@@ -49,7 +49,7 @@ export class AuthSessionService {
     const availableSessions = [...sessions.values()];
 
     if (availableSessions.length !== 1) {
-      throw new Error('Choose a tenant before using MDSweep.');
+      throw new Error('Choose an organization before using MDSweep.');
     }
 
     const session = availableSessions[0];

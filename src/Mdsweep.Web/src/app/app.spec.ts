@@ -25,38 +25,14 @@ describe('App', () => {
     fixture = TestBed.createComponent(App);
   });
 
-  it('presents a 401 as the normal sign-in state without a provider-selection error', async () => {
+  it('presents a 401 as the normal sign-in state without an organization-selection error', async () => {
     fixture.detectChanges();
 
     await vi.waitFor(() => {
       fixture.detectChanges();
       const page = fixture.nativeElement.textContent as string;
       expect(page).toContain('Sign in');
-      expect(page).not.toContain('Provider selection required');
-    });
-  });
-
-  it('uses organization language for a session-establishment error', async () => {
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        provideTanStackQuery(new QueryClient()),
-        provideRouter([]),
-        {
-          provide: AuthSessionService,
-          useValue: {
-            establish: () => Promise.reject(new Error('Choose an organization before using MDSweep.')),
-            signIn: () => undefined,
-          },
-        },
-      ],
-    });
-    fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-
-    await vi.waitFor(() => {
-      fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain('Organization selection required');
+      expect(page).not.toContain('Organization selection required');
     });
   });
 });

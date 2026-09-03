@@ -64,6 +64,30 @@ describe('AuthSessionService', () => {
     });
   });
 
+  it('uses organization language when more than one organization is available', async () => {
+    const establishing = service.establish();
+
+    const currentUser = http.expectOne('/api/auth/me');
+    currentUser.flush([
+      {
+        userId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
+        firstName: 'Synthetic',
+        lastName: 'Dispatcher',
+        tenantId: 'acme-transport',
+        role: 'Dispatcher',
+      },
+      {
+        userId: 'a7bb3945-263b-4a4f-9f45-3d47b550a7c8',
+        firstName: 'Synthetic',
+        lastName: 'Dispatcher',
+        tenantId: 'contoso-transport',
+        role: 'Dispatcher',
+      },
+    ]);
+
+    await expect(establishing).rejects.toThrow('Choose an organization before using MDSweep.');
+  });
+
   it('starts OIDC logout with a browser form post protected by an antiforgery token', async () => {
     const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(() => undefined);
 
