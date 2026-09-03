@@ -29,7 +29,10 @@ public static class DevelopmentIdentitySeeder
         }
 
         if (
-            !await db.TenantMemberships.AnyAsync(x => x.TenantId == tenant.Id && x.UserId == user.Id, cancellationToken)
+            !await db.TenantMemberships.AnyAsync(
+                x => x.TenantId == tenant.Id && x.UserId == user.Id && x.Role == "Dispatcher",
+                cancellationToken
+            )
         )
         {
             db.TenantMemberships.Add(TenantMembership.Create(tenant.Id, user.Id, "Dispatcher"));

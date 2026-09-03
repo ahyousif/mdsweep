@@ -15,7 +15,6 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
         builder
             .Property(trip => trip.BrokerTripNumber)
             .HasColumnName("broker_trip_number")
-            .HasColumnType("citext")
             .HasMaxLength(100)
             .IsRequired();
         builder.HasIndex(trip => new { trip.TenantId, trip.BrokerTripNumber }).IsUnique();

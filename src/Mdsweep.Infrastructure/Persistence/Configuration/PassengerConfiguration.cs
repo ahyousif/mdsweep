@@ -13,7 +13,6 @@ public sealed class PassengerConfiguration : IEntityTypeConfiguration<PassengerA
         builder
             .Property(passenger => passenger.BrokerMemberId)
             .HasColumnName("broker_member_id")
-            .HasColumnType("citext")
             .HasMaxLength(100);
         builder.Property(passenger => passenger.FirstName).HasColumnName("first_name").HasMaxLength(200);
         builder.Property(passenger => passenger.LastName).HasColumnName("last_name").HasMaxLength(200);
