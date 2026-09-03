@@ -79,6 +79,8 @@ Create the administrator with Keycloak's Admin Console rather than adding creden
 
 The production AppHost intentionally does not set `KC_BOOTSTRAP_ADMIN_USERNAME` or `KC_BOOTSTRAP_ADMIN_PASSWORD`. Local `aspire run` still creates the synthetic `admin` bootstrap user and imports the development realm. If production must be recovered onto a fresh database, use Keycloak's native `bootstrap-admin user` recovery command during a controlled maintenance window, then remove that temporary recovery account after a named administrator is restored.
 
+The production `mdsweep-server` client is administered in Keycloak rather than imported by the AppHost. Its Valid Post Logout Redirect URIs must include the deployed public application's `/signout-callback-oidc` URI before enabling RP-initiated logout.
+
 ## Deployment security notes
 
 - Generated `aspire-output` and local `.aspire` deployment state are ignored. Deployment state can contain plain-text parameter values and must never be uploaded as an artifact or committed.

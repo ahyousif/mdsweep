@@ -64,4 +64,22 @@ describe('AppShell', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Could not sign out. Try again.');
   });
+
+  it('does not submit sign out twice while the first request is pending', async () => {
+    let completeSignOut: (() => void) | undefined;
+    signOut.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          completeSignOut = resolve;
+        }),
+    );
+
+    const firstAttempt = fixture.componentInstance.signOut();
+    const secondAttempt = fixture.componentInstance.signOut();
+
+    expect(signOut).toHaveBeenCalledTimes(1);
+
+    completeSignOut?.();
+    await Promise.all([firstAttempt, secondAttempt]);
+  });
 });

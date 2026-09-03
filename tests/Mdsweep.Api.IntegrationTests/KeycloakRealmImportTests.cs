@@ -30,6 +30,16 @@ public sealed class KeycloakRealmImportTests
 
         Assert.Contains("http://localhost:4200/signin-oidc", redirectUris);
         Assert.Contains("http://localhost:4200/signout-callback-oidc", redirectUris);
+
+        var postLogoutRedirectUris = realm.RootElement
+            .GetProperty("clients")
+            .EnumerateArray()
+            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+            .GetProperty("attributes")
+            .GetProperty("post.logout.redirect.uris")
+            .GetString();
+
+        Assert.Equal("http://localhost:4200/signout-callback-oidc", postLogoutRedirectUris);
     }
 
     [Fact]

@@ -51,6 +51,7 @@ public static class ApiExtensions
                     oidc.ClientId = configuration.ClientId;
                     oidc.ClientSecret = configuration.ClientSecret;
                     oidc.ResponseType = OpenIdConnectResponseType.Code;
+                    // The OIDC handler reads this ID token as id_token_hint during RP-initiated logout.
                     oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";

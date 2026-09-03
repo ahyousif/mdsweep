@@ -35,4 +35,28 @@ describe('App', () => {
       expect(page).not.toContain('Provider selection required');
     });
   });
+
+  it('uses organization language for a session-establishment error', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideTanStackQuery(new QueryClient()),
+        provideRouter([]),
+        {
+          provide: AuthSessionService,
+          useValue: {
+            establish: () => Promise.reject(new Error('Choose an organization before using MDSweep.')),
+            signIn: () => undefined,
+          },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Organization selection required');
+    });
+  });
 });
