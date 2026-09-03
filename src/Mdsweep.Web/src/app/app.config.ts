@@ -15,6 +15,7 @@ import { provideRouter } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { routes } from './app.routes';
+import { API_BASE_PATH } from './core/api/api-client';
 import { applicationErrorInterceptor } from './core/errors/application-error.interceptor';
 import { GlobalErrorHandler } from './core/errors/global-error.handler';
 
@@ -31,6 +32,7 @@ export const appConfig: ApplicationConfig = {
         headerName: 'X-XSRF-TOKEN',
       }),
     ),
+    { provide: API_BASE_PATH, useValue: '/api' },
     provideTanStackQuery(
       new QueryClient({
         defaultOptions: {

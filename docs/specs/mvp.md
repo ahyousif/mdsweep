@@ -47,7 +47,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 33. As a Dispatcher, I want terminal Trips reviewed and explicitly closed, so that unresolved operational information is not exported accidentally.
 34. As a Dispatcher, I want Closed Trips validated for billing, so that missing required data is found before MTM upload.
 35. As a Dispatcher, I want to maintain the Tenant's list of Vehicles registered in MTM, so that billing uses known VINs without retyping them for every Trip.
-36. As a Dispatcher, I want to designate a Driver's Primary Vehicle before assigning Trips, so that their usual Vehicle can be reused across the service day.
+36. As a Dispatcher, I want to designate a Driver's Primary Vehicle before assigning Trips, so that their usual Vehicle can be reused across Trips on a service date.
 37. As a Dispatcher, I want each billable Trip to use the Driver's Primary Vehicle automatically unless I record an exception, so that billing reflects performed work without repetitive confirmation.
 38. As a Dispatcher, I want one MTM-compatible billing file, so that I do not open and enter every Trip individually.
 39. As a Dispatcher, I want to download a daily operational spreadsheet when needed, so that operations have a simple fallback.
@@ -73,8 +73,8 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 - A Trip may be closed after its terminal outcome and required operational information have been reviewed and accepted. Closure and billing readiness remain separate decisions.
 - Users receive Driver and Dispatcher roles through Provider Membership; a User may hold both roles. A Driver Profile contains the operational information needed for Assignment, while Dispatcher remains a role.
 - Maintain a minimal Tenant-owned reference list of Vehicles that a Dispatcher confirms are registered in MTM. Each Vehicle has a display label, VIN, and active state; registering the Vehicle with MTM remains an external process.
-- A Dispatcher may designate one active Vehicle as a Driver Profile's Primary Vehicle before the Driver has Trip Assignments. Primary Vehicle changes are effective-dated and retained so the correct default can be resolved for each service day.
-- A Trip uses the assigned Driver's Primary Vehicle for its service day as the Performed Vehicle unless a Dispatcher records an exception. Ordinary Trips require no per-Trip Vehicle confirmation.
+- A Dispatcher may designate one active Vehicle as a Driver Profile's Primary Vehicle before the Driver has Trip Assignments. Primary Vehicle changes are effective-dated and retained so the correct default can be resolved for each Trip's service date.
+- A Trip uses the assigned Driver's Primary Vehicle for its service date as the Performed Vehicle unless a Dispatcher records an exception. Ordinary Trips require no per-Trip Vehicle confirmation.
 - The Dispatcher can override the Vehicle for one Trip or apply an exception across selected Trips. A missing Driver, missing Primary Vehicle, or inactive Vehicle places the Trip in Needs Review instead of guessing.
 - When a Trip is closed, preserve the resolved Performed Vehicle VIN as historical Trip data so later Vehicle edits, deactivation, or Primary Vehicle changes cannot rewrite prior work or claims. Drivers do not select Vehicles.
 - MDSweep records the Tenant's confirmation but does not independently verify current MTM registration or Driver/Vehicle eligibility. MTM Link remains authoritative during manual upload.

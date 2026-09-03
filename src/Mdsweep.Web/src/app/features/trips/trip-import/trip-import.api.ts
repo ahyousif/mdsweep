@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ApiClient } from '../../../core/api/api-client';
 
 export type TripImportItem = {
   rowNumber: number;
@@ -30,15 +30,15 @@ export function tripImportDispositionCounts(items: TripImportItem[]) {
 
 @Injectable({ providedIn: 'root' })
 export class TripImportApi {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(ApiClient);
 
   preview(file: File): Promise<TripImport> {
     const form = new FormData();
     form.append('file', file);
-    return firstValueFrom(this.http.post<TripImport>('/api/trip-imports', form));
+    return firstValueFrom(this.api.http.post<TripImport>(this.api.url('trip-imports'), form));
   }
 
   apply(id: string): Promise<TripImport> {
-    return firstValueFrom(this.http.post<TripImport>(`/api/trip-imports/${id}/apply`, {}));
+    return firstValueFrom(this.api.http.post<TripImport>(this.api.url(`trip-imports/${id}/apply`), {}));
   }
 }

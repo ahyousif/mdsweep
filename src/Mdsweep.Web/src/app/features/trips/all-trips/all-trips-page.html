@@ -2,28 +2,55 @@
   <div>
     <span class="text-primary text-xs font-bold tracking-widest uppercase">Trips</span>
     <h2 class="mt-1 text-2xl font-semibold">All trips</h2>
-    <p class="text-muted-foreground mt-1">Today’s operational work queue.</p>
+    <p class="text-muted-foreground mt-1">Review and schedule trips for a selected service date.</p>
   </div>
 
-  @if (serviceDayQuery.isPending() && serviceDate()) {
-    <div class="text-muted-foreground flex items-center gap-2" role="status">
-      <hlm-spinner /> Loading service day
-    </div>
-  }
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <label class="grid gap-1" for="service-date-filter">
+      <span class="text-sm font-medium">Service date filter</span>
+      <input
+        hlmInput
+        id="service-date-filter"
+        type="date"
+        [value]="serviceDateFilter()"
+        (input)="setServiceDateFilter($any($event.target).value)"
+      />
+    </label>
+    <a hlmBtn routerLink="/trips/import">Import trips</a>
+  </div>
 
-  @if (serviceDayQuery.isSuccess() && !serviceDayQuery.data()?.items?.length) {
+  @if (!serviceDateFilter()) {
     <section hlmCard>
-      <div hlmCardContent class="pt-6">No trips scheduled for {{ serviceDate() }}.</div>
+      <div hlmCardContent class="pt-6">Select a service date to view its trips.</div>
     </section>
   }
 
-  @if (serviceDayQuery.data()?.items?.length) {
+  @if (tripsQuery.isPending() && serviceDateFilter()) {
+    <div class="text-muted-foreground flex items-center gap-2" role="status">
+      <hlm-spinner /> Loading trips
+    </div>
+  }
+
+  @if (tripsQuery.isError()) {
+    <div hlmAlert variant="destructive">
+      <h3 hlmAlertTitle>Trips could not be loaded</h3>
+      <p hlmAlertDescription>{{ tripsQueryError() }}</p>
+    </div>
+  }
+
+  @if (tripsQuery.isSuccess() && !tripsQuery.data()?.items?.length) {
+    <section hlmCard>
+      <div hlmCardContent class="pt-6">No trips scheduled for {{ serviceDateFilter() }}.</div>
+    </section>
+  }
+
+  @if (tripsQuery.data()?.items?.length) {
     <section hlmCard>
       <div hlmCardHeader>
-        <h3 hlmCardTitle>{{ serviceDate() }}</h3>
+        <h3 hlmCardTitle>{{ serviceDateFilter() }}</h3>
         <p hlmCardDescription>
-          {{ serviceDayQuery.data()?.totalCount }} trips · page {{ serviceDayQuery.data()?.page }} of
-          {{ serviceDayQuery.data()?.totalPages }}
+          {{ tripsQuery.data()?.totalCount }} trips · page {{ tripsQuery.data()?.page }} of
+          {{ tripsQuery.data()?.totalPages }}
         </p>
       </div>
       <div hlmCardContent>
@@ -81,10 +108,10 @@
     </section>
   }
 
-  @if (error()) {
+  @if (scheduleError()) {
     <div hlmAlert variant="destructive">
       <h4 hlmAlertTitle>Action needed</h4>
-      <p hlmAlertDescription>{{ error() }}</p>
+      <p hlmAlertDescription>{{ scheduleError() }}</p>
     </div>
   }
 </section>
