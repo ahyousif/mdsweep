@@ -119,7 +119,11 @@ public sealed class TripListTests : MdsweepIntegrationTest
                 "200 Synthetic Way",
                 "Mesa",
                 brokerStatus,
-                isWillCall
+                isWillCall,
+                PassengerMobilityRequirement.Ambulatory,
+                null,
+                null,
+                null
             )
         );
         trip.TenantId = tenantId;

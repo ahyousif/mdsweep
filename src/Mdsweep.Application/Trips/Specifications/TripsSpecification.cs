@@ -6,17 +6,47 @@ namespace Mdsweep.Application.Trips.Specifications;
 
 public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Guid, TripsSpecification>
 {
-    public TripsSpecification WithServiceDate(LocalDate? serviceDate)
+    public TripsSpecification WithTripDateRange(LocalDate? startDate, LocalDate? endDate)
     {
-        if (!serviceDate.HasValue)
+        if (!startDate.HasValue && !endDate.HasValue)
         {
             return this;
         }
 
-        var value = serviceDate.Value.ToDateOnly();
+        if (startDate.HasValue)
+        {
+            var start = startDate.Value.ToDateOnly();
+            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate >= start));
+        }
 
-        Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate == value));
+        if (endDate.HasValue)
+        {
+            var end = endDate.Value.ToDateOnly();
+            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate <= end));
+        }
 
+        return this;
+    }
+
+    public TripsSpecification WithSearch(string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search)) return this;
+
+        var value = search.Trim().ToUpperInvariant();
+        Spec.Add(query => query.Where(trip =>
+            trip.BrokerTripNumber.Contains(value) ||
+            trip.Passenger.FirstName.ToUpper().Contains(value) ||
+            trip.Passenger.LastName.ToUpper().Contains(value)));
+        return this;
+    }
+
+    public TripsSpecification WithNeedsAttention(bool? needsAttention)
+    {
+        if (!needsAttention.HasValue) return this;
+
+        Spec.Add(query => query.Where(trip =>
+            ((trip.ScheduledPickupTime == null && !trip.BrokerData.IsWillCall) ||
+            (trip.BrokerData.BrokerStatus != null && trip.BrokerData.BrokerStatus != "VALID")) == needsAttention.Value));
         return this;
     }
 
@@ -73,6 +103,11 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
 
             case TripSortBy.ScheduledPickupTime:
                 Spec.AddSorting(trip => trip.ScheduledPickupTime, descending);
+                break;
+
+            case TripSortBy.PassengerName:
+                Spec.AddSorting(trip => trip.Passenger.LastName, descending);
+                Spec.AddSorting(trip => trip.Passenger.FirstName, descending);
                 break;
 
             default:

@@ -6,4 +6,5 @@ public enum TripSortBy
     ServiceDate,
     BrokerTripNumber,
     ScheduledPickupTime,
+    PassengerName,
 }

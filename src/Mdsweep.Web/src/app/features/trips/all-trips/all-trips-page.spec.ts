@@ -39,7 +39,7 @@ describe('AllTripsPage', () => {
 
     await vi.waitFor(() => {
       fixture.detectChanges();
-      expect(api.getTrips).toHaveBeenCalledWith('2026-09-03');
+      expect(api.getTrips).toHaveBeenCalledWith(expect.objectContaining({ startDate: '2026-09-03', endDate: '2026-09-03' }));
       expect(fixture.nativeElement.textContent).toContain('Trips could not be loaded');
       expect(fixture.nativeElement.textContent).toContain('Trips are temporarily unavailable.');
     });

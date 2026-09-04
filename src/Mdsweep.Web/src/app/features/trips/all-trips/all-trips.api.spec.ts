@@ -16,8 +16,8 @@ describe('AllTripsApi', () => {
   afterEach(() => http.verify());
 
   it('requests the paged Trips endpoint with service-date and paging parameters', async () => {
-    const request = api.getTrips('2026-09-02');
-    const call = http.expectOne('/api/trips?serviceDate=2026-09-02&page=1&pageSize=50');
+    const request = api.getTrips({ startDate: '2026-09-02', endDate: '2026-09-02' });
+    const call = http.expectOne('/api/trips?startDate=2026-09-02&endDate=2026-09-02&page=1&pageSize=50&sortBy=ScheduledPickupTime&sortDirection=Ascending');
     expect(call.request.method).toBe('GET');
     call.flush({ items: [], totalCount: 0, page: 1, pageSize: 50, totalPages: 0 });
     await expect(request).resolves.toMatchObject({ totalCount: 0 });

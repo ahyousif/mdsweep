@@ -73,7 +73,11 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
                 "200 Synthetic Way",
                 "Mesa",
                 "VALID",
-                false
+                false,
+                PassengerMobilityRequirement.Ambulatory,
+                null,
+                null,
+                null
             )
         );
         trip.TenantId = tenantId;

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
 using NodaTime;
 
@@ -29,6 +30,26 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var response = await Upload(client, "trips.xlsx", Xlsx());
         var result = await response.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(result); Assert.Equal(1, result.Added);
+    }
+
+    [Fact]
+    public async Task Import_normalizes_passenger_mobility_and_derives_wheelchair_capability()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+
+        using var response = await Upload(
+            client,
+            "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Passenger Type,Special Needs,Vehicle Type\n" +
+            "09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-MOBILITY,MED-MOBILITY,VALID,Synthetic,Passenger,Phoenix,Mesa,N,Wheel Chair,Cannot Transfer,Paralift"
+        );
+        response.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var trip = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Trips.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(PassengerMobilityRequirement.ManualWheelchairCannotTransfer, trip.BrokerData.MobilityRequirement);
+        Assert.Equal(RequiredVehicleCapability.WheelchairAccessible, trip.BrokerData.RequiredVehicleCapability);
+        Assert.Equal("Wheel Chair", trip.BrokerData.RawImportedPassengerType);
     }
 
     [Fact]

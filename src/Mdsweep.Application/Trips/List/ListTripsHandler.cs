@@ -9,7 +9,9 @@ public sealed class ListTripsHandler(IRepository repository)
     public async Task<PagedResult<IReadOnlyList<TripModel>>> Handle(ListTripsQuery query, CancellationToken ct)
     {
         var trips = new TripsSpecification()
-            .WithServiceDate(query.ServiceDate)
+            .WithTripDateRange(query.StartDate, query.EndDate)
+            .WithSearch(query.Search)
+            .WithNeedsAttention(query.NeedsAttention)
             .WithBrokerStatus(query.BrokerStatus)
             .WithWillCall(query.IsWillCall);
 

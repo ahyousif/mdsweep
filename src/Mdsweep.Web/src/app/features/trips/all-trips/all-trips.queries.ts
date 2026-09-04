@@ -1,12 +1,12 @@
-import { AllTripsApi } from './all-trips.api';
+import { AllTripsApi, TripsQuery } from './all-trips.api';
 
 export const tripQueryKeys = {
   all: ['trips'] as const,
-  serviceDate: (serviceDate: string) => [...tripQueryKeys.all, 'service-date', serviceDate] as const,
+  workspace: (query: TripsQuery) => [...tripQueryKeys.all, 'workspace', query] as const,
 };
 
-export const allTripsQueryOptions = (api: AllTripsApi, serviceDate: string) => ({
-  queryKey: tripQueryKeys.serviceDate(serviceDate),
-  queryFn: () => api.getTrips(serviceDate),
-  enabled: serviceDate.length > 0,
+export const allTripsQueryOptions = (api: AllTripsApi, query: TripsQuery) => ({
+  queryKey: tripQueryKeys.workspace(query),
+  queryFn: () => api.getTrips(query),
+  enabled: query.startDate.length > 0 && query.endDate.length > 0,
 });

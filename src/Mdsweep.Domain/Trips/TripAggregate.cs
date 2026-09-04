@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
 
 namespace Mdsweep.Domain.Trips;
@@ -18,6 +19,7 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
 
     public string? TenantId { get; set; }
     public Guid PassengerId { get; private set; }
+    public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
     public LocalTime? ScheduledPickupTime { get; private set; }
