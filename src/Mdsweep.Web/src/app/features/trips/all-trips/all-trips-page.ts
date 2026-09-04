@@ -19,7 +19,7 @@ import { uiText } from '@app/ui-text';
 import { AllTripsApi, AllTripsTrip, TripsQuery } from './all-trips.api';
 import { allTripsQueryOptions, tripQueryKeys } from './all-trips.queries';
 
-type TripDateScope = 'day' | 'week' | 'custom';
+type TripDateScope = 'day' | 'week';
 
 const features = tableFeatures({});
 const serviceDateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -68,6 +68,7 @@ const baseColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
 
 function attentionText(trip: AllTripsTrip): string {
   if (trip.brokerStatus && trip.brokerStatus !== 'VALID') return `Broker: ${trip.brokerStatus}`;
+  if (trip.mobilityRequirement === 'Unknown') return 'Mobility unknown';
   if (!trip.isWillCall && !trip.scheduledPickupTime) return 'Set pickup time';
   return '';
 }
@@ -159,7 +160,6 @@ export default class AllTripsPage {
   }
 
   moveServiceDate(days: number): void {
-    if (this.dateScope() === 'custom') return;
     const start = this.selectedServiceDate();
     const delta = this.dateScope() === 'week' ? days * 7 : days;
     start.setDate(start.getDate() + delta);
@@ -195,6 +195,7 @@ export default class AllTripsPage {
     this.serviceDate.set(toServiceDate(start));
     this.endDate.set(toServiceDate(end));
     this.dateScope.set('week');
+    this.sortBy.set('ServiceDate');
     this.page.set(1);
   }
 

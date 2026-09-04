@@ -26,6 +26,7 @@ export default class TripImportPage {
   readonly importMutation = injectMutation(() => ({
     mutationFn: (file: File) => this.#api.import(file),
     onSuccess: (result) => {
+      this.error.set('');
       this.result.set(result);
       this.#queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
     },
@@ -39,6 +40,9 @@ export default class TripImportPage {
 
   importTrips(): void {
     const file = this.selectedFile();
-    if (file) this.importMutation.mutate(file);
+    if (file) {
+      this.error.set('');
+      this.importMutation.mutate(file);
+    }
   }
 }

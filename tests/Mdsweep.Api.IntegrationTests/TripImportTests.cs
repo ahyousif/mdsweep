@@ -61,12 +61,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     {
         using var client = Application.CreateClient(); await AddAntiforgeryToken(client);
         using var initial = await Upload(client, Csv()); initial.EnsureSuccessStatusCode();
-        await using (var scope = Application.Services.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            (await db.Trips.IgnoreQueryFilters().SingleAsync()).SetScheduledPickupTime(new LocalTime(8, 30));
-            await db.SaveChangesAsync();
-        }
+        await using var lookup = Application.Services.CreateAsyncScope();
+        var tripId = (await lookup.ServiceProvider.GetRequiredService<ApplicationDbContext>().Trips.IgnoreQueryFilters().SingleAsync()).Id;
+        using var schedule = await client.PutAsJsonAsync($"/api/trips/{tripId}/scheduled-pickup-time", new { scheduledPickupTime = "08:30:00" });
+        schedule.EnsureSuccessStatusCode();
         using var changed = await Upload(client, Csv("09/16/2026,201 Way,101 St,10:15,TRIP-100,MED-100,VALID,Synthetic,Passenger,Phoenix,Mesa,N"));
         var result = await changed.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(result); Assert.Equal(1, result.Updated);

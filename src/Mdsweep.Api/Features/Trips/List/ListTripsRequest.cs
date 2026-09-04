@@ -34,6 +34,9 @@ public sealed class ListTripsRequest
         var startDate = StartDate.HasValue ? LocalDate.FromDateOnly(StartDate.Value) : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value) : (LocalDate?)null;
         var endDate = EndDate.HasValue ? LocalDate.FromDateOnly(EndDate.Value) : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value) : (LocalDate?)null;
 
-        return new ListTripsQuery(startDate, endDate, Search, NeedsAttention, BrokerStatus, IsWillCall, Page, PageSize, SortBy, SortDirection);
+        var sortBy = StartDate.HasValue && EndDate.HasValue && StartDate != EndDate && SortBy == TripSortBy.ScheduledPickupTime
+            ? TripSortBy.ServiceDate
+            : SortBy;
+        return new ListTripsQuery(startDate, endDate, Search, NeedsAttention, BrokerStatus, IsWillCall, Page, PageSize, sortBy, SortDirection);
     }
 }

@@ -12,7 +12,7 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
-    <button hlmBtn variant="outline" size="icon" type="button" [disabled]="dateScope() === 'custom'" aria-label="Previous Trip Date scope" (click)="moveServiceDate(-1)">
+    <button hlmBtn variant="outline" size="icon" type="button" aria-label="Previous Trip Date scope" (click)="moveServiceDate(-1)">
       <ng-icon name="lucideChevronLeft" />
     </button>
     <div>
@@ -28,7 +28,7 @@
         </hlm-date-picker-trigger>
       </hlm-date-picker>
     </div>
-    <button hlmBtn variant="outline" size="icon" type="button" [disabled]="dateScope() === 'custom'" aria-label="Next Trip Date scope" (click)="moveServiceDate(1)">
+    <button hlmBtn variant="outline" size="icon" type="button" aria-label="Next Trip Date scope" (click)="moveServiceDate(1)">
       <ng-icon name="lucideChevronRight" />
     </button>
     @if (!isToday()) {
@@ -83,10 +83,12 @@
                 <tr hlmTr>
                   @for (header of headerGroup.headers; track header.id) {
                     <th hlmTh>
+                      @if (['serviceDate', 'passenger', 'scheduledPickupTime', 'appointment'].includes(header.column.id)) {
                       <button type="button" class="text-start" (click)="toggleSort(header.column.id)">
                         <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
                         @if (sortBy().toLowerCase().startsWith(header.column.id === 'passenger' ? 'passenger' : header.column.id.toLowerCase())) { {{ sortDirection() === 'Ascending' ? ' ↑' : ' ↓' }} }
                       </button>
+                      } @else { <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container> }
                     </th>
                   }
                 </tr>
