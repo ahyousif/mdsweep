@@ -51,6 +51,31 @@ public sealed class TripListTests : MdsweepIntegrationTest
         Assert.Equal(["TRIP-D", "TRIP-C"], secondPage.Items.Select(trip => trip.BrokerTripNumber));
     }
 
+    [Fact]
+    public async Task Dispatcher_filters_date_ranges_searches_passengers_and_identifies_trips_with_problems()
+    {
+        await AddTrip("mdsw-eep2-3456", "TRIP-EARLY", new LocalDate(2026, 9, 14), new LocalTime(11, 0), "VALID", false, "Early", "Rider");
+        await AddTrip("mdsw-eep2-3456", "TRIP-SEARCH", new LocalDate(2026, 9, 15), new LocalTime(10, 0), "VALID", false, "Searchable", "Passenger");
+        await AddTrip("mdsw-eep2-3456", "TRIP-CLEAR", new LocalDate(2026, 9, 16), new LocalTime(9, 0), "VALID", true, "Clear", "Rider");
+        await AddTrip("mdsw-eep2-3456", "TRIP-LATE", new LocalDate(2026, 9, 17), new LocalTime(8, 0), "TURN BACK", false, "Late", "Rider");
+        using var client = Application.CreateClient();
+
+        var range = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-16");
+        Assert.Equal(["TRIP-SEARCH", "TRIP-CLEAR"], range.Items.Select(trip => trip.BrokerTripNumber));
+
+        var passengerSearch = await GetTrips(client, "/api/trips?search=searchable");
+        Assert.Equal(["TRIP-SEARCH"], passengerSearch.Items.Select(trip => trip.BrokerTripNumber));
+
+        var tripSearch = await GetTrips(client, "/api/trips?search=late");
+        Assert.Equal(["TRIP-LATE"], tripSearch.Items.Select(trip => trip.BrokerTripNumber));
+
+        var problems = await GetTrips(client, "/api/trips?needsAttention=true&sortBy=brokerTripNumber");
+        Assert.Equal(["TRIP-EARLY", "TRIP-LATE", "TRIP-SEARCH"], problems.Items.Select(trip => trip.BrokerTripNumber));
+
+        var clear = await GetTrips(client, "/api/trips?needsAttention=false");
+        Assert.Equal(["TRIP-CLEAR"], clear.Items.Select(trip => trip.BrokerTripNumber));
+    }
+
     [Theory]
     [InlineData("/api/trips?page=0", "page")]
     [InlineData("/api/trips?pageSize=101", "pageSize")]
@@ -99,14 +124,16 @@ public sealed class TripListTests : MdsweepIntegrationTest
         LocalDate serviceDate,
         LocalTime appointmentTime,
         string brokerStatus,
-        bool isWillCall
+        bool isWillCall,
+        string firstName = "Synthetic",
+        string lastName = "Passenger"
     )
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
             .Options;
         await using var db = new ApplicationDbContext(options);
-        var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", "Synthetic", "Passenger");
+        var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", firstName, lastName);
         passenger.TenantId = tenantId;
         var trip = TripAggregate.Create(
             passenger.Id,
