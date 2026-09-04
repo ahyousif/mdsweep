@@ -20,25 +20,34 @@
   @if (result(); as importResult) {
     <section hlmCard>
       <div hlmCardHeader>
-        <h3 hlmCardTitle>{{ importResult.total }} trips processed</h3>
+        <h3 hlmCardTitle>
+          @if (importResult.problemCount === 0) {
+            Import complete
+          } @else {
+            Import complete with problems
+          }
+        </h3>
         <p hlmCardDescription>
-          {{ importResult.added }} added · {{ importResult.updated }} updated · {{ importResult.unchanged }} already up to date · {{ importResult.problemCount }} import problems
+          {{ importResult.total }} trips processed · {{ importResult.added }} added · {{ importResult.updated }} updated · {{ importResult.unchanged }} already up to date
         </p>
       </div>
-      <div hlmCardContent>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead><tr><th>Row</th><th>Trip</th><th>Problem</th></tr></thead>
-            <tbody>
-              @for (problem of importResult.problems; track problem.rowNumber) {
-                <tr><td>{{ problem.rowNumber }}</td><td>{{ problem.tripNumber }}</td><td>{{ problem.message }}</td></tr>
-              }
-            </tbody>
-          </table>
+      @if (importResult.problemCount > 0) {
+        <div hlmCardContent>
+          <h4 class="mb-3 text-sm font-semibold">Import problems ({{ importResult.problemCount }})</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="border-b text-left text-muted-foreground"><tr><th class="px-3 py-2 font-medium">Row</th><th class="px-3 py-2 font-medium">Trip</th><th class="px-3 py-2 font-medium">Problem</th></tr></thead>
+              <tbody>
+                @for (problem of importResult.problems; track problem.rowNumber) {
+                  <tr class="border-b last:border-0"><td class="px-3 py-3">{{ problem.rowNumber }}</td><td class="px-3 py-3">{{ problem.tripNumber }}</td><td class="px-3 py-3">{{ problem.message }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      }
       <div hlmCardFooter>
-        <a hlmBtn variant="outline" routerLink="/trips">View All Trips</a>
+        <a hlmBtn routerLink="/trips">View All Trips</a>
       </div>
     </section>
   }
