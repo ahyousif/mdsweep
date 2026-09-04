@@ -4,6 +4,7 @@ namespace Mdsweep.Domain.Trips;
 // from this vocabulary when the tenant vehicle model supports it.
 public enum RequiredVehicleCapability
 {
+    Unknown,
     StandardTransport,
     WheelchairAccessible,
 }

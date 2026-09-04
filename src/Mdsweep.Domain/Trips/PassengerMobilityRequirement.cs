@@ -4,6 +4,7 @@ namespace Mdsweep.Domain.Trips;
 // It deliberately does not mirror a broker vehicle label.
 public enum PassengerMobilityRequirement
 {
+    Unknown,
     Ambulatory,
     Cane,
     ManualWheelchair,

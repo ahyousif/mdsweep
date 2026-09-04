@@ -46,7 +46,8 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
 
         Spec.Add(query => query.Where(trip =>
             ((trip.ScheduledPickupTime == null && !trip.BrokerData.IsWillCall) ||
-            (trip.BrokerData.BrokerStatus != null && trip.BrokerData.BrokerStatus != "VALID")) == needsAttention.Value));
+            (trip.BrokerData.BrokerStatus != null && trip.BrokerData.BrokerStatus != "VALID") ||
+            trip.BrokerData.MobilityRequirement == PassengerMobilityRequirement.Unknown) == needsAttention.Value));
         return this;
     }
 

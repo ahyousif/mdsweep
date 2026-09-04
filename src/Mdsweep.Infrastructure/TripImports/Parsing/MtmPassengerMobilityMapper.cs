@@ -15,7 +15,10 @@ internal static class MtmPassengerMobilityMapper
 
         switch (sourceValue)
         {
-            case null or "" or "AMBULATORY":
+            case null or "":
+                mobilityRequirement = PassengerMobilityRequirement.Unknown;
+                return true;
+            case "AMBULATORY":
                 mobilityRequirement = PassengerMobilityRequirement.Ambulatory;
                 return true;
             case "CANE":

@@ -14,7 +14,7 @@ export type TripImportResult = {
   added: number;
   updated: number;
   unchanged: number;
-  needsAttention: number;
+  problemCount: number;
   problems: TripImportProblem[];
 };
 

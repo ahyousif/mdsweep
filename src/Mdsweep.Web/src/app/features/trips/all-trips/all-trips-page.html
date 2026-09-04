@@ -12,7 +12,7 @@
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
-    <button hlmBtn variant="outline" size="icon" type="button" aria-label="Previous day" (click)="moveServiceDate(-1)">
+    <button hlmBtn variant="outline" size="icon" type="button" [disabled]="dateScope() === 'custom'" aria-label="Previous Trip Date scope" (click)="moveServiceDate(-1)">
       <ng-icon name="lucideChevronLeft" />
     </button>
     <div>
@@ -28,7 +28,7 @@
         </hlm-date-picker-trigger>
       </hlm-date-picker>
     </div>
-    <button hlmBtn variant="outline" size="icon" type="button" aria-label="Next day" (click)="moveServiceDate(1)">
+    <button hlmBtn variant="outline" size="icon" type="button" [disabled]="dateScope() === 'custom'" aria-label="Next Trip Date scope" (click)="moveServiceDate(1)">
       <ng-icon name="lucideChevronRight" />
     </button>
     @if (!isToday()) {
@@ -83,7 +83,10 @@
                 <tr hlmTr>
                   @for (header of headerGroup.headers; track header.id) {
                     <th hlmTh>
-                      <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                      <button type="button" class="text-start" (click)="toggleSort(header.column.id)">
+                        <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                        @if (sortBy().toLowerCase().startsWith(header.column.id === 'passenger' ? 'passenger' : header.column.id.toLowerCase())) { {{ sortDirection() === 'Ascending' ? ' ↑' : ' ↓' }} }
+                      </button>
                     </th>
                   }
                 </tr>
@@ -91,11 +94,11 @@
             </thead>
             <tbody hlmTBody>
               @for (row of dispatchTable.getRowModel().rows; track row.original.id) {
-                <tr hlmTr (click)="selectedTrip.set(row.original)">
+                <tr hlmTr (click)="openTrip(row.original, tripDetails)">
                   @for (cell of row.getAllCells(); track cell.id) {
                     <td hlmTd>
                       @if (cell.column.id === 'scheduledPickupTime') {
-                        <div class="flex min-w-48 items-center gap-2">
+                        <div class="flex min-w-48 items-center gap-2" (click)="$event.stopPropagation()">
                           <input
                             #scheduledTime
                             hlmInput
@@ -130,6 +133,8 @@
                         <div class="grid gap-1"><span>{{ row.original.pickupAddress }}</span><span class="text-muted-foreground">→ {{ row.original.dropoffAddress }}</span></div>
                       } @else if (cell.column.id === 'attention') {
                         @if (attentionText(row.original)) { <span hlmBadge variant="destructive">{{ attentionText(row.original) }}</span> }
+                      } @else if (cell.column.id === 'serviceDate') {
+                        {{ row.original.serviceDate }}
                       } @else {
                         <ng-container *flexRenderCell="cell; let value">{{ value }}</ng-container>
                       }
@@ -152,21 +157,26 @@
     </div>
   }
 
-  @if (selectedTrip(); as trip) {
-    <section hlmCard>
-      <div hlmCardHeader><h2 hlmCardTitle>{{ trip.passengerFirstName }} {{ trip.passengerLastName }}</h2><p hlmCardDescription>{{ trip.brokerTripNumber }} · {{ trip.serviceDate }}</p></div>
-      <div hlmCardContent class="grid gap-3 text-sm">
-        <p><strong>Mobility requirement:</strong> {{ trip.mobilityRequirement }}</p>
-        <p><strong>Appointment:</strong> {{ trip.isWillCall ? 'Will Call' : (trip.appointmentTime ?? 'Not supplied') }}</p>
-        <p><strong>Pickup:</strong> {{ trip.pickupAddress }}, {{ trip.pickupCity }}</p>
-        <p><strong>Drop-off:</strong> {{ trip.dropoffAddress }}, {{ trip.dropoffCity }}</p>
-        <p><strong>Broker status:</strong> {{ trip.brokerStatus ?? 'Not supplied' }}</p>
-        <p><strong>Trip mileage:</strong> {{ trip.tripMileage ?? 'Not supplied' }}</p>
-        <p><strong>Trip cost:</strong> {{ trip.tripCost ?? 'Not supplied' }}</p>
-      </div>
-      <div hlmCardFooter><button hlmBtn variant="outline" size="sm" type="button" (click)="selectedTrip.set(null)">Close details</button></div>
-    </section>
-  }
+  <hlm-sheet side="right" #tripDetails="hlmSheet">
+    <hlm-sheet-content *hlmSheetPortal>
+      @if (selectedTrip(); as trip) {
+        <div hlmSheetHeader>
+          <h2 hlmSheetTitle>{{ trip.passengerFirstName }} {{ trip.passengerLastName }}</h2>
+          <p hlmSheetDescription>{{ trip.brokerTripNumber }} · {{ trip.serviceDate }}</p>
+        </div>
+        <div class="grid gap-3 px-4 text-sm">
+          <p><strong>Mobility requirement:</strong> {{ trip.mobilityRequirement }}</p>
+          <p><strong>Appointment:</strong> {{ trip.isWillCall ? 'Will Call' : (trip.appointmentTime ?? 'Not supplied') }}</p>
+          <p><strong>Pickup:</strong> {{ trip.pickupAddress }}, {{ trip.pickupCity }}</p>
+          <p><strong>Drop-off:</strong> {{ trip.dropoffAddress }}, {{ trip.dropoffCity }}</p>
+          <p><strong>Broker status:</strong> {{ trip.brokerStatus ?? 'Not supplied' }}</p>
+          <p><strong>Trip mileage:</strong> {{ trip.tripMileage ?? 'Not supplied' }}</p>
+          <p><strong>Trip cost:</strong> {{ trip.tripCost ?? 'Not supplied' }}</p>
+        </div>
+        <div hlmSheetFooter><button hlmBtn variant="outline" size="sm" type="button" hlmSheetClose>Close details</button></div>
+      }
+    </hlm-sheet-content>
+  </hlm-sheet>
 
   @if (scheduleError()) {
     <div hlmAlert variant="destructive">

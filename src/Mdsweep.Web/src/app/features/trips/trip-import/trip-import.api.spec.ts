@@ -20,7 +20,7 @@ describe('TripImportApi', () => {
     const post = http.expectOne('/api/trips/import');
     expect(post.request.method).toBe('POST');
     expect(post.request.body.get('file').name).toBe('synthetic.csv');
-    post.flush({ fileName: 'synthetic.csv', total: 1, added: 1, updated: 0, unchanged: 0, needsAttention: 0, problems: [] });
+    post.flush({ fileName: 'synthetic.csv', total: 1, added: 1, updated: 0, unchanged: 0, problemCount: 0, problems: [] });
     await expect(importing).resolves.toMatchObject({ added: 1 });
   });
 });

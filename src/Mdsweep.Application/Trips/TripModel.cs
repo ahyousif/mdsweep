@@ -13,7 +13,6 @@ public sealed record TripModel(
     string? BrokerStatus,
     bool IsWillCall,
     PassengerMobilityRequirement MobilityRequirement,
-    RequiredVehicleCapability RequiredVehicleCapability,
     decimal? TripCost,
     decimal? TripMileage,
     LocalTime? ScheduledPickupTime,

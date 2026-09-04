@@ -20,7 +20,11 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var repeatResult = await repeat.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(repeatResult); Assert.Equal(1, repeatResult.Unchanged);
         await using var scope = Application.Services.CreateAsyncScope();
-        Assert.Single(await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Trips.IgnoreQueryFilters().ToListAsync());
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Single(await db.Trips.IgnoreQueryFilters().ToListAsync());
+        var receipts = await db.TripImportReceipts.IgnoreQueryFilters().OrderBy(receipt => receipt.ImportedAt).ToListAsync();
+        Assert.Equal(2, receipts.Count);
+        Assert.All(receipts, receipt => Assert.Equal("trips.csv", receipt.FileName));
     }
 
     [Fact]
@@ -80,7 +84,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             "09/15/2026,200 Way,100 St,09:15,TRIP-DUP,MED-2,VALID,Second,Passenger,Phoenix,Mesa,N\n" +
             "09/15/2026,200 Way,100 St,09:15,TRIP-GOOD,MED-3,VALID,Good,Passenger,Phoenix,Mesa,N"));
         var result = await response.Content.ReadFromJsonAsync<ImportTripsResponse>();
-        Assert.NotNull(result); Assert.Equal(1, result.Added); Assert.Equal(2, result.NeedsAttention);
+        Assert.NotNull(result); Assert.Equal(1, result.Added); Assert.Equal(2, result.ProblemCount);
     }
 
     [Fact]
@@ -101,6 +105,6 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var row = Csv().Split('\n')[1].Split(','); for (var i = 0; i < row.Length; i++) sheet.Cell(2, i + 1).Value = row[i];
         using var stream = new MemoryStream(); workbook.SaveAs(stream); return stream.ToArray();
     }
-    private sealed record ImportTripsResponse(int Added, int Updated, int Unchanged, int NeedsAttention, List<TripImportProblem> Problems);
+    private sealed record ImportTripsResponse(int Added, int Updated, int Unchanged, int ProblemCount, List<TripImportProblem> Problems);
     private sealed record TripImportProblem(int RowNumber, string? TripNumber, string Message);
 }

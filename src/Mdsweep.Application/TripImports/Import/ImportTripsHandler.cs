@@ -2,13 +2,16 @@ using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.TripImports.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
+using Mdsweep.Domain.TripImports;
+using System.Security.Cryptography;
 
 namespace Mdsweep.Application.TripImports.Import;
 
 public sealed class ImportTripsHandler(
     IEnumerable<ITripImportFileParser> parsers,
     ITripImportLookup lookup,
-    IRepository repository
+    IRepository repository,
+    IClock clock
 )
 {
     public async Task<Result<ImportTripsResult>> Handle(ImportTripsCommand command, CancellationToken ct)
@@ -82,6 +85,10 @@ public sealed class ImportTripsHandler(
                 await repository.AddAsync(passenger, ct);
                 passengers.Add(row.BrokerMemberId!, passenger);
             }
+            else
+            {
+                passenger.ReconcileBrokerIdentity(row.FirstName!, row.LastName!);
+            }
 
             var brokerData = new BrokerTripData(
                 row.ServiceDate!.Value,
@@ -115,9 +122,18 @@ public sealed class ImportTripsHandler(
                 updated++;
             }
         }
-        return Result.Success(
-            new ImportTripsResult(command.FileName, rows.Count, added, updated, unchanged, problems.Count, problems)
+        var outcome = new ImportTripsResult(command.FileName, rows.Count, added, updated, unchanged, problems.Count, problems);
+        await repository.AddAsync(
+            TripImportReceipt.Create(
+                command.FileName,
+                Convert.ToHexString(SHA256.HashData(command.Content)),
+                new ImportOutcome(outcome.Total, outcome.Added, outcome.Updated, outcome.Unchanged, outcome.ProblemCount),
+                clock.GetCurrentInstant()
+            ),
+            ct
         );
+
+        return Result.Success(outcome);
     }
 
     private static string? Validate(

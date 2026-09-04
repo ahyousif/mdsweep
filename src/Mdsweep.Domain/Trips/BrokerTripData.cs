@@ -21,6 +21,7 @@ public sealed record BrokerTripData(
         PassengerMobilityRequirement.ManualWheelchairCannotTransfer or
         PassengerMobilityRequirement.ElectricWheelchair =>
             global::Mdsweep.Domain.Trips.RequiredVehicleCapability.WheelchairAccessible,
+        PassengerMobilityRequirement.Unknown => global::Mdsweep.Domain.Trips.RequiredVehicleCapability.Unknown,
         _ => global::Mdsweep.Domain.Trips.RequiredVehicleCapability.StandardTransport,
     };
 }

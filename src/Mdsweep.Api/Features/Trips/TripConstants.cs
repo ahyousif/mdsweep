@@ -4,6 +4,7 @@ public static class TripConstants
 {
     public const string Route = "/trips";
     public const string IdRoute = Route + "/{id:guid}";
+    public const string ImportRoute = Route + "/import";
     public const string ScheduledPickupTimeRoute = IdRoute + "/scheduled-pickup-time";
     public const string Tag = "Trips";
 }

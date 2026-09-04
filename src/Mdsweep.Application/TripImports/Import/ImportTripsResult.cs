@@ -6,7 +6,7 @@ public sealed record ImportTripsResult(
     int Added,
     int Updated,
     int Unchanged,
-    int NeedsAttention,
+    int ProblemCount,
     IReadOnlyList<TripImportProblem> Problems
 );
 

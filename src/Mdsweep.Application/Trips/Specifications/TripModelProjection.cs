@@ -19,7 +19,6 @@ internal sealed class TripModelProjection : Specification<TripAggregate, TripMod
             trip.BrokerData.BrokerStatus,
             trip.BrokerData.IsWillCall,
             trip.BrokerData.MobilityRequirement,
-            trip.BrokerData.RequiredVehicleCapability,
             trip.BrokerData.TripCost,
             trip.BrokerData.TripMileage,
             trip.ScheduledPickupTime,

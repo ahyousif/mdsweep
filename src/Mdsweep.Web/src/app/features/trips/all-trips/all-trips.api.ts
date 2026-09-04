@@ -13,8 +13,7 @@ export type AllTripsTrip = {
   appointmentTime: string | null;
   brokerStatus: string | null;
   isWillCall: boolean;
-  mobilityRequirement: 'Ambulatory' | 'Cane' | 'ManualWheelchair' | 'ManualWheelchairCannotTransfer' | 'ElectricWheelchair';
-  requiredVehicleCapability: 'StandardTransport' | 'WheelchairAccessible';
+  mobilityRequirement: 'Unknown' | 'Ambulatory' | 'Cane' | 'ManualWheelchair' | 'ManualWheelchairCannotTransfer' | 'ElectricWheelchair';
   tripCost: number | null;
   tripMileage: number | null;
   scheduledPickupTime: string | null;

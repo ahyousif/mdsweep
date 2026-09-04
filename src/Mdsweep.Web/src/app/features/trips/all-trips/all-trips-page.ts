@@ -19,6 +19,8 @@ import { uiText } from '@app/ui-text';
 import { AllTripsApi, AllTripsTrip, TripsQuery } from './all-trips.api';
 import { allTripsQueryOptions, tripQueryKeys } from './all-trips.queries';
 
+type TripDateScope = 'day' | 'week' | 'custom';
+
 const features = tableFeatures({});
 const serviceDateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -44,7 +46,7 @@ function toLocalDate(value: string): Date {
   return new Date(year, month - 1, day);
 }
 
-const allTripsColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
+const baseColumns: ColumnDef<typeof features, AllTripsTrip>[] = [
   { id: 'passenger', header: 'Passenger', accessorFn: (row) => `${row.passengerFirstName} ${row.passengerLastName}` },
   {
     id: 'scheduledPickupTime',
@@ -96,9 +98,12 @@ export default class AllTripsPage {
   readonly text = uiText;
   readonly serviceDate = signal(toServiceDate(new Date()));
   readonly endDate = signal(toServiceDate(new Date()));
+  readonly dateScope = signal<TripDateScope>('day');
   readonly search = signal('');
   readonly needsAttention = signal(false);
   readonly page = signal(1);
+  readonly sortBy = signal('ScheduledPickupTime');
+  readonly sortDirection = signal<'Ascending' | 'Descending'>('Ascending');
   readonly selectedTrip = signal<AllTripsTrip | null>(null);
   readonly scheduleError = signal('');
   readonly selectedServiceDate = computed(() => toLocalDate(this.serviceDate()));
@@ -106,8 +111,11 @@ export default class AllTripsPage {
   readonly isMultiDay = computed(() => this.serviceDate() !== this.endDate());
   readonly query = computed<TripsQuery>(() => ({
     startDate: this.serviceDate(), endDate: this.endDate(), search: this.search() || undefined,
-    needsAttention: this.needsAttention() || undefined, page: this.page(),
+    needsAttention: this.needsAttention() || undefined, page: this.page(), sortBy: this.sortBy(), sortDirection: this.sortDirection(),
   }));
+  readonly columns = computed(() => this.isMultiDay()
+    ? [{ id: 'serviceDate', header: 'Trip date', accessorKey: 'serviceDate' } as ColumnDef<typeof features, AllTripsTrip>, ...baseColumns]
+    : baseColumns);
   readonly emptyStateText = computed(() =>
     this.isToday()
       ? 'No trips scheduled for today.'
@@ -137,7 +145,7 @@ export default class AllTripsPage {
 
   readonly dispatchTable = injectTable(() => ({
     features,
-    columns: allTripsColumns,
+    columns: this.columns(),
     data: this.tripsQuery.data()?.items ?? [],
   }));
 
@@ -145,21 +153,27 @@ export default class AllTripsPage {
     if (date) {
       this.serviceDate.set(toServiceDate(date));
       this.endDate.set(toServiceDate(date));
+      this.dateScope.set('day');
       this.page.set(1);
     }
   }
 
   moveServiceDate(days: number): void {
-    const date = this.selectedServiceDate();
-    date.setDate(date.getDate() + days);
-    this.serviceDate.set(toServiceDate(date));
-    this.endDate.set(this.serviceDate());
+    if (this.dateScope() === 'custom') return;
+    const start = this.selectedServiceDate();
+    const delta = this.dateScope() === 'week' ? days * 7 : days;
+    start.setDate(start.getDate() + delta);
+    this.serviceDate.set(toServiceDate(start));
+    if (this.dateScope() === 'week') {
+      const end = new Date(start); end.setDate(end.getDate() + 6); this.endDate.set(toServiceDate(end));
+    } else this.endDate.set(this.serviceDate());
     this.page.set(1);
   }
 
   goToToday(): void {
     this.serviceDate.set(toServiceDate(new Date()));
     this.endDate.set(this.serviceDate());
+    this.dateScope.set('day');
     this.page.set(1);
   }
 
@@ -180,16 +194,32 @@ export default class AllTripsPage {
     end.setDate(end.getDate() + 6);
     this.serviceDate.set(toServiceDate(start));
     this.endDate.set(toServiceDate(end));
+    this.dateScope.set('week');
     this.page.set(1);
   }
 
-  setTomorrow(): void { this.moveServiceDate(1); }
+  setTomorrow(): void {
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    this.serviceDate.set(toServiceDate(tomorrow)); this.endDate.set(this.serviceDate()); this.dateScope.set('day'); this.page.set(1);
+  }
 
   setSearch(value: string): void { this.search.set(value); this.page.set(1); }
 
   toggleAttention(): void { this.needsAttention.update(value => !value); this.page.set(1); }
 
   setPage(page: number): void { this.page.set(page); }
+
+  openTrip(trip: AllTripsTrip, sheet: { open: () => void }): void {
+    this.selectedTrip.set(trip);
+    sheet.open();
+  }
+
+  toggleSort(column: string): void {
+    if (!['serviceDate', 'passenger', 'scheduledPickupTime', 'appointment'].includes(column)) return;
+    const sortBy = column === 'passenger' ? 'PassengerName' : column === 'appointment' ? 'AppointmentTime' : column === 'serviceDate' ? 'ServiceDate' : 'ScheduledPickupTime';
+    this.sortDirection.set(this.sortBy() === sortBy && this.sortDirection() === 'Ascending' ? 'Descending' : 'Ascending');
+    this.sortBy.set(sortBy); this.page.set(1);
+  }
 
   attentionText = attentionText;
 
