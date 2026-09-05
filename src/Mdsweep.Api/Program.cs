@@ -42,7 +42,7 @@ app.MapWolverineEndpoints(options =>
     options.UseFluentValidationProblemDetailMiddleware();
 
     options.RequireAuthorizeOnAll();
-    options.AutoAntiforgeryOnFormEndpoints();
+    options.RequireAntiforgeryOnAll();
     options.TenantId.IsClaimTypeNamed(CustomClaimTypes.ActiveTenantId);
     options.TenantId.AssertExists();
 });

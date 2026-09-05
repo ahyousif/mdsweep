@@ -5,5 +5,6 @@ public sealed record TenantMembershipInfo(
     string FirstName,
     string LastName,
     string TenantId,
+    string TenantName,
     string Role
 );

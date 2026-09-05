@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Infrastructure.Identity;
@@ -55,7 +56,30 @@ public static class ApiExtensions
                     oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";
-                    oidc.TokenValidationParameters.RoleClaimType = "roles";
+                    oidc.Events.OnTokenValidated = async context =>
+                    {
+                        var subject = context.Principal?.FindFirstValue("sub");
+                        if (string.IsNullOrWhiteSpace(subject))
+                        {
+                            context.Fail("The identity provider did not supply a subject.");
+                            return;
+                        }
+
+                        var tenantAccess = context.HttpContext.RequestServices.GetRequiredService<ITenantAccess>();
+                        var memberships = await tenantAccess.GetMembershipsAsync(
+                            subject,
+                            context.HttpContext.RequestAborted
+                        );
+                        var tenantIds = memberships
+                            .Select(membership => membership.TenantId)
+                            .Distinct(StringComparer.Ordinal)
+                            .ToList();
+
+                        if (tenantIds.Count == 1 && context.Principal?.Identity is ClaimsIdentity identity)
+                        {
+                            identity.AddClaim(new Claim(CustomClaimTypes.ActiveTenantId, tenantIds[0]));
+                        }
+                    };
                 }
             );
 

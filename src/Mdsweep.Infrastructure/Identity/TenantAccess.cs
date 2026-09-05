@@ -12,12 +12,14 @@ public sealed class TenantAccess(ApplicationDbContext db) : ITenantAccess
         await (
             from user in db.Users
             join membership in db.TenantMemberships on user.Id equals membership.UserId
+            join tenant in db.Tenants on membership.TenantId equals tenant.Id
             where user.KeycloakUserId == userSubject
             select new TenantMembershipInfo(
                 user.Id,
                 user.FirstName,
                 user.LastName,
                 membership.TenantId,
+                tenant.Name,
                 membership.Role
             )
         ).ToListAsync(cancellationToken);
