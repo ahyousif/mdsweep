@@ -13,7 +13,7 @@ public static class IdentityEndpoints
 
         auth.MapGet("/login", Login).AllowAnonymous();
 
-        auth.MapGet("/me", GetCurrentUser);
+        auth.MapGet("/session", GetSession);
 
         auth.MapPost("/tenant-context", SelectTenantContext);
 
@@ -24,17 +24,19 @@ public static class IdentityEndpoints
         return endpoints;
     }
 
-    private static IResult Login()
+    private static IResult Login(string? returnUrl)
     {
         return Results.Challenge(
-            new AuthenticationProperties { RedirectUri = "/" },
+            new AuthenticationProperties { RedirectUri = LocalReturnUrl(returnUrl) },
             [OpenIdConnectDefaults.AuthenticationScheme]
         );
     }
 
-    private static async Task<IResult> GetCurrentUser(
+    private static async Task<IResult> GetSession(
         ClaimsPrincipal user,
         ITenantAccess tenantAccess,
+        IAntiforgery antiforgery,
+        HttpContext httpContext,
         CancellationToken cancellationToken
     )
     {
@@ -52,15 +54,27 @@ public static class IdentityEndpoints
             return Results.Forbid();
         }
 
-        return Results.Ok(
-            memberships.Select(membership => new TenantMembershipResponse(
-                membership.UserId,
-                membership.FirstName,
-                membership.LastName,
-                membership.TenantId,
-                membership.Role
+        var tenants = memberships
+            .GroupBy(membership => new { membership.TenantId, membership.TenantName })
+            .Select(group => new TenantSessionResponse(
+                group.Key.TenantId,
+                group.Key.TenantName,
+                group.Select(membership => membership.Role).Distinct().Order().ToArray()
             ))
-        );
+            .OrderBy(tenant => tenant.Name)
+            .ToArray();
+        var activeTenantId = user.FindFirstValue(CustomClaimTypes.ActiveTenantId);
+        var activeTenant = tenants.SingleOrDefault(tenant => tenant.Id == activeTenantId);
+
+        StoreAntiforgeryRequestToken(antiforgery, httpContext);
+
+        var firstMembership = memberships[0];
+        return Results.Ok(new SessionResponse(
+            firstMembership.UserId,
+            $"{firstMembership.FirstName} {firstMembership.LastName}".Trim(),
+            activeTenant,
+            tenants
+        ));
     }
 
     private static async Task<IResult> SelectTenantContext(
@@ -114,19 +128,7 @@ public static class IdentityEndpoints
 
     private static IResult GetAntiforgeryToken(IAntiforgery antiforgery, HttpContext httpContext)
     {
-        var tokens = antiforgery.GetAndStoreTokens(httpContext);
-
-        httpContext.Response.Cookies.Append(
-            AuthenticationConventions.AntiforgeryRequestCookieName,
-            tokens.RequestToken!,
-            new CookieOptions
-            {
-                HttpOnly = false,
-                SameSite = SameSiteMode.Strict,
-                Secure = httpContext.Request.IsHttps,
-                Path = "/",
-            }
-        );
+        var tokens = StoreAntiforgeryRequestToken(antiforgery, httpContext);
 
         return Results.Ok(new AntiforgeryTokenResponse(tokens.RequestToken!));
     }
@@ -147,12 +149,51 @@ public static class IdentityEndpoints
 
     private sealed record SelectTenantContextRequest(string TenantId);
 
-    private sealed record TenantMembershipResponse(
+    private static string LocalReturnUrl(string? returnUrl)
+    {
+        if (
+            string.IsNullOrWhiteSpace(returnUrl)
+            || !returnUrl.StartsWith("/", StringComparison.Ordinal)
+            || returnUrl.StartsWith("//", StringComparison.Ordinal)
+            || returnUrl.Contains('\\')
+            || returnUrl.Contains("%2f", StringComparison.OrdinalIgnoreCase)
+            || returnUrl.Contains("%5c", StringComparison.OrdinalIgnoreCase)
+            || !Uri.TryCreate(returnUrl, UriKind.Relative, out _)
+        )
+        {
+            return "/";
+        }
+
+        return returnUrl;
+    }
+
+    private static AntiforgeryTokenSet StoreAntiforgeryRequestToken(
+        IAntiforgery antiforgery,
+        HttpContext httpContext
+    )
+    {
+        var tokens = antiforgery.GetAndStoreTokens(httpContext);
+        httpContext.Response.Cookies.Append(
+            AuthenticationConventions.AntiforgeryRequestCookieName,
+            tokens.RequestToken!,
+            new CookieOptions
+            {
+                HttpOnly = false,
+                SameSite = SameSiteMode.Strict,
+                Secure = httpContext.Request.IsHttps,
+                Path = "/",
+            }
+        );
+        return tokens;
+    }
+
+    private sealed record TenantSessionResponse(string Id, string Name, string[] Roles);
+
+    private sealed record SessionResponse(
         Guid UserId,
-        string FirstName,
-        string LastName,
-        string TenantId,
-        string Role
+        string DisplayName,
+        TenantSessionResponse? ActiveTenant,
+        TenantSessionResponse[] AvailableTenants
     );
 
     private sealed record AntiforgeryTokenResponse(string Token);

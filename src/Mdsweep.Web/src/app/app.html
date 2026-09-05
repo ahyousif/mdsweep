@@ -9,29 +9,40 @@
     <div class="grid w-full max-w-md gap-4">
       @if (sessionError()) {
         <div hlmAlert variant="destructive">
-          <h1 hlmAlertTitle>Organization selection required</h1>
+          <h1 hlmAlertTitle>Unable to establish your session</h1>
           <p hlmAlertDescription>{{ sessionError() }}</p>
         </div>
       }
-      <section hlmCard>
-        <div hlmCardHeader>
-          <h1 hlmCardTitle>{{ text.signInTitle }}</h1>
-          <p hlmCardDescription>{{ text.signInHelp }}</p>
-        </div>
-        <div hlmCardFooter>
-          <button hlmBtn type="button" (click)="signIn()">{{ text.signIn }}</button>
-        </div>
-      </section>
     </div>
   </main>
-} @else if (isDriverOnly()) {
-  <main class="grid min-h-svh place-items-center p-4">
-    <section hlmCard class="w-full max-w-md">
-      <div hlmCardHeader>
-        <h1 hlmCardTitle>My Trips is not available in this build yet.</h1>
-      </div>
-    </section>
-  </main>
 } @else if (sessionQuery.data(); as session) {
-  <app-shell [session]="session" />
+  @if (activeSession(); as activeSession) {
+    @if (isDriverOnly()) {
+      <main class="grid min-h-svh place-items-center p-4">
+        <section hlmCard class="w-full max-w-md">
+          <div hlmCardHeader>
+            <h1 hlmCardTitle>My Trips is not available in this build yet.</h1>
+          </div>
+        </section>
+      </main>
+    } @else {
+      <app-shell [session]="activeSession" />
+    }
+  } @else {
+    <main class="grid min-h-svh place-items-center p-4">
+      <section hlmCard class="w-full max-w-md">
+        <div hlmCardHeader>
+          <h1 hlmCardTitle>Choose a tenant</h1>
+          <p hlmCardDescription>Select the tenant you want to work in.</p>
+        </div>
+        <div class="grid gap-2 p-6 pt-0">
+          @for (tenant of session.availableTenants; track tenant.id) {
+            <button hlmBtn variant="outline" type="button" (click)="selectTenant(tenant.id)">
+              {{ tenant.name }}
+            </button>
+          }
+        </div>
+      </section>
+    </main>
+  }
 }

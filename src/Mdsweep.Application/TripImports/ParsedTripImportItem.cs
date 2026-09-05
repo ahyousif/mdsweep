@@ -1,3 +1,5 @@
+using Mdsweep.Domain.Trips;
+
 namespace Mdsweep.Application.TripImports;
 
 public sealed record ParsedTripImportItem(
@@ -14,6 +16,13 @@ public sealed record ParsedTripImportItem(
     string? DropoffCity,
     string? BrokerStatus,
     bool IsWillCall,
+    PassengerMobilityRequirement? MobilityRequirement,
+    string? RawImportedPassengerType,
+    decimal? TripCost,
+    decimal? TripMileage,
     string? AppointmentDateValidationError,
-    string? AppointmentTimeValidationError
+    string? AppointmentTimeValidationError,
+    string? TripCostValidationError,
+    string? TripMileageValidationError,
+    string? PassengerTypeValidationError
 );

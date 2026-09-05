@@ -15,7 +15,6 @@ public sealed class DispatcherAuthenticationHandler(
         var identity = new ClaimsIdentity(
             [
                 new Claim("sub", "dispatcher-test"),
-                new Claim(ClaimTypes.Role, "Dispatcher"),
                 new Claim(CustomClaimTypes.ActiveTenantId, "mdsw-eep2-3456"),
             ],
             Scheme.Name

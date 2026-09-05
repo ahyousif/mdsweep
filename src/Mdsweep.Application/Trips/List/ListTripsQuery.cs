@@ -4,11 +4,14 @@ using Mdsweep.Application.Common.Models;
 namespace Mdsweep.Application.Trips.List;
 
 public sealed record ListTripsQuery(
-    LocalDate? ServiceDate = null,
+    LocalDate? StartDate = null,
+    LocalDate? EndDate = null,
+    string? Search = null,
+    bool? NeedsAttention = null,
     string? BrokerStatus = null,
     bool? IsWillCall = null,
     int Page = 1,
     int PageSize = 50,
-    TripSortBy SortBy = TripSortBy.AppointmentTime,
+    TripSortBy SortBy = TripSortBy.ScheduledPickupTime,
     SortDirection SortDirection = SortDirection.Ascending
-) : IQuery<PagedResult<IReadOnlyList<TripModel>>>;
+) : IQuery<ListTripsResult>;

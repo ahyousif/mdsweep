@@ -16,7 +16,7 @@ describe('Trips routes', () => {
           provide: AllTripsApi,
           useValue: { getTrips: () => Promise.resolve({ items: [] }), setScheduledPickupTime: () => Promise.resolve() },
         },
-        { provide: TripImportApi, useValue: { preview: () => Promise.resolve(), apply: () => Promise.resolve() } },
+        { provide: TripImportApi, useValue: { import: () => Promise.resolve() } },
       ],
     });
     const harness = await RouterTestingHarness.create();

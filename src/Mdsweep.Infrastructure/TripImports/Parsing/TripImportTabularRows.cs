@@ -35,17 +35,43 @@ internal static class TripImportTabularRows
             var hasValidAppointmentTime = TimeOnly.TryParseExact(
                 time, AppointmentTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var appointmentTime
             );
+            var cost = Cell(row, "Trip Cost")?.Trim();
+            var mileage = Cell(row, "Trip Mileage")?.Trim();
+            var hasValidCost = decimal.TryParse(cost, NumberStyles.Number | NumberStyles.AllowCurrencySymbol, CultureInfo.InvariantCulture, out var tripCost);
+            var hasValidMileage = decimal.TryParse(mileage, NumberStyles.Number, CultureInfo.InvariantCulture, out var tripMileage);
+            var rawPassengerType = Cell(row, "Passenger Type")?.Trim();
+            var specialNeeds = Cell(row, "Special Needs")?.Trim();
+            var hasMobilityRequirement = MtmPassengerMobilityMapper.TryMap(rawPassengerType, specialNeeds, out var mobilityRequirement);
             return new ParsedTripImportItem(
-                offset + 2, Cell(row, "Trip Number"), Cell(row, "Medicaid Number"),
-                Cell(row, "Member's First Name"), Cell(row, "Member's Last Name"),
+                offset + 2, BrokerTripNumber(Cell(row, "Trip Number")), ExternalMemberId(Cell(row, "Medicaid Number")),
+                SourceText(Cell(row, "Member's First Name")), SourceText(Cell(row, "Member's Last Name")),
                 hasValidAppointmentDate ? serviceDate : null,
                 hasValidAppointmentTime ? LocalTime.FromTimeOnly(appointmentTime) : null,
-                Cell(row, "Pickup Address"), Cell(row, "Pickup City"), Cell(row, "Delivery Address"),
-                Cell(row, "Delivery City"), Cell(row, "Trip Status"),
+                SourceText(Cell(row, "Pickup Address")), SourceText(Cell(row, "Pickup City")), SourceText(Cell(row, "Delivery Address")),
+                SourceText(Cell(row, "Delivery City")), SourceText(Cell(row, "Trip Status")),
                 string.Equals(Cell(row, "Will Call Flag"), "Y", StringComparison.OrdinalIgnoreCase),
+                hasMobilityRequirement ? mobilityRequirement : null,
+                rawPassengerType,
+                hasValidCost ? tripCost : null,
+                hasValidMileage ? tripMileage : null,
                 hasAppointmentDate && !hasValidAppointmentDate ? $"Appointment Date '{date}' is invalid." : null,
-                hasAppointmentTime && !hasValidAppointmentTime ? $"Appointment Time '{time}' is invalid." : null
+                hasAppointmentTime && !hasValidAppointmentTime ? $"Appointment Time '{time}' is invalid." : null,
+                !string.IsNullOrWhiteSpace(cost) && !hasValidCost ? $"Trip Cost '{cost}' is invalid." : null,
+                !string.IsNullOrWhiteSpace(mileage) && !hasValidMileage ? $"Trip Mileage '{mileage}' is invalid." : null,
+                rawPassengerType is not null && !hasMobilityRequirement
+                    ? $"Passenger Type '{rawPassengerType}' is not supported."
+                    : null
             );
         }).ToList();
     }
+
+    private static string? BrokerTripNumber(string? sourceValue) => Identifier(sourceValue);
+
+    private static string? ExternalMemberId(string? sourceValue) => Identifier(sourceValue);
+
+    private static string? Identifier(string? sourceValue) =>
+        string.IsNullOrWhiteSpace(sourceValue) ? null : sourceValue.Trim().ToUpperInvariant();
+
+    private static string? SourceText(string? sourceValue) =>
+        string.IsNullOrWhiteSpace(sourceValue) ? null : sourceValue.Trim();
 }

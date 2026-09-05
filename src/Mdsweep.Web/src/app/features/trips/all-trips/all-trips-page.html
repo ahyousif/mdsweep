@@ -1,17 +1,29 @@
-<section class="grid gap-4">
+<section class="flex min-h-full min-w-0 flex-col" [style.--toolbar-height.px]="toolbarHeight()">
+  <div #toolbar class="bg-background border-border sticky top-0 z-20 grid gap-4 border-b py-5 shadow-sm">
   <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-semibold">Trips</h1>
-      <p class="text-muted-foreground mt-1">Manage and review transportation.</p>
+      <h1 class="text-[1.75rem] leading-tight font-semibold tracking-tight">Trips</h1>
+      <p class="mt-2 text-lg font-medium">{{ scopeLabel() }}</p>
+      @if (data(); as result) { <p class="text-muted-foreground mt-1 text-sm">{{ result.scopeCount }} trips</p> }
     </div>
     <a hlmBtn routerLink="/trips/import">Import trips</a>
   </div>
 
-  <div class="flex flex-wrap items-center gap-2">
-    <button hlmBtn variant="outline" size="icon" type="button" aria-label="Previous day" (click)="moveServiceDate(-1)">
-      <ng-icon name="lucideChevronLeft" />
-    </button>
-    <div>
+  <div
+    class="grid gap-3 pt-1"
+    aria-label="Trip controls"
+  >
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="icon"
+        type="button"
+        aria-label="Previous Trip Date scope"
+        (click)="moveServiceDate(-1)"
+      >
+        <ng-icon name="lucideChevronLeft" />
+      </button>
       <hlm-date-picker
         [date]="selectedServiceDate()"
         [formatDate]="formatServiceDate"
@@ -19,105 +31,452 @@
         [autoCloseOnSelect]="true"
         (dateChange)="setServiceDate($event)"
       >
-        <hlm-date-picker-trigger buttonId="service-date" class="min-w-56">
-          Select a service date
-        </hlm-date-picker-trigger>
+        <hlm-date-picker-trigger buttonId="service-date">Select Trip Date</hlm-date-picker-trigger>
       </hlm-date-picker>
+      <button
+        hlmBtn
+        variant="outline"
+        size="icon"
+        type="button"
+        aria-label="Next Trip Date scope"
+        (click)="moveServiceDate(1)"
+      >
+        <ng-icon name="lucideChevronRight" />
+      </button>
+      <div class="flex items-center gap-1">
+        <button
+          hlmBtn
+          [variant]="isToday() ? 'secondary' : 'ghost'"
+          [attr.aria-pressed]="isToday()"
+          size="sm"
+          type="button"
+          (click)="goToToday()"
+        >
+          Today
+        </button>
+        <button
+          hlmBtn
+          [variant]="isTomorrow() ? 'secondary' : 'ghost'"
+          [attr.aria-pressed]="isTomorrow()"
+          size="sm"
+          type="button"
+          (click)="setTomorrow()"
+        >
+          Tomorrow
+        </button>
+        <button
+          hlmBtn
+          [variant]="isThisWeek() ? 'secondary' : 'ghost'"
+          [attr.aria-pressed]="isThisWeek()"
+          size="sm"
+          type="button"
+          (click)="setThisWeek()"
+        >
+          This week
+        </button>
+      </div>
+      @if (isMultiDay()) {
+        <span class="text-muted-foreground text-sm">{{ scopeLabel() }}</span>
+      }
     </div>
-    <button hlmBtn variant="outline" size="icon" type="button" aria-label="Next day" (click)="moveServiceDate(1)">
-      <ng-icon name="lucideChevronRight" />
-    </button>
-    @if (!isToday()) {
-      <button hlmBtn variant="ghost" size="sm" type="button" (click)="goToToday()">Today</button>
-    }
+    <div class="flex flex-wrap items-center gap-2">
+      <input
+        hlmInput
+        type="search"
+        class="w-full sm:max-w-md"
+        aria-label="Search passenger or trip number"
+        placeholder="Search passenger or trip number"
+        [value]="search()"
+        (input)="setSearch($any($event.target).value)"
+      />
+      <button
+        hlmBtn
+        size="sm"
+        [variant]="needsAttention() ? 'secondary' : 'outline'"
+        [attr.aria-pressed]="needsAttention()"
+        type="button"
+        (click)="toggleAttention()"
+      >
+        Needs attention @if (data(); as result) { {{ result.attentionCount }} }
+      </button>
+      @if (search() || needsAttention()) {
+        <button hlmBtn variant="ghost" size="sm" type="button" (click)="clearFilters()">
+          Clear filters
+        </button>
+      }
+      <span
+        class="text-muted-foreground flex h-8 min-w-24 items-center gap-2 text-sm"
+        role="status"
+      >
+        @if (tripsQuery.isFetching() && data()) {
+          <hlm-spinner /> Updating…
+        }
+      </span>
+    </div>
+  </div>
   </div>
 
-  @if (tripsQuery.isPending()) {
-    <div class="text-muted-foreground flex items-center gap-2" role="status">
-      <hlm-spinner /> Loading trips
-    </div>
-  }
-
   @if (tripsQuery.isError()) {
-    <div hlmAlert variant="destructive">
-      <h3 hlmAlertTitle>Trips could not be loaded</h3>
-      <p hlmAlertDescription>{{ tripsQueryError() }}</p>
+    <div hlmAlert class="my-3">
+      <h3 hlmAlertTitle>
+        {{ data() ? 'Trips could not be updated' : 'Trips could not be loaded' }}
+      </h3>
+      <p hlmAlertDescription>
+        {{ tripsQueryError() }}
+        @if (data()) {
+          Previously loaded trips are still shown.
+        }
+      </p>
+      <button hlmBtn variant="outline" size="sm" (click)="tripsQuery.refetch()">Retry</button>
     </div>
   }
 
-  @if (tripsQuery.isSuccess() && !tripsQuery.data()?.items?.length) {
-    <section hlmCard>
-      <div hlmCardContent class="pt-6">{{ emptyStateText() }}</div>
-    </section>
-  }
-
-  @if (tripsQuery.data()?.items?.length) {
-    <section hlmCard>
-      <div hlmCardHeader>
-        <p hlmCardDescription>
-          {{ tripsQuery.data()?.totalCount }} trips · page {{ tripsQuery.data()?.page }} of
-          {{ tripsQuery.data()?.totalPages }}
-        </p>
-      </div>
-      <div hlmCardContent>
-        <div hlmTableContainer>
-          <table hlmTable>
-            <thead hlmTHead>
-              @for (headerGroup of dispatchTable.getHeaderGroups(); track headerGroup.id) {
-                <tr hlmTr>
-                  @for (header of headerGroup.headers; track header.id) {
-                    <th hlmTh>
-                      <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
-                    </th>
-                  }
-                </tr>
-              }
-            </thead>
-            <tbody hlmTBody>
-              @for (row of dispatchTable.getRowModel().rows; track row.original.id) {
-                <tr hlmTr>
-                  @for (cell of row.getAllCells(); track cell.id) {
-                    <td hlmTd>
-                      @if (cell.column.id === 'scheduledPickupTime') {
-                        <div class="flex min-w-48 items-center gap-2">
-                          <input
-                            #scheduledTime
-                            hlmInput
-                            type="time"
-                            class="w-28"
-                            [value]="row.original.scheduledPickupTime?.slice(0, 5) ?? ''"
-                            [disabled]="busy()"
-                            [attr.aria-label]="text.scheduledPickup"
-                          />
-                          <button
-                            hlmBtn
-                            variant="outline"
-                            size="sm"
-                            type="button"
-                            (click)="setScheduledPickupTime(row.original, scheduledTime.value)"
-                            [disabled]="busy() || !scheduledTime.value"
-                          >
-                            {{ text.save }}
-                          </button>
-                        </div>
-                      } @else {
-                        <ng-container *flexRenderCell="cell; let value">{{ value }}</ng-container>
-                      }
-                    </td>
-                  }
-                </tr>
-              }
-            </tbody>
-          </table>
+  @if (tripsQuery.isPending() && !data()) {
+    <div role="status" aria-label="Loading trips" class="min-h-96">
+      <span class="sr-only">Loading trips</span>
+      @for (row of [0, 1, 2, 3, 4, 5, 6, 7]; track row) {
+        <div
+          class="border-border grid grid-cols-2 gap-4 border-b px-2 py-4 lg:grid-cols-5"
+          aria-hidden="true"
+        >
+          <span hlmSkeleton class="h-5 w-3/4"></span><span hlmSkeleton class="h-5 w-20"></span>
+          <span hlmSkeleton class="hidden h-5 w-20 lg:block"></span
+          ><span hlmSkeleton class="hidden h-5 w-full lg:block"></span
+          ><span hlmSkeleton class="hidden h-5 w-3/4 lg:block"></span>
         </div>
-      </div>
-    </section>
-  }
-
-  @if (scheduleError()) {
-    <div hlmAlert variant="destructive">
-      <h4 hlmAlertTitle>Action needed</h4>
-      <p hlmAlertDescription>{{ scheduleError() }}</p>
+      }
     </div>
   }
+
+  @if (data(); as result) {
+    @if (!result.items.length) {
+      <div class="text-muted-foreground grid min-h-64 place-content-center gap-3 text-center">
+        <p>{{ emptyStateText() }}</p>
+        @if (search() || needsAttention()) {
+          <button hlmBtn variant="outline" (click)="clearFilters()">Clear filters</button>
+        }
+      </div>
+    } @else if (desktop()?.matches) {
+      <table hlmTable class="table-fixed border-separate border-spacing-0">
+        <caption class="sr-only">
+          Trips for
+          {{
+            scopeLabel()
+          }}
+        </caption>
+        <colgroup>
+          @if (isMultiDay()) {
+            <col class="w-20" />
+          }
+          <col class="w-[22%]" />
+          <col class="w-36" />
+          <col class="w-28" />
+          <col class="w-[30%]" />
+          <col class="w-40" />
+        </colgroup>
+        <thead hlmTHead class="bg-background sticky top-(--toolbar-height) z-10 shadow-sm">
+          @for (group of dispatchTable.getHeaderGroups(); track group.id) {
+            <tr hlmTr>
+              @for (header of group.headers; track header.id) {
+                <th
+                  hlmTh
+                  scope="col"
+                  class="border-border border-b"
+                  [attr.aria-sort]="
+                    header.column.getCanSort()
+                      ? header.column.getIsSorted() === 'asc'
+                        ? 'ascending'
+                        : header.column.getIsSorted() === 'desc'
+                          ? 'descending'
+                          : 'none'
+                      : null
+                  "
+                >
+                  @if (header.column.getCanSort()) {
+                    <button
+                      type="button"
+                      class="flex min-h-10 items-center gap-1 rounded text-start focus-visible:outline-2 focus-visible:outline-ring"
+                      (click)="header.column.toggleSorting()"
+                    >
+                      <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                      <span aria-hidden="true">{{
+                        header.column.getIsSorted() === 'asc'
+                          ? '↑'
+                          : header.column.getIsSorted() === 'desc'
+                            ? '↓'
+                            : ''
+                      }}</span>
+                    </button>
+                  } @else {
+                    <ng-container *flexRenderHeader="header; let value">{{ value }}</ng-container>
+                  }
+                </th>
+              }
+            </tr>
+          }
+        </thead>
+        <tbody hlmTBody>
+          @for (row of dispatchTable.getRowModel().rows; track row.original.id) {
+            <tr
+              hlmTr
+              class="hover:bg-muted/40 cursor-pointer"
+              [attr.data-state]="selectedTrip()?.id === row.original.id ? 'selected' : null"
+              (click)="openTrip(row.original, tripDetails)"
+            >
+              @for (cell of row.getAllCells(); track cell.id) {
+                <td hlmTd class="border-border border-b py-2.5 whitespace-normal break-words">
+                  @switch (cell.column.id) {
+                    @case ('passenger') {
+                      <ng-container
+                        [ngTemplateOutlet]="passenger"
+                        [ngTemplateOutletContext]="{ $implicit: row.original }"
+                      />
+                    }
+                    @case ('scheduledPickupTime') {
+                      <ng-container
+                        [ngTemplateOutlet]="pickup"
+                        [ngTemplateOutletContext]="{ $implicit: row.original }"
+                      />
+                    }
+                    @case ('appointment') {
+                      {{
+                        row.original.isWillCall
+                          ? 'Will Call'
+                          : formatTime(row.original.appointmentTime)
+                      }}
+                    }
+                    @case ('serviceDate') {
+                      {{ formatTripDate(row.original.serviceDate) }}
+                    }
+                    @case ('route') {
+                      <ng-container
+                        [ngTemplateOutlet]="route"
+                        [ngTemplateOutletContext]="{ $implicit: row.original }"
+                      />
+                    }
+                    @case ('attention') {
+                      <ng-container
+                        [ngTemplateOutlet]="attention"
+                        [ngTemplateOutletContext]="{ $implicit: row.original }"
+                      />
+                    }
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <ul aria-label="Trips" class="divide-border divide-y">
+        @for (trip of result.items; track trip.id) {
+          <li
+            class="hover:bg-muted/50 grid cursor-pointer gap-3 py-4"
+            (click)="openTrip(trip, tripDetails)"
+          >
+            @if (isMultiDay()) {
+              <p class="text-muted-foreground text-sm">{{ formatTripDate(trip.serviceDate) }}</p>
+            }
+            <ng-container
+              [ngTemplateOutlet]="passenger"
+              [ngTemplateOutletContext]="{ $implicit: trip }"
+            />
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p class="text-muted-foreground mb-1">Scheduled pickup</p>
+                <ng-container
+                  [ngTemplateOutlet]="pickup"
+                  [ngTemplateOutletContext]="{ $implicit: trip }"
+                />
+              </div>
+              <div>
+                <p class="text-muted-foreground mb-1">Appointment</p>
+                {{ trip.isWillCall ? 'Will Call' : formatTime(trip.appointmentTime) }}
+              </div>
+            </div>
+            <ng-container
+              [ngTemplateOutlet]="attention"
+              [ngTemplateOutletContext]="{ $implicit: trip }"
+            />
+            <div class="text-sm">
+              <ng-container
+                [ngTemplateOutlet]="route"
+                [ngTemplateOutletContext]="{ $implicit: trip }"
+              />
+            </div>
+          </li>
+        }
+      </ul>
+    }
+    <footer
+      class="border-border mt-auto flex flex-wrap items-center justify-between gap-3 border-t py-3"
+    >
+      <p class="text-muted-foreground text-sm">{{ paginationText() }}</p>
+      @if (result.totalPages > 1) {
+        <div class="flex gap-2">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            [disabled]="tripsQuery.isFetching() || tripsQuery.isError() || page() === 1"
+            (click)="setPage(page() - 1)"
+          >
+            Previous
+          </button>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            [disabled]="
+              tripsQuery.isFetching() || tripsQuery.isError() || page() >= result.totalPages
+            "
+            (click)="setPage(page() + 1)"
+          >
+            Next
+          </button>
+        </div>
+      }
+    </footer>
+  }
+
+  <ng-template #passenger let-trip>
+    <div class="grid gap-0.5">
+      <button
+        type="button"
+        class="w-fit rounded text-start font-semibold focus-visible:outline-2 focus-visible:outline-ring"
+        (click)="$event.stopPropagation(); openTrip(trip, tripDetails)"
+        [attr.aria-label]="
+          'Open trip details for ' + trip.passengerFirstName + ' ' + trip.passengerLastName
+        "
+      >
+        {{ trip.passengerFirstName }} {{ trip.passengerLastName }}
+      </button>
+      @if (formatMobility(trip.mobilityRequirement)) {
+        <span class="text-sm">{{ formatMobility(trip.mobilityRequirement) }}</span>
+      }
+      <span class="text-muted-foreground break-all text-xs">MTM {{ trip.brokerTripNumber }}</span>
+    </div>
+  </ng-template>
+  <ng-template #route let-trip>
+    <div class="grid gap-0.5">
+      <span>{{ trip.pickupAddress }}</span
+      ><span class="text-muted-foreground">→ {{ trip.dropoffAddress }}</span>
+    </div>
+  </ng-template>
+  <ng-template #attention let-trip>
+    <div class="flex flex-wrap gap-1">
+      @for (reason of attentionReasons(trip); track reason.text) {
+        <span
+          hlmBadge
+          class="h-auto min-h-5 max-w-full whitespace-normal"
+          [variant]="reason.variant"
+          >{{ reason.text }}</span
+        >
+      }
+    </div>
+  </ng-template>
+  <ng-template #pickup let-trip>
+    <div
+      [attr.data-pickup-id]="trip.id"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()"
+    >
+      <hlm-popover align="start" sideOffset="6">
+        <button
+          hlmBtn
+          variant="link"
+          size="sm"
+          type="button"
+          [attr.aria-label]="'Edit scheduled pickup for ' + trip.passengerFirstName + ' ' + trip.passengerLastName"
+          (click)="startEditing(trip)"
+          hlmPopoverTrigger
+        >
+          {{ trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : trip.isWillCall ? 'Will Call' : 'Set time' }}
+        </button>
+        <ng-template hlmPopoverContent *hlmPopoverPortal>
+        @if (trip.isWillCall) {
+          <p class="text-muted-foreground">Will Call</p>
+        } @else {
+          <form
+          class="grid gap-3"
+          (submit)="$event.preventDefault(); setScheduledPickupTime(trip, draftTime())"
+          (keydown.escape)="cancelEditing()"
+        >
+          <label class="grid gap-1">
+            <span class="font-medium">Scheduled pickup</span>
+            <input
+            hlmInput type="time" class="w-full"
+            [attr.aria-label]="
+              'Scheduled pickup for ' + trip.passengerFirstName + ' ' + trip.passengerLastName
+            "
+            [value]="draftTime()"
+            (input)="draftTime.set($any($event.target).value)"
+            [disabled]="busy()"
+            required
+          />
+          </label>
+          <div class="flex flex-wrap gap-1">
+            <button
+              hlmBtn
+              variant="outline"
+              size="xs"
+              type="submit"
+              [disabled]="busy() || !draftTime()"
+            >
+              {{ busy() ? 'Saving…' : 'Save' }}
+            </button>
+            <button
+              hlmBtn
+              variant="ghost"
+              size="xs"
+              type="button"
+              [disabled]="busy()"
+              (click)="cancelEditing()"
+            >
+              Cancel
+            </button>
+          </div>
+          @if (scheduleError()) {
+            <p class="text-destructive text-sm" role="alert">{{ scheduleError() }}</p>
+          }
+        </form>
+        }
+        </ng-template>
+      </hlm-popover>
+    </div>
+  </ng-template>
+  <hlm-sheet side="right" #tripDetails="hlmSheet">
+    <hlm-sheet-content *hlmSheetPortal class="data-[side=right]:w-full overflow-y-auto">
+      @if (selectedTrip(); as trip) {
+        <div hlmSheetHeader>
+          <h2 hlmSheetTitle>{{ trip.passengerFirstName }} {{ trip.passengerLastName }}</h2>
+          <p hlmSheetDescription>{{ trip.brokerTripNumber }} · {{ trip.serviceDate }}</p>
+        </div>
+        <div class="grid gap-3 px-4 text-sm">
+          <p>
+            <strong>Mobility requirement:</strong>
+            {{ formatMobility(trip.mobilityRequirement) || 'Ambulatory' }}
+          </p>
+          <p>
+            <strong>Appointment:</strong>
+            {{ trip.isWillCall ? 'Will Call' : formatTime(trip.appointmentTime) }}
+          </p>
+          <p><strong>Scheduled pickup:</strong> {{ trip.isWillCall ? 'Will Call' : (trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : 'Set time') }}</p>
+          @if (trip.estimatedTravelMinutes) {
+            <p><strong>Estimated drive:</strong> {{ trip.estimatedTravelMinutes }} min</p>
+          }
+          <p><strong>Pickup:</strong> {{ trip.pickupAddress }}, {{ trip.pickupCity }}</p>
+          <p><strong>Drop-off:</strong> {{ trip.dropoffAddress }}, {{ trip.dropoffCity }}</p>
+          <p><strong>Broker status:</strong> {{ trip.brokerStatus ?? 'Not supplied' }}</p>
+          <p><strong>Trip mileage:</strong> {{ trip.tripMileage ?? 'Not supplied' }}</p>
+          <p><strong>Trip cost:</strong> {{ trip.tripCost ?? 'Not supplied' }}</p>
+        </div>
+        <div hlmSheetFooter>
+          <button hlmBtn variant="outline" size="sm" type="button" hlmSheetClose>
+            Close details
+          </button>
+        </div>
+      }
+    </hlm-sheet-content>
+  </hlm-sheet>
 </section>

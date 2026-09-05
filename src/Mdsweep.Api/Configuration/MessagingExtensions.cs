@@ -1,4 +1,5 @@
 using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Application.Trips.Scheduling;
 using Mdsweep.Infrastructure.Persistence;
 using Wolverine.FluentValidation;
 
@@ -16,6 +17,8 @@ public static class MessagingExtensions
             options.Discovery.IncludeAssembly(typeof(IRequest<>).Assembly);
             options.UseFluentValidation();
             options.AddPersistence(builder.Configuration);
+            options.LocalQueue("trip-scheduling");
+            options.PublishMessage<CalculateScheduledPickupTimeCommand>().ToLocalQueue("trip-scheduling");
         });
 
         builder.Services.AddWolverineHttp();

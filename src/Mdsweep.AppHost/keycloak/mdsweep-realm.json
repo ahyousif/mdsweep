@@ -1,6 +1,7 @@
 {
   "realm": "mdsweep",
   "enabled": true,
+  "browserFlow": "mdsweep-browser",
   "organizationsEnabled": true,
   "organizations": [
     {
@@ -16,7 +17,54 @@
       ]
     }
   ],
-  "roles": { "realm": [{ "name": "Dispatcher" }, { "name": "Driver" }] },
+  "authenticationFlows": [
+    {
+      "alias": "mdsweep-browser",
+      "description": "MDSweep username and password browser login",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorFlow": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "authenticatorFlow": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "userSetupAllowed": false,
+          "authenticatorFlow": true,
+          "flowAlias": "mdsweep-browser-forms"
+        }
+      ]
+    },
+    {
+      "alias": "mdsweep-browser-forms",
+      "description": "MDSweep username and password form",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "authenticatorFlow": false
+        }
+      ]
+    }
+  ],
   "clients": [
     {
       "clientId": "mdsweep-server",
@@ -32,21 +80,7 @@
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:4200/signout-callback-oidc"
       },
-      "webOrigins": ["http://localhost:4200"],
-      "protocolMappers": [
-        {
-          "name": "roles",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-realm-role-mapper",
-          "config": {
-            "claim.name": "roles",
-            "jsonType.label": "String",
-            "multivalued": "true",
-            "access.token.claim": "true",
-            "id.token.claim": "true"
-          }
-        }
-      ]
+      "webOrigins": ["http://localhost:4200"]
     },
     {
       "clientId": "mdsweep-administration",
@@ -74,7 +108,6 @@
       "lastName": "Test",
       "enabled": true,
       "emailVerified": true,
-      "realmRoles": ["Dispatcher"],
       "credentials": [
         { "type": "password", "value": "P@ssw0rd!", "temporary": false }
       ]

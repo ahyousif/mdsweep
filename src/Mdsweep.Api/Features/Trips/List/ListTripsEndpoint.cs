@@ -10,14 +10,19 @@ public static class ListTripsEndpoint
     [Tags(TripConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.TripsViewAll)]
     [WolverineGet(TripConstants.Route)]
-    public static async Task<IResult> Get(
-        [FromQuery] ListTripsRequest request,
-        IMessageBus bus,
-        CancellationToken ct
-    )
+    public static async Task<IResult> Get([FromQuery] ListTripsRequest request, IMessageBus bus, CancellationToken ct)
     {
         var result = await bus.SendAsync(request.ToQuery(), ct);
 
-        return result.ToEndpointResult(TripResponse.FromModel);
+        return result.ToEndpointResult(value => new
+        {
+            Items = value.Items.Select(TripResponse.FromModel),
+            value.TotalCount,
+            value.Page,
+            value.PageSize,
+            value.TotalPages,
+            value.ScopeCount,
+            value.AttentionCount,
+        });
     }
 }

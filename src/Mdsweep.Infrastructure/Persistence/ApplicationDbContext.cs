@@ -2,8 +2,8 @@ using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
-using Mdsweep.Domain.TripImports;
 using Mdsweep.Domain.Trips;
+using Mdsweep.Domain.TripImports;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Infrastructure.Persistence;
@@ -13,8 +13,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         IRepository
 {
     public DbSet<TripAggregate> Trips => Set<TripAggregate>();
-    public DbSet<TripImportAggregate> TripImports => Set<TripImportAggregate>();
     public DbSet<PassengerAggregate> Passengers => Set<PassengerAggregate>();
+    public DbSet<TripImportReceipt> TripImportReceipts => Set<TripImportReceipt>();
     public DbSet<TenantAggregate> Tenants => Set<TenantAggregate>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
     public DbSet<UserAggregate> Users => Set<UserAggregate>();

@@ -8,6 +8,19 @@ namespace Mdsweep.Api.IntegrationTests;
 public sealed class PassengerManagementTests : MdsweepIntegrationTest
 {
     [Fact]
+    public async Task Cookie_authenticated_json_mutation_requires_an_antiforgery_token()
+    {
+        using var client = Application.CreateClient();
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/passengers",
+            new { firstName = "Jordan", lastName = "Example" }
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task DispatcherCanCreatePassengerIndependentlyOfManifest()
     {
         using var client = Application.CreateClient();
