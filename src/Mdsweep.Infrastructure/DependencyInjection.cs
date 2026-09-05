@@ -5,6 +5,8 @@ using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 using Mdsweep.Infrastructure.TripImports.Parsing;
 using Mdsweep.Infrastructure.TripImports.Persistence;
+using Mdsweep.Application.Trips.Scheduling;
+using Mdsweep.Infrastructure.Trips.Scheduling;
 
 namespace Mdsweep.Infrastructure;
 
@@ -42,6 +44,19 @@ public static class DependencyInjection
         services.AddScoped<ITripImportLookup, EfTripImportLookup>();
         services.AddSingleton<ITripImportFileParser, CsvTripImportFileParser>();
         services.AddSingleton<ITripImportFileParser, XlsxTripImportFileParser>();
+
+        services
+            .AddOptions<TripSchedulingOptions>()
+            .Bind(configuration.GetSection(TripSchedulingOptions.SectionName))
+            .Validate(options => options.SchedulingBufferMinutes > 0, "Scheduling buffer must be positive.")
+            .ValidateOnStart();
+        services.AddOptions<GoogleRoutesOptions>().Bind(configuration.GetSection(GoogleRoutesOptions.SectionName));
+        services.AddSingleton<IScheduledPickupCalculator, ConfiguredScheduledPickupCalculator>();
+        services.AddHttpClient<IRouteEstimator, GoogleRoutesEstimator>(client =>
+        {
+            client.BaseAddress = new Uri("https://routes.googleapis.com/");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 

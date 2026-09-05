@@ -23,6 +23,9 @@ export type AllTripsTrip = {
   tripCost: number | null;
   tripMileage: number | null;
   scheduledPickupTime: string | null;
+  scheduledPickupSource?: 'Calculated' | 'DispatcherOverride' | null;
+  suggestedPickupTime?: string | null;
+  estimatedTravelMinutes?: number | null;
   pickupAddress: string;
   pickupCity: string;
   dropoffAddress: string;
@@ -73,6 +76,24 @@ export class AllTripsApi {
       this.#api.http.put<void>(
         this.#api.url(`trips/${encodeURIComponent(id)}/scheduled-pickup-time`),
         { scheduledPickupTime: value.length === 5 ? `${value}:00` : value },
+      ),
+    );
+  }
+
+  resetScheduledPickupTime(id: string): Promise<void> {
+    return firstValueFrom(
+      this.#api.http.post<void>(
+        this.#api.url(`trips/${encodeURIComponent(id)}/scheduled-pickup-time/reset`),
+        {},
+      ),
+    );
+  }
+
+  calculateScheduledPickupTime(id: string): Promise<void> {
+    return firstValueFrom(
+      this.#api.http.post<void>(
+        this.#api.url(`trips/${encodeURIComponent(id)}/scheduled-pickup-time/calculate`),
+        {},
       ),
     );
   }

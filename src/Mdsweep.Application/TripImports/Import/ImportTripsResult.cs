@@ -8,6 +8,9 @@ public sealed record ImportTripsResult(
     int Unchanged,
     int ProblemCount,
     IReadOnlyList<TripImportProblem> Problems
-);
+)
+{
+    public IReadOnlyList<Guid> SchedulingTripIds { get; init; } = [];
+}
 
 public sealed record TripImportProblem(int RowNumber, string? TripNumber, string Message);

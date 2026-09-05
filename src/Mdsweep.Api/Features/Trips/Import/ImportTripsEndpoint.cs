@@ -2,6 +2,7 @@ using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Extensions;
 using Mdsweep.Application.Common.Extensions;
 using Mdsweep.Application.TripImports.Import;
+using Mdsweep.Application.Trips.Scheduling;
 
 namespace Mdsweep.Api.Features.Trips.Import;
 
@@ -20,6 +21,16 @@ public sealed class ImportTripsEndpoint
             ct
         );
 
-        return result.ToEndpointResult(value => Results.Ok(ImportTripsResponse.FromResult(value)));
+        if (!result.IsSuccess)
+        {
+            return result.ToEndpointResult(value => Results.Ok(ImportTripsResponse.FromResult(value)));
+        }
+
+        foreach (var tripId in result.Value.SchedulingTripIds)
+        {
+            await bus.SendAsync(new CalculateScheduledPickupTimeCommand(tripId), ct);
+        }
+
+        return Results.Ok(ImportTripsResponse.FromResult(result.Value));
     }
 }

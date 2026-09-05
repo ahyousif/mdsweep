@@ -24,6 +24,7 @@ import { HlmDatePickerImports } from '@spartan-ng/helm/date-picker';
 import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
+import { HlmPopoverImports } from '@spartan-ng/helm/popover';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { injectMutation, injectQuery } from '@tanstack/angular-query-experimental';
 import {
@@ -104,8 +105,6 @@ export function attentionReasons(
     reasons.push({ text: `Broker: ${trip.brokerStatus || 'Unknown'}`, variant: 'destructive' });
   if (trip.mobilityRequirement === 'Unknown')
     reasons.push({ text: 'Mobility unknown', variant: 'secondary' });
-  if (!trip.isWillCall && !trip.scheduledPickupTime)
-    reasons.push({ text: 'Set pickup time', variant: 'secondary' });
   return reasons;
 }
 
@@ -157,6 +156,7 @@ const sortColumns: Record<string, string> = {
     HlmSpinner,
     ...HlmAlertImports,
     ...HlmSheetImports,
+    ...HlmPopoverImports,
     ...HlmTableImports,
     RouterLink,
   ],
@@ -293,6 +293,18 @@ export default class AllTripsPage {
 
   readonly busy = computed(() => this.scheduleMutation.isPending());
 
+  readonly calculateMutation = injectMutation(() => ({
+    mutationFn: (id: string) => this.#api.calculateScheduledPickupTime(id),
+    onSuccess: async () => await this.#queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
+    onError: (error) => this.scheduleError.set(httpErrorMessage(error, this.text.scheduleSaveError)),
+  }));
+
+  readonly resetMutation = injectMutation(() => ({
+    mutationFn: (id: string) => this.#api.resetScheduledPickupTime(id),
+    onSuccess: async () => await this.#queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
+    onError: (error) => this.scheduleError.set(httpErrorMessage(error, this.text.scheduleSaveError)),
+  }));
+
   readonly dispatchTable = injectTable(() => ({
     features,
     columns: this.columns(),
@@ -362,6 +374,20 @@ export default class AllTripsPage {
     if (!value) return;
     this.scheduleError.set('');
     this.scheduleMutation.mutate({ id: trip.id, value });
+  }
+
+  calculatePickupTime(trip: AllTripsTrip): void {
+    this.scheduleError.set('');
+    this.calculateMutation.mutate(trip.id);
+  }
+
+  resetPickupTime(trip: AllTripsTrip): void {
+    this.scheduleError.set('');
+    this.resetMutation.mutate(trip.id);
+  }
+
+  pickupSourceLabel(trip: AllTripsTrip): string {
+    return trip.scheduledPickupSource === 'DispatcherOverride' ? 'Adjusted' : 'Calculated';
   }
 
   setThisWeek(): void {

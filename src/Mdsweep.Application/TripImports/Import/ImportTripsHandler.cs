@@ -76,6 +76,7 @@ public sealed class ImportTripsHandler(
         var added = 0;
         var updated = 0;
         var unchanged = 0;
+        var schedulingTripIds = new List<Guid>();
 
         foreach (var row in validRows)
         {
@@ -111,6 +112,7 @@ public sealed class ImportTripsHandler(
                 await repository.AddAsync(trip, ct);
                 trips.Add(row.TripNumber!, trip);
                 added++;
+                schedulingTripIds.Add(trip.Id);
             }
             else if (trip.BrokerData == brokerData)
             {
@@ -118,8 +120,13 @@ public sealed class ImportTripsHandler(
             }
             else
             {
+                var schedulingInputsChanged = SchedulingInputsChanged(trip.BrokerData, brokerData);
                 trip.ReconcileBrokerData(brokerData);
                 updated++;
+                if (schedulingInputsChanged)
+                {
+                    schedulingTripIds.Add(trip.Id);
+                }
             }
         }
         var outcome = new ImportTripsResult(command.FileName, rows.Count, added, updated, unchanged, problems.Count, problems);
@@ -133,7 +140,7 @@ public sealed class ImportTripsHandler(
             ct
         );
 
-        return Result.Success(outcome);
+        return Result.Success(outcome with { SchedulingTripIds = schedulingTripIds });
     }
 
     private static string? Validate(
@@ -182,4 +189,12 @@ public sealed class ImportTripsHandler(
             return $"Trip {row.TripNumber} already belongs to another passenger.";
         return null;
     }
+
+    private static bool SchedulingInputsChanged(BrokerTripData previous, BrokerTripData current) =>
+        previous.ServiceDate != current.ServiceDate
+        || previous.AppointmentTime != current.AppointmentTime
+        || previous.PickupAddress != current.PickupAddress
+        || previous.PickupCity != current.PickupCity
+        || previous.DropoffAddress != current.DropoffAddress
+        || previous.DropoffCity != current.DropoffCity;
 }
