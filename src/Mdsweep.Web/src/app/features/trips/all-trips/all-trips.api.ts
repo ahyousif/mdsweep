@@ -13,7 +13,13 @@ export type AllTripsTrip = {
   appointmentTime: string | null;
   brokerStatus: string | null;
   isWillCall: boolean;
-  mobilityRequirement: 'Unknown' | 'Ambulatory' | 'Cane' | 'ManualWheelchair' | 'ManualWheelchairCannotTransfer' | 'ElectricWheelchair';
+  mobilityRequirement:
+    | 'Unknown'
+    | 'Ambulatory'
+    | 'Cane'
+    | 'ManualWheelchair'
+    | 'ManualWheelchairCannotTransfer'
+    | 'ElectricWheelchair';
   tripCost: number | null;
   tripMileage: number | null;
   scheduledPickupTime: string | null;
@@ -34,11 +40,16 @@ export type TripsQuery = {
   sortDirection?: 'Ascending' | 'Descending';
 };
 
+export type TripsResponse = PagedResponse<AllTripsTrip> & {
+  scopeCount: number;
+  attentionCount: number;
+};
+
 @Injectable({ providedIn: 'root' })
 export class AllTripsApi {
   readonly #api = inject(ApiClient);
 
-  getTrips(query: TripsQuery): Promise<PagedResponse<AllTripsTrip>> {
+  getTrips(query: TripsQuery): Promise<TripsResponse> {
     const params: Record<string, string | number | boolean> = {
       startDate: query.startDate,
       endDate: query.endDate,
@@ -51,7 +62,7 @@ export class AllTripsApi {
     if (query.needsAttention) params['needsAttention'] = true;
 
     return firstValueFrom(
-      this.#api.http.get<PagedResponse<AllTripsTrip>>(this.#api.url('trips'), {
+      this.#api.http.get<TripsResponse>(this.#api.url('trips'), {
         params,
       }),
     );

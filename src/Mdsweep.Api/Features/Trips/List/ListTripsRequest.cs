@@ -31,12 +31,26 @@ public sealed class ListTripsRequest
 
     public ListTripsQuery ToQuery()
     {
-        var startDate = StartDate.HasValue ? LocalDate.FromDateOnly(StartDate.Value) : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value) : (LocalDate?)null;
-        var endDate = EndDate.HasValue ? LocalDate.FromDateOnly(EndDate.Value) : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value) : (LocalDate?)null;
+        var startDate =
+            StartDate.HasValue ? LocalDate.FromDateOnly(StartDate.Value)
+            : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value)
+            : (LocalDate?)null;
+        var endDate =
+            EndDate.HasValue ? LocalDate.FromDateOnly(EndDate.Value)
+            : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value)
+            : (LocalDate?)null;
 
-        var sortBy = StartDate.HasValue && EndDate.HasValue && StartDate != EndDate && SortBy == TripSortBy.ScheduledPickupTime
-            ? TripSortBy.ServiceDate
-            : SortBy;
-        return new ListTripsQuery(startDate, endDate, Search, NeedsAttention, BrokerStatus, IsWillCall, Page, PageSize, sortBy, SortDirection);
+        return new ListTripsQuery(
+            startDate,
+            endDate,
+            Search,
+            NeedsAttention,
+            BrokerStatus,
+            IsWillCall,
+            Page,
+            PageSize,
+            SortBy,
+            SortDirection
+        );
     }
 }

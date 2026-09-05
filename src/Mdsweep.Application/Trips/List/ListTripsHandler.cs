@@ -6,20 +6,36 @@ namespace Mdsweep.Application.Trips.List;
 
 public sealed class ListTripsHandler(IRepository repository)
 {
-    public async Task<PagedResult<IReadOnlyList<TripModel>>> Handle(ListTripsQuery query, CancellationToken ct)
+    public async Task<Result<ListTripsResult>> Handle(ListTripsQuery query, CancellationToken ct)
     {
         var trips = new TripsSpecification()
             .WithTripDateRange(query.StartDate, query.EndDate)
             .WithSearch(query.Search)
-            .WithNeedsAttention(query.NeedsAttention)
             .WithBrokerStatus(query.BrokerStatus)
             .WithWillCall(query.IsWillCall);
 
-        var totalCount = await repository.CountAsync(trips.Build(), ct);
+        var scopeCount = await repository.CountAsync(trips.Build(), ct);
+        var attentionCount = await repository.CountAsync(
+            new TripsSpecification()
+                .WithTripDateRange(query.StartDate, query.EndDate)
+                .WithSearch(query.Search)
+                .WithBrokerStatus(query.BrokerStatus)
+                .WithWillCall(query.IsWillCall)
+                .WithNeedsAttention(true)
+                .Build(),
+            ct
+        );
+        var totalCount = query.NeedsAttention switch
+        {
+            true => attentionCount,
+            false => scopeCount - attentionCount,
+            _ => scopeCount,
+        };
+        trips.WithNeedsAttention(query.NeedsAttention);
 
         var items = await repository.ListAsync(
             trips
-                .OrderBy(query.SortBy, query.SortDirection)
+                .OrderBy(query.SortBy, query.SortDirection, query.StartDate != query.EndDate)
                 .WithPagination(query.Page, query.PageSize)
                 .Build(TripModelProjection.Instance),
             ct
@@ -27,8 +43,14 @@ public sealed class ListTripsHandler(IRepository repository)
 
         var totalPages = (long)Math.Ceiling(totalCount / (double)query.PageSize);
 
-        var pagedInfo = new PagedInfo(query.Page, query.PageSize, totalPages, totalCount);
-
-        return new PagedResult<IReadOnlyList<TripModel>>(pagedInfo, items);
+        return new ListTripsResult(
+            items,
+            totalCount,
+            query.Page,
+            query.PageSize,
+            totalPages,
+            scopeCount,
+            attentionCount
+        );
     }
 }

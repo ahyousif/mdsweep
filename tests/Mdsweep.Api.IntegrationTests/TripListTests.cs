@@ -54,10 +54,46 @@ public sealed class TripListTests : MdsweepIntegrationTest
     [Fact]
     public async Task Dispatcher_filters_date_ranges_searches_passengers_and_identifies_trips_with_problems()
     {
-        await AddTrip("mdsw-eep2-3456", "TRIP-EARLY", new LocalDate(2026, 9, 14), new LocalTime(11, 0), "VALID", false, "Early", "Rider");
-        await AddTrip("mdsw-eep2-3456", "TRIP-SEARCH", new LocalDate(2026, 9, 15), new LocalTime(10, 0), "VALID", false, "Searchable", "Passenger");
-        await AddTrip("mdsw-eep2-3456", "TRIP-CLEAR", new LocalDate(2026, 9, 16), new LocalTime(9, 0), "VALID", true, "Clear", "Rider");
-        await AddTrip("mdsw-eep2-3456", "TRIP-LATE", new LocalDate(2026, 9, 17), new LocalTime(8, 0), "TURN BACK", false, "Late", "Rider");
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-EARLY",
+            new LocalDate(2026, 9, 14),
+            new LocalTime(11, 0),
+            "VALID",
+            false,
+            "Early",
+            "Rider"
+        );
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-SEARCH",
+            new LocalDate(2026, 9, 15),
+            new LocalTime(10, 0),
+            "VALID",
+            false,
+            "Searchable",
+            "Passenger"
+        );
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-CLEAR",
+            new LocalDate(2026, 9, 16),
+            new LocalTime(9, 0),
+            "VALID",
+            true,
+            "Clear",
+            "Rider"
+        );
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-LATE",
+            new LocalDate(2026, 9, 17),
+            new LocalTime(8, 0),
+            "TURN BACK",
+            false,
+            "Late",
+            "Rider"
+        );
         using var client = Application.CreateClient();
 
         var range = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-16");
@@ -74,6 +110,77 @@ public sealed class TripListTests : MdsweepIntegrationTest
 
         var clear = await GetTrips(client, "/api/trips?needsAttention=false");
         Assert.Equal(["TRIP-CLEAR"], clear.Items.Select(trip => trip.BrokerTripNumber));
+    }
+
+    [Fact]
+    public async Task Default_chronology_uses_appointment_fallback_and_keeps_multiple_days_together()
+    {
+        var day = new LocalDate(2026, 9, 15);
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-PLANNED",
+            day,
+            new LocalTime(10, 0),
+            "VALID",
+            false,
+            scheduledPickupTime: new LocalTime(8, 30)
+        );
+        await AddTrip("mdsw-eep2-3456", "TRIP-FALLBACK", day, new LocalTime(8, 0), "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-LATER", day, new LocalTime(9, 0), "VALID", false);
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-TOMORROW",
+            day.PlusDays(1),
+            new LocalTime(7, 0),
+            "VALID",
+            false,
+            scheduledPickupTime: new LocalTime(6, 0)
+        );
+        using var client = Application.CreateClient();
+
+        var single = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-15");
+        Assert.Equal(
+            ["TRIP-FALLBACK", "TRIP-PLANNED", "TRIP-LATER"],
+            single.Items.Select(trip => trip.BrokerTripNumber)
+        );
+        var week = await GetTrips(client, "/api/trips?startDate=2026-09-13&endDate=2026-09-19");
+        Assert.Equal(
+            ["TRIP-FALLBACK", "TRIP-PLANNED", "TRIP-LATER", "TRIP-TOMORROW"],
+            week.Items.Select(trip => trip.BrokerTripNumber)
+        );
+    }
+
+    [Fact]
+    public async Task Attention_summary_uses_the_full_base_scope_and_unknown_mobility_is_actionable()
+    {
+        var day = new LocalDate(2026, 9, 15);
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "TRIP-UNKNOWN",
+            day,
+            new LocalTime(10, 0),
+            "VALID",
+            true,
+            mobility: PassengerMobilityRequirement.Unknown
+        );
+        await AddTrip("mdsw-eep2-3456", "TRIP-MISSING", day, new LocalTime(9, 0), "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-CLEAR", day, new LocalTime(8, 0), "VALID", true);
+        await AddTrip("mdsw-eep2-3456", "OUTSIDE-SCOPE", day.PlusDays(1), new LocalTime(9, 0), "TURN BACK", false);
+        await AddTrip("mdsw-other-000", "TRIP-OTHER", day, new LocalTime(9, 0), "TURN BACK", false);
+        using var client = Application.CreateClient();
+        const string scope = "/api/trips?startDate=2026-09-15&endDate=2026-09-15&pageSize=1";
+        var all = await GetTrips(client, scope);
+        Assert.Equal(3, all.ScopeCount);
+        Assert.Equal(2, all.AttentionCount);
+        Assert.Single(all.Items);
+        var filtered = await GetTrips(client, scope + "&needsAttention=true");
+        Assert.Equal(3, filtered.ScopeCount);
+        Assert.Equal(2, filtered.TotalCount);
+        Assert.Equal(2, filtered.AttentionCount);
+        var unknown = await GetTrips(client, scope + "&needsAttention=true&search=UNKNOWN");
+        Assert.Equal("TRIP-UNKNOWN", Assert.Single(unknown.Items).BrokerTripNumber);
+        Assert.Equal(1, unknown.AttentionCount);
+        Assert.Equal(1, unknown.ScopeCount);
     }
 
     [Theory]
@@ -126,7 +233,9 @@ public sealed class TripListTests : MdsweepIntegrationTest
         string brokerStatus,
         bool isWillCall,
         string firstName = "Synthetic",
-        string lastName = "Passenger"
+        string lastName = "Passenger",
+        LocalTime? scheduledPickupTime = null,
+        PassengerMobilityRequirement mobility = PassengerMobilityRequirement.Ambulatory
     )
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -147,18 +256,27 @@ public sealed class TripListTests : MdsweepIntegrationTest
                 "Mesa",
                 brokerStatus,
                 isWillCall,
-                PassengerMobilityRequirement.Ambulatory,
+                mobility,
                 null,
                 null,
                 null
             )
         );
+        if (scheduledPickupTime.HasValue)
+            trip.SetScheduledPickupTime(scheduledPickupTime.Value);
         trip.TenantId = tenantId;
         db.AddRange(passenger, trip);
         await db.SaveChangesAsync();
     }
 
-    private sealed record PagedTripResponse(List<TripResponse> Items, int TotalCount, int Page, int PageSize);
+    private sealed record PagedTripResponse(
+        List<TripResponse> Items,
+        int TotalCount,
+        int Page,
+        int PageSize,
+        int ScopeCount,
+        int AttentionCount
+    );
 
     private sealed record TripResponse(
         Guid Id,

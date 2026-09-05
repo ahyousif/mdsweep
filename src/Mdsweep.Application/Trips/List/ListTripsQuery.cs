@@ -14,4 +14,4 @@ public sealed record ListTripsQuery(
     int PageSize = 50,
     TripSortBy SortBy = TripSortBy.ScheduledPickupTime,
     SortDirection SortDirection = SortDirection.Ascending
-) : IQuery<PagedResult<IReadOnlyList<TripModel>>>;
+) : IQuery<ListTripsResult>;
