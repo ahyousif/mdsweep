@@ -293,18 +293,6 @@ export default class AllTripsPage {
 
   readonly busy = computed(() => this.scheduleMutation.isPending());
 
-  readonly calculateMutation = injectMutation(() => ({
-    mutationFn: (id: string) => this.#api.calculateScheduledPickupTime(id),
-    onSuccess: async () => await this.#queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
-    onError: (error) => this.scheduleError.set(httpErrorMessage(error, this.text.scheduleSaveError)),
-  }));
-
-  readonly resetMutation = injectMutation(() => ({
-    mutationFn: (id: string) => this.#api.resetScheduledPickupTime(id),
-    onSuccess: async () => await this.#queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
-    onError: (error) => this.scheduleError.set(httpErrorMessage(error, this.text.scheduleSaveError)),
-  }));
-
   readonly dispatchTable = injectTable(() => ({
     features,
     columns: this.columns(),
@@ -374,20 +362,6 @@ export default class AllTripsPage {
     if (!value) return;
     this.scheduleError.set('');
     this.scheduleMutation.mutate({ id: trip.id, value });
-  }
-
-  calculatePickupTime(trip: AllTripsTrip): void {
-    this.scheduleError.set('');
-    this.calculateMutation.mutate(trip.id);
-  }
-
-  resetPickupTime(trip: AllTripsTrip): void {
-    this.scheduleError.set('');
-    this.resetMutation.mutate(trip.id);
-  }
-
-  pickupSourceLabel(trip: AllTripsTrip): string {
-    return trip.scheduledPickupSource === 'DispatcherOverride' ? 'Adjusted' : 'Calculated';
   }
 
   setThisWeek(): void {

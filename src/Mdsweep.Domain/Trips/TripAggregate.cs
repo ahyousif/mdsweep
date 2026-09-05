@@ -23,8 +23,6 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
     public LocalTime? ScheduledPickupTime { get; private set; }
-    public LocalTime? SuggestedPickupTime { get; private set; }
-    public ScheduledPickupSource? ScheduledPickupSource { get; private set; }
     public int? EstimatedTravelMinutes { get; private set; }
     public string? SchedulingInputFingerprint { get; private set; }
 
@@ -58,35 +56,17 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public void SetScheduledPickupTime(LocalTime scheduledPickupTime)
     {
         ScheduledPickupTime = scheduledPickupTime;
-        ScheduledPickupSource = global::Mdsweep.Domain.Trips.ScheduledPickupSource.DispatcherOverride;
     }
 
-    public void ApplyCalculatedPickupTime(
-        LocalTime suggestedPickupTime,
-        int estimatedTravelMinutes,
+    public void ApplyScheduledPickupTime(
+        LocalTime? scheduledPickupTime,
+        int? estimatedTravelMinutes,
         string schedulingInputFingerprint
     )
     {
-        SuggestedPickupTime = suggestedPickupTime;
+        ScheduledPickupTime = scheduledPickupTime;
         EstimatedTravelMinutes = estimatedTravelMinutes;
         SchedulingInputFingerprint = schedulingInputFingerprint;
 
-        if (ScheduledPickupSource != global::Mdsweep.Domain.Trips.ScheduledPickupSource.DispatcherOverride)
-        {
-            ScheduledPickupTime = suggestedPickupTime;
-            ScheduledPickupSource = global::Mdsweep.Domain.Trips.ScheduledPickupSource.Calculated;
-        }
-    }
-
-    public bool ResetScheduledPickupToCalculated()
-    {
-        if (SuggestedPickupTime is null)
-        {
-            return false;
-        }
-
-        ScheduledPickupTime = SuggestedPickupTime;
-        ScheduledPickupSource = global::Mdsweep.Domain.Trips.ScheduledPickupSource.Calculated;
-        return true;
     }
 }

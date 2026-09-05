@@ -90,7 +90,7 @@ describe('Trips workspace interactions', () => {
   const button = (text: string) =>
     Array.from(
       fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
-    ).find((item) => item.textContent?.trim() === text)!;
+    ).find((item) => item.textContent?.trim().startsWith(text))!;
   const settle = async () => {
     fixture.autoDetectChanges();
     await fixture.whenStable();
@@ -272,7 +272,7 @@ describe('Trips workspace interactions', () => {
       totalPages: 3,
     });
     await settle();
-    expect(fixture.nativeElement.textContent).toContain('60 need attention');
+    expect(fixture.nativeElement.textContent).toMatch(/Needs attention\s+60/);
     expect(fixture.nativeElement.textContent).toContain('1–50 of 137');
     api.getTrips.mockResolvedValue(response([]));
     button('Needs attention').click();

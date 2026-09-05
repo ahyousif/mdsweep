@@ -6,11 +6,13 @@ using Microsoft.Extensions.Options;
 namespace Mdsweep.Infrastructure.Trips.Scheduling;
 
 public sealed class GoogleRoutesEstimator(
-    HttpClient httpClient,
+    IHttpClientFactory httpClientFactory,
     IOptions<GoogleRoutesOptions> options,
     ILogger<GoogleRoutesEstimator> logger
 ) : IRouteEstimator
 {
+    public const string HttpClientName = "GoogleRoutes";
+
     public async Task<TimeSpan?> EstimateDurationAsync(RouteLocation pickup, RouteLocation dropoff, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(options.Value.ApiKey))
@@ -34,7 +36,7 @@ public sealed class GoogleRoutesEstimator(
         request.Headers.Add("X-Goog-Api-Key", options.Value.ApiKey);
         request.Headers.Add("X-Goog-FieldMask", "routes.duration");
 
-        using var response = await httpClient.SendAsync(request, ct);
+        using var response = await httpClientFactory.CreateClient(HttpClientName).SendAsync(request, ct);
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning("Google Routes returned {StatusCode}", (int)response.StatusCode);

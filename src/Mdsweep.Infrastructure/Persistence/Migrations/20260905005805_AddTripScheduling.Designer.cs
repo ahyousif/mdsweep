@@ -198,11 +198,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("passenger_id");
 
-                    b.Property<string>("ScheduledPickupSource")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("scheduled_pickup_source");
-
                     b.Property<LocalTime?>("ScheduledPickupTime")
                         .HasColumnType("time")
                         .HasColumnName("scheduled_pickup_time");
@@ -211,10 +206,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("scheduling_input_fingerprint");
-
-                    b.Property<LocalTime?>("SuggestedPickupTime")
-                        .HasColumnType("time")
-                        .HasColumnName("suggested_pickup_time");
 
                     b.Property<string>("TenantId")
                         .IsRequired()

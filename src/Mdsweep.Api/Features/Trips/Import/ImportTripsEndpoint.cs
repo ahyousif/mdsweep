@@ -11,8 +11,15 @@ public sealed class ImportTripsEndpoint
     [Tags(TripConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.TripsImport)]
     [WolverinePost(TripConstants.ImportRoute)]
-    public static async Task<IResult> Post(IFormFile file, IMessageBus bus, CancellationToken ct)
+    public static async Task<IResult> Post(
+        IFormFile file,
+        IMessageBus bus,
+        IAntiforgery antiforgery,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
     {
+        await antiforgery.ValidateRequestAsync(httpContext);
         await using var content = new MemoryStream();
         await file.CopyToAsync(content, ct);
 
@@ -28,7 +35,7 @@ public sealed class ImportTripsEndpoint
 
         foreach (var tripId in result.Value.SchedulingTripIds)
         {
-            await bus.SendAsync(new CalculateScheduledPickupTimeCommand(tripId), ct);
+            await bus.PublishAsync(new CalculateScheduledPickupTimeCommand(tripId));
         }
 
         return Results.Ok(ImportTripsResponse.FromResult(result.Value));

@@ -1,27 +1,16 @@
 <section class="flex min-h-full min-w-0 flex-col" [style.--toolbar-height.px]="toolbarHeight()">
-  <div #toolbar class="bg-background border-border sticky top-0 z-20 grid gap-3 border-b py-3 shadow-sm">
+  <div #toolbar class="bg-background border-border sticky top-0 z-20 grid gap-4 border-b py-5 shadow-sm">
   <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-semibold">Trips</h1>
-      <p class="text-muted-foreground mt-1 text-sm">
-        {{ scopeLabel() }}
-        @if (data(); as result) {
-          · {{ result.scopeCount }} trips ·
-          <button
-            type="button"
-            class="rounded underline-offset-4 hover:underline focus-visible:outline-ring focus-visible:outline-2"
-            (click)="needsAttention.set(true); page.set(1)"
-          >
-            {{ result.attentionCount }} need attention
-          </button>
-        }
-      </p>
+      <h1 class="text-[1.75rem] leading-tight font-semibold tracking-tight">Trips</h1>
+      <p class="mt-2 text-lg font-medium">{{ scopeLabel() }}</p>
+      @if (data(); as result) { <p class="text-muted-foreground mt-1 text-sm">{{ result.scopeCount }} trips</p> }
     </div>
     <a hlmBtn routerLink="/trips/import">Import trips</a>
   </div>
 
   <div
-    class="grid gap-2"
+    class="grid gap-3 pt-1"
     aria-label="Trip controls"
   >
     <div class="flex flex-wrap items-center gap-2">
@@ -94,7 +83,7 @@
       <input
         hlmInput
         type="search"
-        class="w-full sm:max-w-72"
+        class="w-full sm:max-w-md"
         aria-label="Search passenger or trip number"
         placeholder="Search passenger or trip number"
         [value]="search()"
@@ -108,7 +97,7 @@
         type="button"
         (click)="toggleAttention()"
       >
-        Needs attention
+        Needs attention @if (data(); as result) { {{ result.attentionCount }} }
       </button>
       @if (search() || needsAttention()) {
         <button hlmBtn variant="ghost" size="sm" type="button" (click)="clearFilters()">
@@ -402,17 +391,11 @@
           (click)="startEditing(trip)"
           hlmPopoverTrigger
         >
-          {{ trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : trip.isWillCall ? 'Will Call' : 'Calculate' }}
+          {{ trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : trip.isWillCall ? 'Will Call' : 'Set time' }}
         </button>
         <ng-template hlmPopoverContent *hlmPopoverPortal>
-        @if (!trip.isWillCall && !trip.scheduledPickupTime) {
-          <div class="grid gap-2">
-            <p class="font-medium">Scheduled pickup</p>
-            <p class="text-muted-foreground">A pickup time has not been calculated yet.</p>
-            <button hlmBtn size="sm" type="button" (click)="calculatePickupTime(trip)">Calculate pickup</button>
-          </div>
-        } @else if (trip.isWillCall) {
-          <p class="text-muted-foreground">Will Call trips do not receive an automatic pickup time.</p>
+        @if (trip.isWillCall) {
+          <p class="text-muted-foreground">Will Call</p>
         } @else {
           <form
           class="grid gap-3"
@@ -432,9 +415,6 @@
             required
           />
           </label>
-          @if (trip.suggestedPickupTime) {
-            <p class="text-muted-foreground">Suggested: {{ formatTime(trip.suggestedPickupTime) }}</p>
-          }
           <div class="flex flex-wrap gap-1">
             <button
               hlmBtn
@@ -445,11 +425,6 @@
             >
               {{ busy() ? 'Saving…' : 'Save' }}
             </button>
-            @if (trip.suggestedPickupTime && trip.scheduledPickupSource === 'DispatcherOverride') {
-              <button hlmBtn variant="ghost" size="xs" type="button" (click)="resetPickupTime(trip)">
-                Reset to calculated
-              </button>
-            }
             <button
               hlmBtn
               variant="ghost"
@@ -486,13 +461,9 @@
             <strong>Appointment:</strong>
             {{ trip.isWillCall ? 'Will Call' : formatTime(trip.appointmentTime) }}
           </p>
-          <p><strong>Scheduled pickup:</strong> {{ formatTime(trip.scheduledPickupTime) }} · {{ pickupSourceLabel(trip) }}</p>
-          @if (trip.suggestedPickupTime) {
-            <p><strong>Suggested pickup:</strong> {{ formatTime(trip.suggestedPickupTime) }}</p>
-          }
+          <p><strong>Scheduled pickup:</strong> {{ trip.isWillCall ? 'Will Call' : (trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : 'Set time') }}</p>
           @if (trip.estimatedTravelMinutes) {
             <p><strong>Estimated drive:</strong> {{ trip.estimatedTravelMinutes }} min</p>
-            <p><strong>Scheduling buffer:</strong> 15 min</p>
           }
           <p><strong>Pickup:</strong> {{ trip.pickupAddress }}, {{ trip.pickupCity }}</p>
           <p><strong>Drop-off:</strong> {{ trip.dropoffAddress }}, {{ trip.dropoffCity }}</p>

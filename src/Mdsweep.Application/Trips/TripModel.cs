@@ -16,8 +16,6 @@ public sealed record TripModel(
     decimal? TripCost,
     decimal? TripMileage,
     LocalTime? ScheduledPickupTime,
-    LocalTime? SuggestedPickupTime,
-    ScheduledPickupSource? ScheduledPickupSource,
     int? EstimatedTravelMinutes,
     string PickupAddress,
     string PickupCity,

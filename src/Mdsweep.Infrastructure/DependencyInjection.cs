@@ -52,11 +52,13 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddOptions<GoogleRoutesOptions>().Bind(configuration.GetSection(GoogleRoutesOptions.SectionName));
         services.AddSingleton<IScheduledPickupCalculator, ConfiguredScheduledPickupCalculator>();
-        services.AddHttpClient<IRouteEstimator, GoogleRoutesEstimator>(client =>
+        services.AddHttpClient(GoogleRoutesEstimator.HttpClientName, client =>
         {
             client.BaseAddress = new Uri("https://routes.googleapis.com/");
             client.Timeout = TimeSpan.FromSeconds(10);
         });
+        services.AddScoped<GoogleRoutesEstimator>();
+        services.AddScoped<IRouteEstimator, GoogleRoutesEstimator>();
 
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 

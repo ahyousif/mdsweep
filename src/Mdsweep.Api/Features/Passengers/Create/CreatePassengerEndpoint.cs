@@ -10,8 +10,15 @@ public sealed class CreatePassengerEndpoint
     [Tags(PassengerConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.PassengersManage)]
     [WolverinePost(PassengerConstants.Route)]
-    public static async Task<IResult> Post(CreatePassengerRequest request, IMessageBus bus, CancellationToken ct)
+    public static async Task<IResult> Post(
+        CreatePassengerRequest request,
+        IMessageBus bus,
+        IAntiforgery antiforgery,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
     {
+        await antiforgery.ValidateRequestAsync(httpContext);
         var result = await bus.SendAsync(request.ToCommand(), ct);
 
         return await result.ToEndpointResultAsync(passengerId => GetPassengerResponse(passengerId, bus, ct));

@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -29,6 +31,15 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
                 services
                     .AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
+                services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
+                {
+                    options.Configuration = new OpenIdConnectConfiguration
+                    {
+                        AuthorizationEndpoint = "https://keycloak.test/authorize",
+                        TokenEndpoint = "https://keycloak.test/token",
+                        EndSessionEndpoint = "https://keycloak.test/logout",
+                    };
+                });
             });
         });
         await using var scope = Application.Services.CreateAsyncScope();

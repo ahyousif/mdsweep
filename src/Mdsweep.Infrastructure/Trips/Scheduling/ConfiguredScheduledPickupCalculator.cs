@@ -11,7 +11,7 @@ public sealed class ConfiguredScheduledPickupCalculator(IOptions<TripSchedulingO
 
     public string PolicyFingerprint => $"{_options.PolicyVersion}:{_options.SchedulingBufferMinutes}";
 
-    public LocalTime Calculate(LocalTime appointmentTime, TimeSpan estimatedDuration) =>
+    public LocalTime? Calculate(LocalTime appointmentTime, TimeSpan estimatedDuration) =>
         ScheduledPickupCalculationPolicy.Calculate(
             appointmentTime,
             estimatedDuration,

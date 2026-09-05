@@ -24,12 +24,6 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
             .HasForeignKey(trip => trip.PassengerId)
             .OnDelete(DeleteBehavior.Restrict);
         builder.Property(trip => trip.ScheduledPickupTime).HasColumnName("scheduled_pickup_time").HasColumnType("time");
-        builder.Property(trip => trip.SuggestedPickupTime).HasColumnName("suggested_pickup_time").HasColumnType("time");
-        builder
-            .Property(trip => trip.ScheduledPickupSource)
-            .HasColumnName("scheduled_pickup_source")
-            .HasConversion<string>()
-            .HasMaxLength(30);
         builder.Property(trip => trip.EstimatedTravelMinutes).HasColumnName("estimated_travel_minutes");
         builder
             .Property(trip => trip.SchedulingInputFingerprint)

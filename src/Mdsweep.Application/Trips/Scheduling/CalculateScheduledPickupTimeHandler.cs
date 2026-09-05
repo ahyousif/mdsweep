@@ -23,6 +23,8 @@ public sealed class CalculateScheduledPickupTimeHandler(
 
         if (trip.BrokerData.IsWillCall || trip.BrokerData.AppointmentTime is null)
         {
+            trip.ApplyScheduledPickupTime(null, null, CreateFingerprint(trip.BrokerData, calculator.PolicyFingerprint));
+            await repository.UpdateAsync(trip, ct);
             return Result.Success(trip.Id);
         }
 
@@ -46,8 +48,8 @@ public sealed class CalculateScheduledPickupTimeHandler(
             }
 
             var minutes = (int)Math.Ceiling(duration.Value.TotalMinutes);
-            var suggestion = calculator.Calculate(trip.BrokerData.AppointmentTime.Value, TimeSpan.FromMinutes(minutes));
-            trip.ApplyCalculatedPickupTime(suggestion, minutes, fingerprint);
+            var scheduledPickupTime = calculator.Calculate(trip.BrokerData.AppointmentTime.Value, TimeSpan.FromMinutes(minutes));
+            trip.ApplyScheduledPickupTime(scheduledPickupTime, minutes, fingerprint);
             await repository.UpdateAsync(trip, ct);
         }
         catch (HttpRequestException exception)
