@@ -2,7 +2,7 @@ namespace Mdsweep.Api.Common.Authentication;
 
 public static class AntiforgeryMiddlewareExtensions
 {
-    public static IApplicationBuilder UseCookieAuthenticatedApiAntiforgery(this IApplicationBuilder app) =>
+    public static IApplicationBuilder UseAuthenticatedApiAntiforgery(this IApplicationBuilder app) =>
         app.Use(
             async (httpContext, next) =>
             {

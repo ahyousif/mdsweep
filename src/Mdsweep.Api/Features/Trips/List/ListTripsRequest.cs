@@ -31,6 +31,7 @@ public sealed class ListTripsRequest
 
     public ListTripsQuery ToQuery()
     {
+        // TODO: add json options to support deserializing LocalDate from yyyy-MM-dd format, and then change the API to use LocalDate instead of DateOnly for StartDate, EndDate, and ServiceDate.
         var startDate =
             StartDate.HasValue ? LocalDate.FromDateOnly(StartDate.Value)
             : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value)

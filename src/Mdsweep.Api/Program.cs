@@ -35,7 +35,8 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseCookieAuthenticatedApiAntiforgery();
+// This is the sole enforcement boundary for authenticated unsafe API requests.
+app.UseAuthenticatedApiAntiforgery();
 app.UseAntiforgery();
 
 app.MapWolverineEndpoints(options =>
@@ -45,7 +46,6 @@ app.MapWolverineEndpoints(options =>
     options.UseFluentValidationProblemDetailMiddleware();
 
     options.RequireAuthorizeOnAll();
-    options.RequireAntiforgeryOnAll();
     options.TenantId.IsClaimTypeNamed(CustomClaimTypes.ActiveTenantId);
     options.TenantId.AssertExists();
 });

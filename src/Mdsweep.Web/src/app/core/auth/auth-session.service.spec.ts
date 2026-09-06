@@ -47,6 +47,16 @@ describe('AuthSessionService', () => {
     });
   });
 
+  it('starts BFF sign-in when session bootstrap returns 401', async () => {
+    const signIn = vi.spyOn(service, 'signIn').mockImplementation(() => undefined);
+    const establishing = service.establish();
+
+    http.expectOne('/api/auth/session').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    await expect(establishing).rejects.toMatchObject({ status: 401 });
+    expect(signIn).toHaveBeenCalledOnce();
+  });
+
   it('selects a tenant only when the session requires it', async () => {
     const selecting = service.selectTenant('contoso-transport');
 

@@ -10,11 +10,7 @@ public sealed class ImportTripsEndpoint
     [Tags(TripConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.TripsImport)]
     [WolverinePost(TripConstants.ImportRoute)]
-    public static async Task<IResult> Post(
-        IFormFile file,
-        IMessageBus bus,
-        CancellationToken ct
-    )
+    public static async Task<IResult> Post(IFormFile file, IMessageBus bus, CancellationToken ct)
     {
         await using var content = new MemoryStream();
         await file.CopyToAsync(content, ct);
@@ -28,6 +24,8 @@ public sealed class ImportTripsEndpoint
         {
             return result.ToEndpointResult(value => Results.Ok(ImportTripsResponse.FromResult(value)));
         }
+
+        // TODO: revisit this, this should be handled via a domain event
 
         foreach (var tripId in result.Value.PickupTimeTripIds)
         {
