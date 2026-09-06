@@ -13,7 +13,7 @@ public sealed class TenantContextTests : MdsweepIntegrationTest
     [InlineData("https://attacker.example/", "/")]
     [InlineData("//attacker.example/", "/")]
     [InlineData("/\\attacker.example/", "/")]
-    public async Task Login_only_preserves_safe_local_return_urls(string returnUrl, string expectedRedirectUri)
+    public async Task Login_only_preserves_safe_application_return_paths(string returnUrl, string expectedRedirectUri)
     {
         using var client = Application.CreateClient(
             new WebApplicationFactoryClientOptions { AllowAutoRedirect = false }
@@ -22,8 +22,8 @@ public sealed class TenantContextTests : MdsweepIntegrationTest
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         var state = QueryHelpers.ParseQuery(response.Headers.Location!.Query)["state"].Single();
-        var oidc = Application.Services
-            .GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
+        var oidc = Application
+            .Services.GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
             .Get(OpenIdConnectDefaults.AuthenticationScheme);
         var properties = oidc.StateDataFormat.Unprotect(state);
 
@@ -43,10 +43,7 @@ public sealed class TenantContextTests : MdsweepIntegrationTest
         var activeTenant = document.RootElement.GetProperty("activeTenant");
         Assert.Equal("mdsw-eep2-3456", activeTenant.GetProperty("id").GetString());
         Assert.Equal("Synthetic Tenant", activeTenant.GetProperty("name").GetString());
-        Assert.Contains(
-            activeTenant.GetProperty("roles").EnumerateArray(),
-            role => role.GetString() == "Dispatcher"
-        );
+        Assert.Contains(activeTenant.GetProperty("roles").EnumerateArray(), role => role.GetString() == "Dispatcher");
         Assert.Contains(
             response.Headers.GetValues("Set-Cookie"),
             value => value.StartsWith("XSRF-TOKEN=", StringComparison.Ordinal)

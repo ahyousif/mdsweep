@@ -15,8 +15,7 @@ public static class IdentityEndpoints
 
         auth.MapGet("/session", GetSession);
 
-        auth.MapPost("/tenant-context", SelectTenantContext)
-            .WithMetadata(new RequireAntiforgeryTokenAttribute(true));
+        auth.MapPost("/tenant-context", SelectTenantContext).WithMetadata(new RequireAntiforgeryTokenAttribute(true));
 
         auth.MapGet("/antiforgery", GetAntiforgeryToken);
 
@@ -28,7 +27,7 @@ public static class IdentityEndpoints
     private static IResult Login(string? returnUrl)
     {
         return Results.Challenge(
-            new AuthenticationProperties { RedirectUri = LocalReturnUrl(returnUrl) },
+            new AuthenticationProperties { RedirectUri = SafeReturnPath(returnUrl) },
             [OpenIdConnectDefaults.AuthenticationScheme]
         );
     }
@@ -60,22 +59,26 @@ public static class IdentityEndpoints
             .Select(group => new TenantSessionResponse(
                 group.Key.TenantId,
                 group.Key.TenantName,
-                group.Select(membership => membership.Role).Distinct().Order().ToArray()
+                [.. group.Select(membership => membership.Role).Distinct().Order()]
             ))
             .OrderBy(tenant => tenant.Name)
             .ToArray();
+
         var activeTenantId = user.FindFirstValue(CustomClaimTypes.ActiveTenantId);
         var activeTenant = tenants.SingleOrDefault(tenant => tenant.Id == activeTenantId);
 
         StoreAntiforgeryRequestToken(antiforgery, httpContext);
 
         var firstMembership = memberships[0];
-        return Results.Ok(new SessionResponse(
-            firstMembership.UserId,
-            $"{firstMembership.FirstName} {firstMembership.LastName}".Trim(),
-            activeTenant,
-            tenants
-        ));
+
+        return Results.Ok(
+            new SessionResponse(
+                firstMembership.UserId,
+                $"{firstMembership.FirstName} {firstMembership.LastName}".Trim(),
+                activeTenant,
+                tenants
+            )
+        );
     }
 
     private static async Task<IResult> SelectTenantContext(
@@ -145,17 +148,14 @@ public static class IdentityEndpoints
 
     private sealed record SelectTenantContextRequest(string TenantId);
 
-    private static string LocalReturnUrl(string? returnUrl)
+    private static string SafeReturnPath(string? returnUrl)
     {
-        if (
-            string.IsNullOrWhiteSpace(returnUrl)
-            || !returnUrl.StartsWith("/", StringComparison.Ordinal)
-            || returnUrl.StartsWith("//", StringComparison.Ordinal)
-            || returnUrl.Contains('\\')
-            || returnUrl.Contains("%2f", StringComparison.OrdinalIgnoreCase)
-            || returnUrl.Contains("%5c", StringComparison.OrdinalIgnoreCase)
-            || !Uri.TryCreate(returnUrl, UriKind.Relative, out _)
-        )
+        if (string.IsNullOrWhiteSpace(returnUrl))
+        {
+            return "/";
+        }
+
+        if (!returnUrl.StartsWith('/') || returnUrl.StartsWith("//") || returnUrl.StartsWith("/\\"))
         {
             return "/";
         }
@@ -163,12 +163,10 @@ public static class IdentityEndpoints
         return returnUrl;
     }
 
-    private static AntiforgeryTokenSet StoreAntiforgeryRequestToken(
-        IAntiforgery antiforgery,
-        HttpContext httpContext
-    )
+    private static AntiforgeryTokenSet StoreAntiforgeryRequestToken(IAntiforgery antiforgery, HttpContext httpContext)
     {
         var tokens = antiforgery.GetAndStoreTokens(httpContext);
+
         httpContext.Response.Cookies.Append(
             AuthenticationConventions.AntiforgeryRequestCookieName,
             tokens.RequestToken!,
@@ -180,6 +178,7 @@ public static class IdentityEndpoints
                 Path = "/",
             }
         );
+
         return tokens;
     }
 
