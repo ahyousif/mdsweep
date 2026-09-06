@@ -388,7 +388,7 @@
       (click)="$event.stopPropagation()"
       (keydown)="$event.stopPropagation()"
     >
-      <hlm-popover align="start" sideOffset="6">
+      <hlm-popover #pickupEditor="brnPopover" align="start" sideOffset="6">
         <button
           hlmBtn
           variant="link"
@@ -408,7 +408,7 @@
                 : 'Set time'
           }}
         </button>
-        <ng-template hlmPopoverContent *hlmPopoverPortal>
+        <hlm-popover-content *hlmPopoverPortal>
           @if (trip.isWillCall) {
             <p class="text-muted-foreground">Will Call</p>
           } @else {
@@ -448,7 +448,7 @@
                   size="xs"
                   type="button"
                   [disabled]="busy()"
-                  (click)="cancelEditing()"
+                  (click)="cancelEditing(); pickupEditor.close()"
                 >
                   Cancel
                 </button>
@@ -458,7 +458,7 @@
               }
             </form>
           }
-        </ng-template>
+        </hlm-popover-content>
       </hlm-popover>
     </div>
   </ng-template>

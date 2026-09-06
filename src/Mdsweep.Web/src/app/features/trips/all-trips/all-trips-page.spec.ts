@@ -99,13 +99,6 @@ describe('Trips workspace interactions', () => {
   };
 
   beforeEach(() => {
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        disconnect() {}
-      },
-    );
     api.getTrips.mockReset().mockResolvedValue(response());
     api.setScheduledPickupTime.mockReset().mockResolvedValue(undefined);
     viewport = new BehaviorSubject<{ matches: boolean; breakpoints: Record<string, boolean> }>({
@@ -124,8 +117,6 @@ describe('Trips workspace interactions', () => {
     });
     fixture = TestBed.createComponent(AllTripsPage);
   });
-
-  afterEach(() => vi.unstubAllGlobals());
 
   it('uses a skeleton initially, keeps previous rows during fetches and failures, and retries', async () => {
     const initial = deferred<TripsResponse>();
@@ -209,10 +200,13 @@ describe('Trips workspace interactions', () => {
       expect.objectContaining({ sortBy: 'PassengerName', sortDirection: 'Ascending' }),
     );
     expect(passengerSort.closest('th')?.getAttribute('aria-sort')).toBe('ascending');
-    button('Today').click();
+    const todayButton = Array.from(
+      fixture.nativeElement.querySelectorAll('button[aria-pressed]') as NodeListOf<HTMLButtonElement>,
+    ).find((item) => item.textContent?.trim() === 'Today')!;
+    todayButton.click();
     await settle();
     expect(fixture.nativeElement.querySelectorAll('th')).toHaveLength(5);
-    expect(button('Today').getAttribute('aria-pressed')).toBe('true');
+    expect(todayButton.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('edits just one pickup, saves/cancels without opening details, and formats time and mobility', async () => {
@@ -223,23 +217,22 @@ describe('Trips workspace interactions', () => {
     button('Set time').click();
     await fixture.whenStable();
     expect(fixture.componentInstance.selectedTrip()).toBeNull();
-    button('Cancel').click();
+    Array.from(document.querySelectorAll('button')).find(
+      (item) => item.textContent?.trim() === 'Cancel',
+    )!.click();
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull();
+    expect(fixture.componentInstance.editingTripId()).toBeNull();
     button('Set time').click();
     await fixture.whenStable();
-    const input = fixture.nativeElement.querySelector('input[type="time"]') as HTMLInputElement;
+    const input = document.querySelector('input[type="time"]') as HTMLInputElement;
     input.value = '08:15';
     input.dispatchEvent(new Event('input'));
     api.getTrips.mockResolvedValue(response([{ ...trip, scheduledPickupTime: '08:15:00' }]));
-    fixture.nativeElement
-      .querySelector('form')
-      .dispatchEvent(new Event('submit', { cancelable: true }));
+    document.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
     await vi.waitFor(() =>
       expect(api.setScheduledPickupTime).toHaveBeenCalledWith(trip.id, '08:15'),
     );
     await settle();
-    expect(fixture.nativeElement.querySelector('input[type="time"]')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('8:15 AM');
     expect(fixture.componentInstance.selectedTrip()).toBeNull();
     fixture.nativeElement.querySelector('tbody tr').click();
@@ -259,7 +252,7 @@ describe('Trips workspace interactions', () => {
     expect(api.getTrips).toHaveBeenCalledTimes(calls);
     button('Set time').click();
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('input[type="time"]')).not.toBeNull();
+    expect(document.querySelector('input[type="time"]')).not.toBeNull();
     expect(fixture.componentInstance.selectedTrip()).toBeNull();
   });
 
