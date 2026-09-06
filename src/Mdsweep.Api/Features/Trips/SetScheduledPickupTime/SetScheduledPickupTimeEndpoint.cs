@@ -14,12 +14,9 @@ public static class SetScheduledPickupTimeEndpoint
         Guid id,
         SetScheduledPickupTimeRequest req,
         IMessageBus bus,
-        IAntiforgery antiforgery,
-        HttpContext httpContext,
         CancellationToken ct
     )
     {
-        await antiforgery.ValidateRequestAsync(httpContext);
         var result = await bus.SendAsync(new SetScheduledPickupTimeCommand(id, req.ScheduledPickupTime), ct);
 
         return result.ToEndpointResult(value => Results.Ok(new { value }));

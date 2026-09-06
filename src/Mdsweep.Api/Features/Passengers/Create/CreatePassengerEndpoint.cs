@@ -13,12 +13,9 @@ public sealed class CreatePassengerEndpoint
     public static async Task<IResult> Post(
         CreatePassengerRequest request,
         IMessageBus bus,
-        IAntiforgery antiforgery,
-        HttpContext httpContext,
         CancellationToken ct
     )
     {
-        await antiforgery.ValidateRequestAsync(httpContext);
         var result = await bus.SendAsync(request.ToCommand(), ct);
 
         return await result.ToEndpointResultAsync(passengerId => GetPassengerResponse(passengerId, bus, ct));

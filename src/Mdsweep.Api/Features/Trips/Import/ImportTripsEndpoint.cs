@@ -14,12 +14,9 @@ public sealed class ImportTripsEndpoint
     public static async Task<IResult> Post(
         IFormFile file,
         IMessageBus bus,
-        IAntiforgery antiforgery,
-        HttpContext httpContext,
         CancellationToken ct
     )
     {
-        await antiforgery.ValidateRequestAsync(httpContext);
         await using var content = new MemoryStream();
         await file.CopyToAsync(content, ct);
 

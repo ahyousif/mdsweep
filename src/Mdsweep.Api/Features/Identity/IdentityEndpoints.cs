@@ -15,11 +15,12 @@ public static class IdentityEndpoints
 
         auth.MapGet("/session", GetSession);
 
-        auth.MapPost("/tenant-context", SelectTenantContext);
+        auth.MapPost("/tenant-context", SelectTenantContext)
+            .WithMetadata(new RequireAntiforgeryTokenAttribute(true));
 
         auth.MapGet("/antiforgery", GetAntiforgeryToken);
 
-        auth.MapPost("/logout", Logout);
+        auth.MapPost("/logout", Logout).WithMetadata(new RequireAntiforgeryTokenAttribute(true));
 
         return endpoints;
     }
@@ -82,12 +83,9 @@ public static class IdentityEndpoints
         ClaimsPrincipal user,
         HttpContext httpContext,
         ITenantAccess tenantAccess,
-        IAntiforgery antiforgery,
         CancellationToken cancellationToken
     )
     {
-        await antiforgery.ValidateRequestAsync(httpContext);
-
         var userSubject = user.FindFirstValue("sub");
 
         if (string.IsNullOrWhiteSpace(userSubject))
@@ -133,10 +131,8 @@ public static class IdentityEndpoints
         return Results.Ok(new AntiforgeryTokenResponse(tokens.RequestToken!));
     }
 
-    private static async Task<IResult> Logout(IAntiforgery antiforgery, HttpContext httpContext)
+    private static IResult Logout()
     {
-        await antiforgery.ValidateRequestAsync(httpContext);
-
         return Results.SignOut(
             properties: null,
             authenticationSchemes:

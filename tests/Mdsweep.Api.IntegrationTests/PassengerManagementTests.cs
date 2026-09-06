@@ -21,6 +21,32 @@ public sealed class PassengerManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task Cookie_authenticated_json_mutation_rejects_an_invalid_antiforgery_token()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        client.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", "invalid-token");
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/passengers",
+            new { firstName = "Jordan", lastName = "Example" }
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Cookie_authenticated_get_requests_do_not_require_an_antiforgery_token()
+    {
+        using var client = Application.CreateClient();
+
+        using var response = await client.GetAsync("/api/trips");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
     public async Task DispatcherCanCreatePassengerIndependentlyOfManifest()
     {
         using var client = Application.CreateClient();
