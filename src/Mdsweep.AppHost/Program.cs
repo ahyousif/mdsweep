@@ -19,12 +19,10 @@ var database = postgres.AddDatabase("mdsweep");
 var keycloakDatabase = postgres.AddDatabase("keycloak-db", databaseName: "keycloak");
 
 var postgresUsername =
-    postgres.Resource.UserName
-    ?? throw new InvalidOperationException("Postgres username was not configured.");
+    postgres.Resource.UserName ?? throw new InvalidOperationException("Postgres username was not configured.");
 
 var postgresPassword =
-    postgres.Resource.Password
-    ?? throw new InvalidOperationException("Postgres password was not configured.");
+    postgres.Resource.Password ?? throw new InvalidOperationException("Postgres password was not configured.");
 
 var keycloak = builder
     .AddContainer("keycloak", "quay.io/keycloak/keycloak", "26.2.5")
@@ -46,11 +44,7 @@ keycloak.WithHttpHealthCheck(
 
 if (builder.ExecutionContext.IsRunMode)
 {
-    var keycloakAdminPassword = builder.AddParameter(
-        "keycloak-admin-password",
-        "P@ssw0rd!",
-        secret: true
-    );
+    var keycloakAdminPassword = builder.AddParameter("keycloak-admin-password", "P@ssw0rd!", secret: true);
 
     keycloak
         .WithEnvironment("KC_BOOTSTRAP_ADMIN_USERNAME", "admin")
@@ -73,11 +67,7 @@ var oidcClientSecret = builder.ExecutionContext.IsRunMode
     : builder.AddParameter("oidc-client-secret", secret: true);
 
 var administrationClientSecret = builder.ExecutionContext.IsRunMode
-    ? builder.AddParameter(
-        "administration-client-secret",
-        "Development-only-administration-secret",
-        secret: true
-    )
+    ? builder.AddParameter("administration-client-secret", "Development-only-administration-secret", secret: true)
     : builder.AddParameter("administration-client-secret", secret: true);
 
 var keycloakAuthority = builder.ExecutionContext.IsRunMode
@@ -94,7 +84,9 @@ var api = builder
     .WithExternalHttpEndpoints()
     .WithReference(database)
     .WithEnvironment("Authentication__Authority", keycloakAuthority)
+    .WithEnvironment("Authentication__ClientId", "mdsweep-server")
     .WithEnvironment("Authentication__ClientSecret", oidcClientSecret)
+    .WithEnvironment("KeycloakAdministration__ClientId", "mdsweep-administration")
     .WithEnvironment("KeycloakAdministration__ClientSecret", administrationClientSecret)
     .WaitFor(database)
     .WaitFor(keycloak);
