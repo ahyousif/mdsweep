@@ -1,4 +1,4 @@
-namespace Mdsweep.Application.Trips.Scheduling;
+namespace Mdsweep.Application.Trips.PickupTimeCalculation;
 
 public interface IScheduledPickupCalculator
 {

@@ -5,8 +5,10 @@ using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 using Mdsweep.Infrastructure.TripImports.Parsing;
 using Mdsweep.Infrastructure.TripImports.Persistence;
-using Mdsweep.Application.Trips.Scheduling;
-using Mdsweep.Infrastructure.Trips.Scheduling;
+using Mdsweep.Application.Trips.PickupTimeCalculation;
+using Mdsweep.Application.Trips.Routing;
+using Mdsweep.Infrastructure.Trips.PickupTimeCalculation;
+using Mdsweep.Infrastructure.Trips.Routing;
 
 namespace Mdsweep.Infrastructure;
 
@@ -46,9 +48,9 @@ public static class DependencyInjection
         services.AddSingleton<ITripImportFileParser, XlsxTripImportFileParser>();
 
         services
-            .AddOptions<TripSchedulingOptions>()
-            .Bind(configuration.GetSection(TripSchedulingOptions.SectionName))
-            .Validate(options => options.SchedulingBufferMinutes > 0, "Scheduling buffer must be positive.")
+            .AddOptions<PickupTimeCalculationOptions>()
+            .Bind(configuration.GetSection(PickupTimeCalculationOptions.SectionName))
+            .Validate(options => options.PickupTimeBufferMinutes > 0, "Pickup-time buffer must be positive.")
             .ValidateOnStart();
         services.AddOptions<GoogleRoutesOptions>().Bind(configuration.GetSection(GoogleRoutesOptions.SectionName));
         services.AddSingleton<IScheduledPickupCalculator, ConfiguredScheduledPickupCalculator>();

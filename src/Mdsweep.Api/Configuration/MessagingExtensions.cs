@@ -1,6 +1,7 @@
 using Mdsweep.Application.Common.Abstractions;
-using Mdsweep.Application.Trips.Scheduling;
+using Mdsweep.Application.TripImports.Import;
 using Mdsweep.Infrastructure.Persistence;
+using Wolverine.ErrorHandling;
 using Wolverine.FluentValidation;
 
 namespace Mdsweep.Api.Configuration;
@@ -17,8 +18,18 @@ public static class MessagingExtensions
             options.Discovery.IncludeAssembly(typeof(IRequest<>).Assembly);
             options.UseFluentValidation();
             options.AddPersistence(builder.Configuration);
-            options.LocalQueue("trip-scheduling");
-            options.PublishMessage<CalculateScheduledPickupTimeCommand>().ToLocalQueue("trip-scheduling");
+            options.LocalQueue("trip-import-processing").UseDurableInbox();
+            options.PublishMessage<PopulateImportedTripPickupTime>().ToLocalQueue("trip-import-processing");
+            options.OnException<HttpRequestException>().ScheduleRetry(
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMinutes(5)
+            );
+            options.OnException<TaskCanceledException>().ScheduleRetry(
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMinutes(5)
+            );
         });
 
         builder.Services.AddWolverineHttp();

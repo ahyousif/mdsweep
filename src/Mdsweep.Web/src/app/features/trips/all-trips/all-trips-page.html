@@ -1,119 +1,126 @@
 <section class="flex min-h-full min-w-0 flex-col" [style.--toolbar-height.px]="toolbarHeight()">
-  <div #toolbar class="bg-background border-border sticky top-0 z-20 grid gap-4 border-b py-5 shadow-sm">
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1 class="text-[1.75rem] leading-tight font-semibold tracking-tight">Trips</h1>
-      <p class="mt-2 text-lg font-medium">{{ scopeLabel() }}</p>
-      @if (data(); as result) { <p class="text-muted-foreground mt-1 text-sm">{{ result.scopeCount }} trips</p> }
-    </div>
-    <a hlmBtn routerLink="/trips/import">Import trips</a>
-  </div>
-
   <div
-    class="grid gap-3 pt-1"
-    aria-label="Trip controls"
+    #toolbar
+    class="bg-background border-border sticky top-0 z-20 grid gap-4 border-b py-5 shadow-sm"
   >
-    <div class="flex flex-wrap items-center gap-2">
-      <button
-        hlmBtn
-        variant="outline"
-        size="icon"
-        type="button"
-        aria-label="Previous Trip Date scope"
-        (click)="moveServiceDate(-1)"
-      >
-        <ng-icon name="lucideChevronLeft" />
-      </button>
-      <hlm-date-picker
-        [date]="selectedServiceDate()"
-        [formatDate]="formatServiceDate"
-        captionLayout="dropdown"
-        [autoCloseOnSelect]="true"
-        (dateChange)="setServiceDate($event)"
-      >
-        <hlm-date-picker-trigger buttonId="service-date">Select Trip Date</hlm-date-picker-trigger>
-      </hlm-date-picker>
-      <button
-        hlmBtn
-        variant="outline"
-        size="icon"
-        type="button"
-        aria-label="Next Trip Date scope"
-        (click)="moveServiceDate(1)"
-      >
-        <ng-icon name="lucideChevronRight" />
-      </button>
-      <div class="flex items-center gap-1">
-        <button
-          hlmBtn
-          [variant]="isToday() ? 'secondary' : 'ghost'"
-          [attr.aria-pressed]="isToday()"
-          size="sm"
-          type="button"
-          (click)="goToToday()"
-        >
-          Today
-        </button>
-        <button
-          hlmBtn
-          [variant]="isTomorrow() ? 'secondary' : 'ghost'"
-          [attr.aria-pressed]="isTomorrow()"
-          size="sm"
-          type="button"
-          (click)="setTomorrow()"
-        >
-          Tomorrow
-        </button>
-        <button
-          hlmBtn
-          [variant]="isThisWeek() ? 'secondary' : 'ghost'"
-          [attr.aria-pressed]="isThisWeek()"
-          size="sm"
-          type="button"
-          (click)="setThisWeek()"
-        >
-          This week
-        </button>
-      </div>
-      @if (isMultiDay()) {
-        <span class="text-muted-foreground text-sm">{{ scopeLabel() }}</span>
-      }
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <input
-        hlmInput
-        type="search"
-        class="w-full sm:max-w-md"
-        aria-label="Search passenger or trip number"
-        placeholder="Search passenger or trip number"
-        [value]="search()"
-        (input)="setSearch($any($event.target).value)"
-      />
-      <button
-        hlmBtn
-        size="sm"
-        [variant]="needsAttention() ? 'secondary' : 'outline'"
-        [attr.aria-pressed]="needsAttention()"
-        type="button"
-        (click)="toggleAttention()"
-      >
-        Needs attention @if (data(); as result) { {{ result.attentionCount }} }
-      </button>
-      @if (search() || needsAttention()) {
-        <button hlmBtn variant="ghost" size="sm" type="button" (click)="clearFilters()">
-          Clear filters
-        </button>
-      }
-      <span
-        class="text-muted-foreground flex h-8 min-w-24 items-center gap-2 text-sm"
-        role="status"
-      >
-        @if (tripsQuery.isFetching() && data()) {
-          <hlm-spinner /> Updating…
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h1 class="text-[1.75rem] leading-tight font-semibold tracking-tight">Trips</h1>
+        <p class="mt-2 text-lg font-medium">{{ scopeLabel() }}</p>
+        @if (data(); as result) {
+          <p class="text-muted-foreground mt-1 text-sm">{{ result.scopeCount }} trips</p>
         }
-      </span>
+      </div>
+      <a hlmBtn routerLink="/trips/import">Import trips</a>
     </div>
-  </div>
+
+    <div class="grid gap-3 pt-1" aria-label="Trip controls">
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          hlmBtn
+          variant="outline"
+          size="icon"
+          type="button"
+          aria-label="Previous Trip Date scope"
+          (click)="moveServiceDate(-1)"
+        >
+          <ng-icon name="lucideChevronLeft" />
+        </button>
+        <hlm-date-picker
+          [date]="selectedServiceDate()"
+          [formatDate]="formatServiceDate"
+          captionLayout="dropdown"
+          [autoCloseOnSelect]="true"
+          (dateChange)="setServiceDate($event)"
+        >
+          <hlm-date-picker-trigger buttonId="service-date"
+            >Select Trip Date</hlm-date-picker-trigger
+          >
+        </hlm-date-picker>
+        <button
+          hlmBtn
+          variant="outline"
+          size="icon"
+          type="button"
+          aria-label="Next Trip Date scope"
+          (click)="moveServiceDate(1)"
+        >
+          <ng-icon name="lucideChevronRight" />
+        </button>
+        <div class="flex items-center gap-1">
+          <button
+            hlmBtn
+            [variant]="isToday() ? 'secondary' : 'ghost'"
+            [attr.aria-pressed]="isToday()"
+            size="sm"
+            type="button"
+            (click)="goToToday()"
+          >
+            Today
+          </button>
+          <button
+            hlmBtn
+            [variant]="isTomorrow() ? 'secondary' : 'ghost'"
+            [attr.aria-pressed]="isTomorrow()"
+            size="sm"
+            type="button"
+            (click)="setTomorrow()"
+          >
+            Tomorrow
+          </button>
+          <button
+            hlmBtn
+            [variant]="isThisWeek() ? 'secondary' : 'ghost'"
+            [attr.aria-pressed]="isThisWeek()"
+            size="sm"
+            type="button"
+            (click)="setThisWeek()"
+          >
+            This week
+          </button>
+        </div>
+        @if (isMultiDay()) {
+          <span class="text-muted-foreground text-sm">{{ scopeLabel() }}</span>
+        }
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          hlmInput
+          type="search"
+          class="w-full sm:max-w-md"
+          aria-label="Search passenger or trip number"
+          placeholder="Search passenger or trip number"
+          [value]="search()"
+          (input)="setSearch($any($event.target).value)"
+        />
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="needsAttention() ? 'secondary' : 'outline'"
+          [attr.aria-pressed]="needsAttention()"
+          type="button"
+          (click)="toggleAttention()"
+        >
+          Needs attention
+          @if (data(); as result) {
+            {{ result.attentionCount }}
+          }
+        </button>
+        @if (search() || needsAttention()) {
+          <button hlmBtn variant="ghost" size="sm" type="button" (click)="clearFilters()">
+            Clear filters
+          </button>
+        }
+        <span
+          class="text-muted-foreground flex h-8 min-w-24 items-center gap-2 text-sm"
+          role="status"
+        >
+          @if (tripsQuery.isFetching() && data()) {
+            <hlm-spinner /> Updating…
+          }
+        </span>
+      </div>
+    </div>
   </div>
 
   @if (tripsQuery.isError()) {
@@ -224,7 +231,7 @@
               (click)="openTrip(row.original, tripDetails)"
             >
               @for (cell of row.getAllCells(); track cell.id) {
-                <td hlmTd class="border-border border-b py-2.5 whitespace-normal break-words">
+                <td hlmTd class="border-border border-b py-2.5 whitespace-normal wrap-break-word">
                   @switch (cell.column.id) {
                     @case ('passenger') {
                       <ng-container
@@ -387,60 +394,70 @@
           variant="link"
           size="sm"
           type="button"
-          [attr.aria-label]="'Edit scheduled pickup for ' + trip.passengerFirstName + ' ' + trip.passengerLastName"
+          [attr.aria-label]="
+            'Edit scheduled pickup for ' + trip.passengerFirstName + ' ' + trip.passengerLastName
+          "
           (click)="startEditing(trip)"
           hlmPopoverTrigger
         >
-          {{ trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : trip.isWillCall ? 'Will Call' : 'Set time' }}
+          {{
+            trip.scheduledPickupTime
+              ? formatTime(trip.scheduledPickupTime)
+              : trip.isWillCall
+                ? 'Will Call'
+                : 'Set time'
+          }}
         </button>
         <ng-template hlmPopoverContent *hlmPopoverPortal>
-        @if (trip.isWillCall) {
-          <p class="text-muted-foreground">Will Call</p>
-        } @else {
-          <form
-          class="grid gap-3"
-          (submit)="$event.preventDefault(); setScheduledPickupTime(trip, draftTime())"
-          (keydown.escape)="cancelEditing()"
-        >
-          <label class="grid gap-1">
-            <span class="font-medium">Scheduled pickup</span>
-            <input
-            hlmInput type="time" class="w-full"
-            [attr.aria-label]="
-              'Scheduled pickup for ' + trip.passengerFirstName + ' ' + trip.passengerLastName
-            "
-            [value]="draftTime()"
-            (input)="draftTime.set($any($event.target).value)"
-            [disabled]="busy()"
-            required
-          />
-          </label>
-          <div class="flex flex-wrap gap-1">
-            <button
-              hlmBtn
-              variant="outline"
-              size="xs"
-              type="submit"
-              [disabled]="busy() || !draftTime()"
+          @if (trip.isWillCall) {
+            <p class="text-muted-foreground">Will Call</p>
+          } @else {
+            <form
+              class="grid gap-3"
+              (submit)="$event.preventDefault(); setScheduledPickupTime(trip, draftTime())"
+              (keydown.escape)="cancelEditing()"
             >
-              {{ busy() ? 'Saving…' : 'Save' }}
-            </button>
-            <button
-              hlmBtn
-              variant="ghost"
-              size="xs"
-              type="button"
-              [disabled]="busy()"
-              (click)="cancelEditing()"
-            >
-              Cancel
-            </button>
-          </div>
-          @if (scheduleError()) {
-            <p class="text-destructive text-sm" role="alert">{{ scheduleError() }}</p>
+              <label class="grid gap-1">
+                <span class="font-medium">Scheduled pickup</span>
+                <input
+                  hlmInput
+                  type="time"
+                  class="w-full"
+                  [attr.aria-label]="
+                    'Scheduled pickup for ' + trip.passengerFirstName + ' ' + trip.passengerLastName
+                  "
+                  [value]="draftTime()"
+                  (input)="draftTime.set($any($event.target).value)"
+                  [disabled]="busy()"
+                  required
+                />
+              </label>
+              <div class="flex flex-wrap gap-1">
+                <button
+                  hlmBtn
+                  variant="outline"
+                  size="xs"
+                  type="submit"
+                  [disabled]="busy() || !draftTime()"
+                >
+                  {{ busy() ? 'Saving…' : 'Save' }}
+                </button>
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="xs"
+                  type="button"
+                  [disabled]="busy()"
+                  (click)="cancelEditing()"
+                >
+                  Cancel
+                </button>
+              </div>
+              @if (scheduleError()) {
+                <p class="text-destructive text-sm" role="alert">{{ scheduleError() }}</p>
+              }
+            </form>
           }
-        </form>
-        }
         </ng-template>
       </hlm-popover>
     </div>
@@ -461,7 +478,16 @@
             <strong>Appointment:</strong>
             {{ trip.isWillCall ? 'Will Call' : formatTime(trip.appointmentTime) }}
           </p>
-          <p><strong>Scheduled pickup:</strong> {{ trip.isWillCall ? 'Will Call' : (trip.scheduledPickupTime ? formatTime(trip.scheduledPickupTime) : 'Set time') }}</p>
+          <p>
+            <strong>Scheduled pickup:</strong>
+            {{
+              trip.isWillCall
+                ? 'Will Call'
+                : trip.scheduledPickupTime
+                  ? formatTime(trip.scheduledPickupTime)
+                  : 'Set time'
+            }}
+          </p>
           @if (trip.estimatedTravelMinutes) {
             <p><strong>Estimated drive:</strong> {{ trip.estimatedTravelMinutes }} min</p>
           }

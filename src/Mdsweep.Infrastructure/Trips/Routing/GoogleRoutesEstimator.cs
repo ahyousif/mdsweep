@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
-using Mdsweep.Application.Trips.Scheduling;
+using Mdsweep.Application.Trips.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Mdsweep.Infrastructure.Trips.Scheduling;
+namespace Mdsweep.Infrastructure.Trips.Routing;
 
 public sealed class GoogleRoutesEstimator(
     IHttpClientFactory httpClientFactory,
@@ -37,9 +37,14 @@ public sealed class GoogleRoutesEstimator(
         request.Headers.Add("X-Goog-FieldMask", "routes.duration");
 
         using var response = await httpClientFactory.CreateClient(HttpClientName).SendAsync(request, ct);
+        if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
+        {
+            throw new HttpRequestException($"Google Routes returned {(int)response.StatusCode}.", null, response.StatusCode);
+        }
+
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("Google Routes returned {StatusCode}", (int)response.StatusCode);
+            logger.LogWarning("Google Routes cannot estimate this route and returned {StatusCode}", (int)response.StatusCode);
             return null;
         }
 

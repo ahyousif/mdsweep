@@ -1,4 +1,4 @@
-namespace Mdsweep.Infrastructure.Trips.Scheduling;
+namespace Mdsweep.Infrastructure.Trips.Routing;
 
 public sealed class GoogleRoutesOptions
 {

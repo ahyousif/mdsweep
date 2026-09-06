@@ -40,6 +40,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
                         EndSessionEndpoint = "https://keycloak.test/logout",
                     };
                 });
+                ConfigureTestServices(services);
             });
         });
         await using var scope = Application.Services.CreateAsyncScope();
@@ -68,6 +69,8 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
     }
 
     protected sealed record AntiforgeryResponse(string Token);
+
+    protected virtual void ConfigureTestServices(IServiceCollection services) { }
 
     protected sealed class TestKeycloakUserAdministration : IKeycloakUserAdministration
     {

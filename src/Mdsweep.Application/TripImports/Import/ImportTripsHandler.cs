@@ -76,7 +76,7 @@ public sealed class ImportTripsHandler(
         var added = 0;
         var updated = 0;
         var unchanged = 0;
-        var schedulingTripIds = new List<Guid>();
+        var pickupTimeTripIds = new List<Guid>();
 
         foreach (var row in validRows)
         {
@@ -112,7 +112,7 @@ public sealed class ImportTripsHandler(
                 await repository.AddAsync(trip, ct);
                 trips.Add(row.TripNumber!, trip);
                 added++;
-                schedulingTripIds.Add(trip.Id);
+                pickupTimeTripIds.Add(trip.Id);
             }
             else if (trip.BrokerData == brokerData)
             {
@@ -120,12 +120,12 @@ public sealed class ImportTripsHandler(
             }
             else
             {
-                var schedulingInputsChanged = SchedulingInputsChanged(trip.BrokerData, brokerData);
+                var pickupCalculationInputsChanged = PickupCalculationInputsChanged(trip.BrokerData, brokerData);
                 trip.ReconcileBrokerData(brokerData);
                 updated++;
-                if (schedulingInputsChanged)
+                if (pickupCalculationInputsChanged)
                 {
-                    schedulingTripIds.Add(trip.Id);
+                    pickupTimeTripIds.Add(trip.Id);
                 }
             }
         }
@@ -140,7 +140,7 @@ public sealed class ImportTripsHandler(
             ct
         );
 
-        return Result.Success(outcome with { SchedulingTripIds = schedulingTripIds });
+        return Result.Success(outcome with { PickupTimeTripIds = pickupTimeTripIds });
     }
 
     private static string? Validate(
@@ -190,11 +190,12 @@ public sealed class ImportTripsHandler(
         return null;
     }
 
-    private static bool SchedulingInputsChanged(BrokerTripData previous, BrokerTripData current) =>
+    private static bool PickupCalculationInputsChanged(BrokerTripData previous, BrokerTripData current) =>
         previous.ServiceDate != current.ServiceDate
         || previous.AppointmentTime != current.AppointmentTime
         || previous.PickupAddress != current.PickupAddress
         || previous.PickupCity != current.PickupCity
         || previous.DropoffAddress != current.DropoffAddress
-        || previous.DropoffCity != current.DropoffCity;
+        || previous.DropoffCity != current.DropoffCity
+        || previous.IsWillCall != current.IsWillCall;
 }

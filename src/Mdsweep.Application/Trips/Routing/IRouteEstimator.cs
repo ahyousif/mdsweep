@@ -1,4 +1,4 @@
-namespace Mdsweep.Application.Trips.Scheduling;
+namespace Mdsweep.Application.Trips.Routing;
 
 public sealed record RouteLocation(string Address, string City);
 

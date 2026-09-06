@@ -10,7 +10,7 @@ public sealed record ImportTripsResult(
     IReadOnlyList<TripImportProblem> Problems
 )
 {
-    public IReadOnlyList<Guid> SchedulingTripIds { get; init; } = [];
+    public IReadOnlyList<Guid> PickupTimeTripIds { get; init; } = [];
 }
 
 public sealed record TripImportProblem(int RowNumber, string? TripNumber, string Message);
