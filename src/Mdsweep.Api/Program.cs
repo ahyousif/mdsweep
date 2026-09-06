@@ -1,6 +1,7 @@
 using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
+using Mdsweep.Api.Features.Users;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Persistence;
 using Wolverine.Http.FluentValidation;
@@ -37,6 +38,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 // This is the sole enforcement boundary for authenticated unsafe API requests.
 app.UseAuthenticatedApiAntiforgery();
+app.UseMiddleware<AccessFailureMiddleware>();
 app.UseAntiforgery();
 
 app.MapWolverineEndpoints(options =>
@@ -50,6 +52,7 @@ app.MapWolverineEndpoints(options =>
     options.TenantId.AssertExists();
 });
 app.MapIdentity();
+app.MapInvitationAcceptance();
 
 app.MapDefaultEndpoints();
 

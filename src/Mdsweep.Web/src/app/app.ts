@@ -8,10 +8,18 @@ import { AuthSessionService } from './core/auth/auth-session.service';
 import { ApplicationError } from './core/errors/application-error';
 import { AppShell } from './shell/app-shell';
 import { uiText } from './ui-text';
+import { InvitationWelcome } from './features/users/invitation-welcome';
 
 @Component({
   selector: 'app-root',
-  imports: [AppShell, HlmButton, HlmSpinner, ...HlmAlertImports, ...HlmCardImports],
+  imports: [
+    AppShell,
+    InvitationWelcome,
+    HlmButton,
+    HlmSpinner,
+    ...HlmAlertImports,
+    ...HlmCardImports,
+  ],
   templateUrl: './app.html',
 })
 export class App {

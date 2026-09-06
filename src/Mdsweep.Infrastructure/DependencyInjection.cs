@@ -2,6 +2,7 @@ using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Authorization;
 using Mdsweep.Application.Trips.Import.Manifest;
 using Mdsweep.Application.Trips.Scheduling;
+using Mdsweep.Application.Users;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Manifests;
 using Mdsweep.Infrastructure.Persistence;
@@ -59,7 +60,11 @@ public static class DependencyInjection
 
         services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
 
-        services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
+        services.AddScoped<UserManagementAccess>();
+        // Sending an email is not idempotent. Delivery retries are explicit User actions.
+#pragma warning disable EXTEXP0001 // Opt this client out of the host's automatic retry pipeline.
+        services.AddHttpClient<IIdentityAdministration, KeycloakUserAdministration>().RemoveAllResilienceHandlers();
+#pragma warning restore EXTEXP0001
 
         return services;
     }

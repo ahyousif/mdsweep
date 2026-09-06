@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Infrastructure.Identity;
+using Mdsweep.Application.Users;
+using Mdsweep.Api.Features.Users;
 
 namespace Mdsweep.Api.Configuration;
 
@@ -9,6 +11,8 @@ public static class ApiExtensions
 {
     public static WebApplicationBuilder AddApi(this WebApplicationBuilder builder)
     {
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IAccessActor, HttpAccessActor>();
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -85,6 +89,8 @@ public static class ApiExtensions
 
         builder.Services.AddAuthorization(options =>
         {
+            options.AddPolicy(AuthorizationPolicies.UsersManage, policy => policy.RequireAuthenticatedUser()
+                .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)));
             options.AddPolicy(
                 AuthorizationPolicies.TripsViewAll,
                 policy =>

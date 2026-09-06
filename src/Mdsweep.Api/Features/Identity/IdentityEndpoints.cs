@@ -49,11 +49,6 @@ public static class IdentityEndpoints
 
         var memberships = await tenantAccess.GetMembershipsAsync(userSubject, cancellationToken);
 
-        if (memberships.Count == 0)
-        {
-            return Results.Forbid();
-        }
-
         var tenants = memberships
             .GroupBy(membership => new { membership.TenantId, membership.TenantName })
             .Select(group => new TenantSessionResponse(
@@ -69,12 +64,12 @@ public static class IdentityEndpoints
 
         StoreAntiforgeryRequestToken(antiforgery, httpContext);
 
-        var firstMembership = memberships[0];
+        var firstMembership = memberships.FirstOrDefault();
 
         return Results.Ok(
             new SessionResponse(
-                firstMembership.UserId,
-                $"{firstMembership.FirstName} {firstMembership.LastName}".Trim(),
+                firstMembership?.UserId,
+                $"{firstMembership?.FirstName} {firstMembership?.LastName}".Trim(),
                 activeTenant,
                 tenants
             )
@@ -185,7 +180,7 @@ public static class IdentityEndpoints
     private sealed record TenantSessionResponse(string Id, string Name, string[] Roles);
 
     private sealed record SessionResponse(
-        Guid UserId,
+        Guid? UserId,
         string DisplayName,
         TenantSessionResponse? ActiveTenant,
         TenantSessionResponse[] AvailableTenants

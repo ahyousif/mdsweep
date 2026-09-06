@@ -4,6 +4,7 @@ using Mdsweep.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Mdsweep.Application.Users;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -28,8 +29,9 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
             builder.UseSetting("GoogleRoutes:ApiKey", "synthetic-google-routes-api-key");
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IKeycloakUserAdministration>();
-                services.AddSingleton<IKeycloakUserAdministration, TestKeycloakUserAdministration>();
+                services.RemoveAll<IIdentityAdministration>();
+                services.AddSingleton<TestKeycloakUserAdministration>();
+                services.AddSingleton<IIdentityAdministration>(sp => sp.GetRequiredService<TestKeycloakUserAdministration>());
                 services
                     .AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
@@ -52,7 +54,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant", "synthetic-tenant");
-        var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test");
+        var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test", tenant.Id, "dispatcher@example.test");
         db.Tenants.Add(tenant);
         db.Users.Add(user);
         db.TenantMemberships.Add(TenantMembership.Create(tenant.Id, user.Id, "Dispatcher"));
@@ -78,18 +80,17 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
 
     protected virtual void ConfigureTestServices(IServiceCollection services) { }
 
-    protected sealed class TestKeycloakUserAdministration : IKeycloakUserAdministration
+    public sealed class TestKeycloakUserAdministration : IIdentityAdministration
     {
-        public Task<string> CreateDriverAsync(
-            string email,
-            string temporaryPassword,
-            string organizationId,
-            CancellationToken cancellationToken
-        ) => Task.FromResult($"test-{email}");
-
-        public Task ResetPasswordAsync(string subject, string temporaryPassword, CancellationToken cancellationToken) =>
-            Task.CompletedTask;
-
-        public Task DeleteUserAsync(string subject, CancellationToken cancellationToken) => Task.CompletedTask;
+        public bool FailEmail { get; set; }
+        public bool IsMember { get; set; } = true;
+        public bool Verified { get; set; } = true;
+        public string Email { get; set; } = "driver@example.test";
+        public Task InviteAsync(string organizationId, string email, string firstName, string lastName, CancellationToken ct)
+            => FailEmail ? Task.FromException(new IdentityAdministrationException("Email delivery is not configured. Configure it and retry.")) : Task.CompletedTask;
+        public Task<VerifiedIdentity?> GetVerifiedIdentityAsync(string subject, CancellationToken ct)
+            => Task.FromResult(Verified ? new VerifiedIdentity(subject, Email) : null);
+        public Task<bool> IsOrganizationMemberAsync(string subject, string organizationId, CancellationToken ct) => Task.FromResult(IsMember);
+        public Task SendPasswordResetAsync(string subject, CancellationToken ct) => InviteAsync("", "", "", "", ct);
     }
 }

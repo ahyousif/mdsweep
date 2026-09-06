@@ -1,4 +1,4 @@
-using Mdsweep.Application.Common.Abstractions;
+﻿using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
@@ -16,6 +16,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<TenantAggregate> Tenants => Set<TenantAggregate>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
     public DbSet<UserAggregate> Users => Set<UserAggregate>();
+    public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
 
     // Single
     public Task<TAggregate?> GetByIdAsync<TAggregate, TId>(TId id, CancellationToken ct)

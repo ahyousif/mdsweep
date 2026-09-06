@@ -1,0 +1,55 @@
+<main class="grid min-h-svh place-items-center p-4">
+  <section hlmCard class="w-full max-w-lg">
+    <div hlmCardHeader><h1 hlmCardTitle>Welcome to MDSweep</h1></div>
+    <div hlmCardContent class="grid gap-4">
+      @if (invitation.isPending()) {
+        <div class="flex items-center gap-2" role="status">
+          <hlm-spinner aria-hidden="true" /> Checking your invitation…
+        </div>
+      } @else if (invitation.data(); as pending) {
+        <p>
+          You have been invited to {{ pending.tenantName }} with roles:
+          {{ pending.roles.join(' and ') }}.
+        </p>
+        <p hlmMuted>Expires {{ pending.expiresAt | date: 'medium' }}.</p>
+        <button
+          hlmBtn
+          type="button"
+          [disabled]="acceptance.isPending()"
+          (click)="acceptance.mutate(pending.id)"
+        >
+          @if (acceptance.isPending()) {
+            <hlm-spinner aria-hidden="true" />
+          }
+          {{ acceptance.isPending() ? 'Accepting…' : 'Accept invitation' }}
+        </button>
+      } @else {
+        <div hlmAlert variant="destructive" role="alert">
+          <p hlmAlertDescription>{{ invitationError() }}</p>
+        </div>
+        <button hlmBtn variant="outline" type="button" (click)="invitation.refetch()">
+          Check again
+        </button>
+      }
+      @if (error()) {
+        <div hlmAlert variant="destructive" role="alert">
+          <p hlmAlertDescription>{{ error() }}</p>
+        </div>
+      }
+    </div>
+    <div hlmCardFooter>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="signOut()"
+        [disabled]="signingOut() || acceptance.isPending()"
+      >
+        @if (signingOut()) {
+          <hlm-spinner aria-hidden="true" />
+        }
+        {{ signingOut() ? 'Signing out…' : 'Sign out' }}
+      </button>
+    </div>
+  </section>
+</main>

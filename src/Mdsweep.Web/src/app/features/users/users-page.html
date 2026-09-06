@@ -1,0 +1,363 @@
+<div class="grid gap-6">
+  <header class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 hlmH3>Users and Invitations</h1>
+      <p hlmMuted>Manage access to your Tenant.</p>
+    </div>
+    @if (listing.data(); as data) {
+      <hlm-dialog
+        [state]="inviting() ? 'open' : 'closed'"
+        (stateChanged)="inviting.set($event === 'open')"
+        [disableClose]="mutation.isPending()"
+        autoFocus="first-tabbable"
+      >
+        <button
+          hlmDialogTrigger
+          hlmBtn
+          type="button"
+          (click)="startInvite()"
+          [disabled]="mutation.isPending()"
+        >
+          Invite User
+        </button>
+        <hlm-dialog-content
+          *hlmDialogPortal
+          class="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg"
+          [showCloseButton]="!mutation.isPending()"
+        >
+          <hlm-dialog-header>
+            <h2 hlmDialogTitle>Invite User</h2>
+            <p hlmDialogDescription>
+              The recipient must accept before receiving access. Invitations expire after seven
+              days.
+            </p>
+          </hlm-dialog-header>
+          @if (error()) {
+            <div hlmAlert variant="destructive" role="alert">
+              <p hlmAlertDescription>{{ error() }}</p>
+            </div>
+          }
+          <app-user-form
+            prefix="invite-user"
+            [inviting]="true"
+            [administrator]="data.isAdministrator"
+            [busy]="mutation.isPending()"
+            (saved)="save($event)"
+            (cancelled)="inviting.set(false)"
+          />
+        </hlm-dialog-content>
+      </hlm-dialog>
+    }
+  </header>
+  @if (message()) {
+    <div hlmAlert role="status">
+      <p hlmAlertDescription>{{ message() }}</p>
+    </div>
+  }
+  @if (error() && !inviting()) {
+    <div hlmAlert variant="destructive" role="alert">
+      <p hlmAlertDescription>{{ error() }}</p>
+    </div>
+  }
+  @if (listing.isPending()) {
+    <div class="flex items-center gap-2" role="status">
+      <hlm-spinner aria-hidden="true" /> Loading Users…
+    </div>
+  } @else if (listing.isError()) {
+    <div hlmAlert variant="destructive">
+      <p hlmAlertDescription>{{ loadError() }}</p>
+    </div>
+    <button hlmBtn variant="outline" type="button" (click)="listing.refetch()">Retry</button>
+  }
+  @if (listing.data(); as data) {
+    @if (!data.isAdministrator) {
+      <p hlmMuted>
+        Dispatchers can manage Users whose only role is Driver. An Administrator manages all roles.
+      </p>
+    }
+    @if (editing()) {
+      <section hlmCard>
+        <div hlmCardHeader>
+          <h2 hlmCardTitle>Edit User</h2>
+        </div>
+        <div hlmCardContent>
+          <app-user-form
+            [value]="editingValue()"
+            [administrator]="data.isAdministrator"
+            [busy]="mutation.isPending()"
+            (saved)="save($event)"
+            (cancelled)="editing.set(null)"
+          />
+        </div>
+      </section>
+    }
+    <div hlmField class="max-w-md">
+      <label hlmFieldLabel for="user-search">Search Users and Invitations</label>
+      <input
+        hlmInput
+        id="user-search"
+        type="search"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+        placeholder="Name, email, or role"
+      />
+    </div>
+    <section hlmCard aria-labelledby="users-heading">
+      <div hlmCardHeader><h2 hlmCardTitle id="users-heading">Users</h2></div>
+      <div hlmCardContent>
+        <div hlmTableContainer>
+          <table hlmTable>
+            <thead hlmTHead>
+              <tr hlmTr>
+                <th hlmTh scope="col">Name</th>
+                <th hlmTh scope="col">Email</th>
+                <th hlmTh scope="col">Roles</th>
+                <th hlmTh scope="col">Access</th>
+                <th hlmTh scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody hlmTBody>
+              @for (user of users(); track user.id) {
+                <tr hlmTr>
+                  <td hlmTd>{{ user.firstName }} {{ user.lastName }}</td>
+                  <td hlmTd>{{ user.email || 'Not recorded' }}</td>
+                  <td hlmTd>
+                    <div class="flex flex-wrap gap-1">
+                      @for (role of user.roles; track role) {
+                        <span hlmBadge variant="outline">{{ role }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td hlmTd>
+                    <span hlmBadge [variant]="user.isActive ? 'secondary' : 'outline'">{{
+                      user.isActive ? 'Active' : 'Inactive'
+                    }}</span>
+                  </td>
+                  <td hlmTd>
+                    <div class="flex gap-2">
+                      <button
+                        hlmBtn
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        [disabled]="mutation.isPending()"
+                        (click)="edit(user)"
+                        [attr.aria-label]="'Edit ' + user.firstName + ' ' + user.lastName"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        [disabled]="mutation.isPending() || !user.isActive"
+                        (click)="run({ kind: 'reset', id: user.id })"
+                        [attr.aria-label]="
+                          'Send password reset to ' + user.firstName + ' ' + user.lastName
+                        "
+                      >
+                        Reset password
+                      </button>
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        (click)="showHistory(user, false)"
+                        [attr.aria-label]="
+                          'View history for ' + user.firstName + ' ' + user.lastName
+                        "
+                      >
+                        History
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr hlmTr>
+                  <td hlmTd colspan="5">
+                    <hlm-empty
+                      ><hlm-empty-header
+                        ><h3 hlmEmptyTitle>No Users match.</h3>
+                        <p hlmEmptyDescription>
+                          Try a different name, email, or role.
+                        </p></hlm-empty-header
+                      ></hlm-empty
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <section hlmCard aria-labelledby="invitations-heading">
+      <div hlmCardHeader><h2 hlmCardTitle id="invitations-heading">Invitations</h2></div>
+      <div hlmCardContent>
+        <div hlmTableContainer>
+          <table hlmTable>
+            <thead hlmTHead>
+              <tr hlmTr>
+                <th hlmTh scope="col">Recipient</th>
+                <th hlmTh scope="col">Roles</th>
+                <th hlmTh scope="col">Status</th>
+                <th hlmTh scope="col">Expires</th>
+                <th hlmTh scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody hlmTBody>
+              @for (invitation of invitations(); track invitation.id) {
+                <tr hlmTr>
+                  <td hlmTd>
+                    <p>{{ invitation.firstName }} {{ invitation.lastName }}</p>
+                    <p hlmMuted>{{ invitation.email }}</p>
+                  </td>
+                  <td hlmTd>
+                    <div class="flex flex-wrap gap-1">
+                      @for (role of invitation.roles; track role) {
+                        <span hlmBadge variant="outline">{{ role }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td hlmTd>
+                    <span
+                      hlmBadge
+                      [variant]="invitation.status === 'Accepted' ? 'secondary' : 'outline'"
+                      >{{ invitation.status }}</span
+                    >
+                    @if (
+                      invitation.deliveryError &&
+                      invitation.status !== 'Accepted' &&
+                      invitation.status !== 'Revoked'
+                    ) {
+                      <div hlmAlert variant="destructive" class="mt-2 max-w-xs whitespace-normal">
+                        <p hlmAlertDescription>{{ invitation.deliveryError }}</p>
+                      </div>
+                    } @else if (invitation.status === 'Pending') {
+                      <p hlmMuted>
+                        {{ invitation.sentAt ? 'Email sent' : 'Email not sent' }}
+                      </p>
+                    }
+                  </td>
+                  <td hlmTd>{{ invitation.expiresAt | date: 'medium' }}</td>
+                  <td hlmTd>
+                    <div class="flex gap-2">
+                      @if (invitation.status === 'Pending' || invitation.status === 'Expired') {
+                        <button
+                          hlmBtn
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          [disabled]="mutation.isPending()"
+                          (click)="run({ kind: 'resend', id: invitation.id })"
+                          [attr.aria-label]="
+                            'Resend invitation to ' +
+                            invitation.firstName +
+                            ' ' +
+                            invitation.lastName
+                          "
+                        >
+                          Resend
+                        </button>
+                        <button
+                          hlmBtn
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          [disabled]="mutation.isPending()"
+                          (click)="run({ kind: 'revoke', id: invitation.id })"
+                          [attr.aria-label]="
+                            'Revoke invitation for ' +
+                            invitation.firstName +
+                            ' ' +
+                            invitation.lastName
+                          "
+                        >
+                          Revoke
+                        </button>
+                      }
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        (click)="showHistory(invitation, true)"
+                        [attr.aria-label]="
+                          'View invitation history for ' +
+                          invitation.firstName +
+                          ' ' +
+                          invitation.lastName
+                        "
+                      >
+                        History
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr hlmTr>
+                  <td hlmTd colspan="5">
+                    <hlm-empty
+                      ><hlm-empty-header
+                        ><h3 hlmEmptyTitle>No invitations match.</h3>
+                        <p hlmEmptyDescription>
+                          Invite a User or adjust your search.
+                        </p></hlm-empty-header
+                      ></hlm-empty
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    @if (selectedHistory(); as selected) {
+      <section hlmCard aria-labelledby="history-heading">
+        <div hlmCardHeader>
+          <h2 hlmCardTitle id="history-heading">History — {{ selected.name }}</h2>
+        </div>
+        <div hlmCardContent class="grid gap-3">
+          @if (history.isPending()) {
+            <div class="flex items-center gap-2" role="status">
+              <hlm-spinner aria-hidden="true" /> Loading history…
+            </div>
+          } @else if (history.isError()) {
+            <div hlmAlert variant="destructive" role="alert">
+              <p hlmAlertDescription>{{ historyError() }}</p>
+            </div>
+            <button hlmBtn variant="outline" type="button" (click)="history.refetch()">
+              Retry history
+            </button>
+          } @else {
+            @for (entry of history.data(); track $index; let last = $last) {
+              <div class="grid gap-1">
+                <p hlmSmall>{{ entry.action }}</p>
+                <p>{{ entry.details }}</p>
+                <p hlmMuted>{{ entry.occurredAt | date: 'medium' }} · {{ entry.actorName }}</p>
+              </div>
+              @if (!last) {
+                <hlm-separator />
+              }
+            } @empty {
+              <hlm-empty
+                ><hlm-empty-header
+                  ><h3 hlmEmptyTitle>No recorded changes.</h3>
+                  <p hlmEmptyDescription>Access changes will appear here.</p></hlm-empty-header
+                ></hlm-empty
+              >
+            }
+          }
+        </div>
+        <div hlmCardFooter>
+          <button hlmBtn variant="outline" type="button" (click)="selectedHistory.set(null)">
+            Close history
+          </button>
+        </div>
+      </section>
+    }
+  }
+</div>

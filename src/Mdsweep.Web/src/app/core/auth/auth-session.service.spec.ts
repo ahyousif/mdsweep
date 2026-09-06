@@ -77,9 +77,9 @@ describe('AuthSessionService', () => {
     const form = submit.mock.instances[0] as HTMLFormElement;
     expect(form.getAttribute('method')).toBe('post');
     expect(form.getAttribute('action')).toBe('/api/auth/logout');
-    expect(form.querySelector('input[name="__RequestVerificationToken"]')?.getAttribute('value')).toBe(
-      'sign-out-token',
-    );
+    expect(
+      form.querySelector('input[name="__RequestVerificationToken"]')?.getAttribute('value'),
+    ).toBe('sign-out-token');
 
     form.remove();
     submit.mockRestore();

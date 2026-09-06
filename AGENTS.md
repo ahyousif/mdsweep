@@ -56,6 +56,8 @@ A feature is complete when its acceptance criteria pass through its public inter
 
 ## Angular frontend guidance
 
+- Keep large component templates in separate `.html` files referenced by `templateUrl`; reserve inline templates for small components.
+
 - Use inline Tailwind utilities and semantic application tokens in feature templates; do not use literal palette utilities. Spartan primitives belong in `src/Mdsweep.Web/src/app/ui`.
 - Organize frontend code by business feature. Use `dispatcher`, `trip-import`, and `driver` terminology; retain legacy API route names only where they are the server contract.
 - TanStack Query owns server state and typed query keys. Signals and feature stores own client/UI state only; preserve the Driver's durable offline queue separately.
