@@ -56,7 +56,7 @@ _Avoid_: Spreadsheet, upload
 The retained record of a Manifest received and reviewed by the Tenant, including the disposition of every source row.
 
 **Trip Import**:
-The retained preview of one uploaded broker file, including parsed source rows, validation outcomes, and whether it has been applied.
+The one-step process of importing a broker-provided trip file. Each complete MTM Trip Number uniquely identifies a Trip within a Tenant. Valid rows create Trips or reconcile only broker trip facts; repeat imports are safe, and missing rows do not imply deletion.
 _Avoid_: Manifest Import, upload
 
 **Broker Trip Facts**:

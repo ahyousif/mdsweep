@@ -6,25 +6,65 @@ import { PagedResponse } from '@app/core/api/paged-response';
 export type AllTripsTrip = {
   id: string;
   brokerTripNumber: string;
+  passengerFirstName: string;
+  passengerLastName: string;
+  brokerMemberId: string | null;
   serviceDate: string;
   appointmentTime: string | null;
   brokerStatus: string | null;
   isWillCall: boolean;
+  mobilityRequirement:
+    | 'Unknown'
+    | 'Ambulatory'
+    | 'Cane'
+    | 'ManualWheelchair'
+    | 'ManualWheelchairCannotTransfer'
+    | 'ElectricWheelchair';
+  tripCost: number | null;
+  tripMileage: number | null;
   scheduledPickupTime: string | null;
+  estimatedTravelMinutes?: number | null;
   pickupAddress: string;
   pickupCity: string;
   dropoffAddress: string;
   dropoffCity: string;
 };
 
+export type TripsQuery = {
+  startDate: string;
+  endDate: string;
+  search?: string;
+  needsAttention?: boolean;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDirection?: 'Ascending' | 'Descending';
+};
+
+export type TripsResponse = PagedResponse<AllTripsTrip> & {
+  scopeCount: number;
+  attentionCount: number;
+};
+
 @Injectable({ providedIn: 'root' })
 export class AllTripsApi {
   readonly #api = inject(ApiClient);
 
-  getTrips(serviceDate: string, page = 1, pageSize = 50): Promise<PagedResponse<AllTripsTrip>> {
+  getTrips(query: TripsQuery): Promise<TripsResponse> {
+    const params: Record<string, string | number | boolean> = {
+      startDate: query.startDate,
+      endDate: query.endDate,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 50,
+      sortBy: query.sortBy ?? 'ScheduledPickupTime',
+      sortDirection: query.sortDirection ?? 'Ascending',
+    };
+    if (query.search) params['search'] = query.search;
+    if (query.needsAttention) params['needsAttention'] = true;
+
     return firstValueFrom(
-      this.#api.http.get<PagedResponse<AllTripsTrip>>(this.#api.url('trips'), {
-        params: { serviceDate, page, pageSize },
+      this.#api.http.get<TripsResponse>(this.#api.url('trips'), {
+        params,
       }),
     );
   }
@@ -37,4 +77,5 @@ export class AllTripsApi {
       ),
     );
   }
+
 }

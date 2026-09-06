@@ -27,7 +27,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
 
         Assert.Equal(5, identityEndpoints.Count);
         Assert.True(IsAnonymous(identityEndpoints["/api/auth/login"]));
-        AssertProtected(identityEndpoints["/api/auth/me"]);
+        AssertProtected(identityEndpoints["/api/auth/session"]);
         AssertProtected(identityEndpoints["/api/auth/tenant-context"]);
         AssertProtected(identityEndpoints["/api/auth/antiforgery"]);
         AssertProtected(identityEndpoints["/api/auth/logout"]);
@@ -35,14 +35,12 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
         var expectedRoutes = new[]
         {
             "GET /api/auth/login",
-            "GET /api/auth/me",
+            "GET /api/auth/session",
             "POST /api/auth/tenant-context",
             "GET /api/auth/antiforgery",
             "POST /api/auth/logout",
             "POST /api/passengers",
-            "POST /api/trip-imports",
-            "GET /api/trip-imports/{id:guid}",
-            "POST /api/trip-imports/{id:guid}/apply",
+            "POST /api/trips/import",
             "GET /api/trips/{id:guid}",
             "GET /api/trips",
             "PUT /api/trips/{id:guid}/scheduled-pickup-time",

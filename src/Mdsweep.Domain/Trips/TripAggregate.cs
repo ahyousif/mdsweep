@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
 
 namespace Mdsweep.Domain.Trips;
@@ -18,9 +19,12 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
 
     public string? TenantId { get; set; }
     public Guid PassengerId { get; private set; }
+    public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
     public LocalTime? ScheduledPickupTime { get; private set; }
+    public int? EstimatedTravelMinutes { get; private set; }
+    public string? SchedulingInputFingerprint { get; private set; }
 
     public static TripAggregate Create(Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
     {
@@ -52,5 +56,17 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public void SetScheduledPickupTime(LocalTime scheduledPickupTime)
     {
         ScheduledPickupTime = scheduledPickupTime;
+    }
+
+    public void ApplyScheduledPickupTime(
+        LocalTime? scheduledPickupTime,
+        int? estimatedTravelMinutes,
+        string schedulingInputFingerprint
+    )
+    {
+        ScheduledPickupTime = scheduledPickupTime;
+        EstimatedTravelMinutes = estimatedTravelMinutes;
+        SchedulingInputFingerprint = schedulingInputFingerprint;
+
     }
 }

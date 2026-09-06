@@ -5,6 +5,10 @@ using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 using Mdsweep.Infrastructure.TripImports.Parsing;
 using Mdsweep.Infrastructure.TripImports.Persistence;
+using Mdsweep.Application.Trips.PickupTimeCalculation;
+using Mdsweep.Application.Trips.Routing;
+using Mdsweep.Infrastructure.Trips.PickupTimeCalculation;
+using Mdsweep.Infrastructure.Trips.Routing;
 
 namespace Mdsweep.Infrastructure;
 
@@ -42,6 +46,21 @@ public static class DependencyInjection
         services.AddScoped<ITripImportLookup, EfTripImportLookup>();
         services.AddSingleton<ITripImportFileParser, CsvTripImportFileParser>();
         services.AddSingleton<ITripImportFileParser, XlsxTripImportFileParser>();
+
+        services
+            .AddOptions<PickupTimeCalculationOptions>()
+            .Bind(configuration.GetSection(PickupTimeCalculationOptions.SectionName))
+            .Validate(options => options.PickupTimeBufferMinutes > 0, "Pickup-time buffer must be positive.")
+            .ValidateOnStart();
+        services.AddOptions<GoogleRoutesOptions>().Bind(configuration.GetSection(GoogleRoutesOptions.SectionName));
+        services.AddSingleton<IScheduledPickupCalculator, ConfiguredScheduledPickupCalculator>();
+        services.AddHttpClient(GoogleRoutesEstimator.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://routes.googleapis.com/");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddScoped<GoogleRoutesEstimator>();
+        services.AddScoped<IRouteEstimator, GoogleRoutesEstimator>();
 
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 

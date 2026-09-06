@@ -26,8 +26,13 @@ export class App {
     staleTime: Number.POSITIVE_INFINITY,
   }));
 
+  readonly activeSession = computed(() => {
+    const session = this.sessionQuery.data();
+    return session === undefined ? null : this.auth.toTenantSession(session);
+  });
+
   readonly isDriverOnly = computed(() => {
-    const roles = this.sessionQuery.data()?.roles ?? [];
+    const roles = this.activeSession()?.roles ?? [];
 
     return (
       roles.includes('Driver') &&
@@ -35,8 +40,9 @@ export class App {
     );
   });
 
-  signIn(): void {
-    this.auth.signIn();
+  async selectTenant(tenantId: string): Promise<void> {
+    await this.auth.selectTenant(tenantId);
+    await this.sessionQuery.refetch();
   }
 
   sessionError(): string {

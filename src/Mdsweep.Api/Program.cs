@@ -31,8 +31,12 @@ if (!app.Environment.IsDevelopment())
     app.UseStaticFiles();
 }
 
+// Endpoint metadata must be available before antiforgery middleware runs.
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+// This is the sole enforcement boundary for authenticated unsafe API requests.
+app.UseAuthenticatedApiAntiforgery();
 app.UseAntiforgery();
 
 app.MapWolverineEndpoints(options =>
@@ -42,7 +46,6 @@ app.MapWolverineEndpoints(options =>
     options.UseFluentValidationProblemDetailMiddleware();
 
     options.RequireAuthorizeOnAll();
-    options.AutoAntiforgeryOnFormEndpoints();
     options.TenantId.IsClaimTypeNamed(CustomClaimTypes.ActiveTenantId);
     options.TenantId.AssertExists();
 });

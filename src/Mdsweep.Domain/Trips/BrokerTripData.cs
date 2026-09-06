@@ -8,5 +8,20 @@ public sealed record BrokerTripData(
     string DropoffAddress,
     string DropoffCity,
     string? BrokerStatus,
-    bool IsWillCall
-);
+    bool IsWillCall,
+    PassengerMobilityRequirement MobilityRequirement,
+    string? RawImportedPassengerType,
+    decimal? TripCost,
+    decimal? TripMileage
+)
+{
+    public RequiredVehicleCapability RequiredVehicleCapability => MobilityRequirement switch
+    {
+        PassengerMobilityRequirement.ManualWheelchair or
+        PassengerMobilityRequirement.ManualWheelchairCannotTransfer or
+        PassengerMobilityRequirement.ElectricWheelchair =>
+            global::Mdsweep.Domain.Trips.RequiredVehicleCapability.WheelchairAccessible,
+        PassengerMobilityRequirement.Unknown => global::Mdsweep.Domain.Trips.RequiredVehicleCapability.Unknown,
+        _ => global::Mdsweep.Domain.Trips.RequiredVehicleCapability.StandardTransport,
+    };
+}

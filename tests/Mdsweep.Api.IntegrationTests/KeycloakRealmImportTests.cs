@@ -40,6 +40,25 @@ public sealed class KeycloakRealmImportTests
             .GetString();
 
         Assert.Equal("http://localhost:4200/signout-callback-oidc", postLogoutRedirectUris);
+
+        Assert.Equal("mdsweep-browser", realm.RootElement.GetProperty("browserFlow").GetString());
+        var browserFlow = realm.RootElement
+            .GetProperty("authenticationFlows")
+            .EnumerateArray()
+            .Single(flow => flow.GetProperty("alias").GetString() == "mdsweep-browser");
+        Assert.Contains(
+            browserFlow.GetProperty("authenticationExecutions").EnumerateArray(),
+            execution =>
+                execution.GetProperty("authenticatorFlow").GetBoolean()
+                && execution.GetProperty("flowAlias").GetString() == "mdsweep-browser-forms"
+        );
+        Assert.False(
+            realm.RootElement
+                .GetProperty("clients")
+                .EnumerateArray()
+                .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+                .TryGetProperty("protocolMappers", out _)
+        );
     }
 
     [Fact]

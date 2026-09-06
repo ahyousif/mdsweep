@@ -7,10 +7,9 @@ export const uiText = {
   password: 'Password',
   signIn: 'Sign in',
   signingIn: 'Signing in…',
-  uploadTitle: 'Upload MTM Manifest',
-  uploadHelp:
-    'Choose the CSV or Excel file downloaded from MTM. You can review problems before importing.',
-  chooseManifest: 'Choose Manifest',
+  uploadTitle: 'Import Trips',
+  uploadHelp: 'Upload the trip file you received from MTM.',
+  chooseManifest: 'Choose File',
   needsReview: 'Needs review',
   newTrips: 'new',
   brokerChanged: 'changed by MTM',

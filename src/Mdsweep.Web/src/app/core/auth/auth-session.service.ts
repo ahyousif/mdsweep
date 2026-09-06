@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ApplicationError } from '../errors/application-error';
 import { ApiClient } from '../api/api-client';
 
 export type TenantSession = {
@@ -10,16 +11,17 @@ export type TenantSession = {
   roles: Array<'Administrator' | 'Dispatcher' | 'Driver'>;
 };
 
-type Membership = {
-  userId: string;
-  firstName: string;
-  lastName: string;
-  tenantId: string;
-  role: TenantSession['roles'][number];
+export type AvailableTenant = {
+  id: string;
+  name: string;
+  roles: TenantSession['roles'];
 };
 
-type AntiforgeryResponse = {
-  token: string;
+export type SessionBootstrap = {
+  userId: string;
+  displayName: string;
+  activeTenant: AvailableTenant | null;
+  availableTenants: AvailableTenant[];
 };
 
 @Injectable({ providedIn: 'root' })
@@ -27,61 +29,40 @@ export class AuthSessionService {
   readonly #api = inject(ApiClient);
   readonly #document = inject(DOCUMENT);
 
-  async establish(): Promise<TenantSession> {
-    const memberships = await firstValueFrom(
-      this.#api.http.get<Membership[]>(this.#api.url('auth/me')),
-    );
+  async establish(): Promise<SessionBootstrap> {
+    try {
+      return await firstValueFrom(this.#api.http.get<SessionBootstrap>(this.#api.url('auth/session')));
+    } catch (error) {
+      if (error instanceof ApplicationError && error.status === 401) {
+        this.signIn();
+      }
+      throw error;
+    }
+  }
 
-    const sessions = new Map<string, TenantSession>();
+  async selectTenant(tenantId: string): Promise<void> {
+    await firstValueFrom(this.#api.http.post<void>(this.#api.url('auth/tenant-context'), { tenantId }));
+  }
 
-    for (const membership of memberships) {
-      const session = sessions.get(membership.tenantId) ?? {
-        appUserId: membership.userId,
-        displayName: `${membership.firstName} ${membership.lastName}`.trim(),
-        tenantId: membership.tenantId,
-        roles: [],
-      };
-
-      session.roles.push(membership.role);
-      sessions.set(membership.tenantId, session);
+  toTenantSession(session: SessionBootstrap): TenantSession | null {
+    if (session.activeTenant === null) {
+      return null;
     }
 
-    const availableSessions = [...sessions.values()];
-
-    if (availableSessions.length !== 1) {
-      throw new Error('Choose an organization before using MDSweep.');
-    }
-
-    const session = availableSessions[0];
-
-    // Required before the protected POST.
-    await firstValueFrom(
-      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
-    );
-
-    await firstValueFrom(
-      this.#api.http.post<void>(this.#api.url('auth/tenant-context'), {
-        tenantId: session.tenantId,
-      }),
-    );
-
-    // Refresh the token after the authentication cookie gains the tenant claim.
-    await firstValueFrom(
-      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
-    );
-
-    return session;
+    return {
+      appUserId: session.userId,
+      displayName: session.displayName,
+      tenantId: session.activeTenant.id,
+      roles: session.activeTenant.roles,
+    };
   }
 
   signIn(): void {
-    window.location.assign(this.#api.url('auth/login'));
+    const returnUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(`${this.#api.url('auth/login')}?returnUrl=${encodeURIComponent(returnUrl)}`);
   }
 
-  async signOut(): Promise<void> {
-    const antiforgery = await firstValueFrom(
-      this.#api.http.get<AntiforgeryResponse>(this.#api.url('auth/antiforgery')),
-    );
-
+  signOut(): void {
     const form = this.#document.createElement('form');
     form.method = 'post';
     form.action = this.#api.url('auth/logout');
@@ -89,10 +70,19 @@ export class AuthSessionService {
     const token = this.#document.createElement('input');
     token.type = 'hidden';
     token.name = '__RequestVerificationToken';
-    token.value = antiforgery.token;
+    token.value = this.readCookie('XSRF-TOKEN');
     form.append(token);
 
     this.#document.body.append(form);
     form.submit();
+  }
+
+  private readCookie(name: string): string {
+    const value = this.#document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith(`${name}=`))
+      ?.slice(name.length + 1);
+
+    return value === undefined ? '' : decodeURIComponent(value);
   }
 }

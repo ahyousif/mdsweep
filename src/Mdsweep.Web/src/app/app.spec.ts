@@ -7,6 +7,7 @@ import { App } from './app';
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
+  const signIn = vi.fn();
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -16,8 +17,11 @@ describe('App', () => {
         {
           provide: AuthSessionService,
           useValue: {
-            establish: () => Promise.reject(new ApplicationError('Unauthenticated.', 401)),
-            signIn: () => undefined,
+            establish: () => {
+              signIn();
+              return Promise.reject(new ApplicationError('Unauthenticated.', 401));
+            },
+            signIn,
           },
         },
       ],
@@ -25,13 +29,14 @@ describe('App', () => {
     fixture = TestBed.createComponent(App);
   });
 
-  it('presents a 401 as the normal sign-in state without an organization-selection error', async () => {
+  it('starts BFF sign-in without rendering the removed sign-in card', async () => {
     fixture.detectChanges();
 
     await vi.waitFor(() => {
       fixture.detectChanges();
       const page = fixture.nativeElement.textContent as string;
-      expect(page).toContain('Sign in');
+      expect(signIn).toHaveBeenCalledOnce();
+      expect(page).not.toContain('Sign in');
       expect(page).not.toContain('Organization selection required');
     });
   });
