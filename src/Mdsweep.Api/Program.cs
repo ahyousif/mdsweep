@@ -31,8 +31,11 @@ if (!app.Environment.IsDevelopment())
     app.UseStaticFiles();
 }
 
+// Endpoint metadata must be available before antiforgery middleware runs.
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCookieAuthenticatedApiAntiforgery();
 app.UseAntiforgery();
 
 app.MapWolverineEndpoints(options =>

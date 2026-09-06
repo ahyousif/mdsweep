@@ -15,11 +15,11 @@ public static class IdentityEndpoints
 
         auth.MapGet("/session", GetSession);
 
-        auth.MapPost("/tenant-context", SelectTenantContext).WithMetadata(new RequireAntiforgeryTokenAttribute(true));
+        auth.MapPost("/tenant-context", SelectTenantContext);
 
         auth.MapGet("/antiforgery", GetAntiforgeryToken);
 
-        auth.MapPost("/logout", Logout).WithMetadata(new RequireAntiforgeryTokenAttribute(true));
+        auth.MapPost("/logout", Logout);
 
         return endpoints;
     }
