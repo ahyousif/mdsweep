@@ -1,5 +1,3 @@
-using Mdsweep.Domain.Trips;
-
 namespace Mdsweep.Application.Trips;
 
 public sealed record TripModel(
@@ -12,7 +10,6 @@ public sealed record TripModel(
     LocalTime? AppointmentTime,
     string? BrokerStatus,
     bool IsWillCall,
-    PassengerMobilityRequirement MobilityRequirement,
     decimal? TripCost,
     decimal? TripMileage,
     LocalTime? ScheduledPickupTime,

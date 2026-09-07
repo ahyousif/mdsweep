@@ -1,3 +1,4 @@
+using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Infrastructure.Persistence.Configuration;
@@ -23,6 +24,11 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
             .Property(trip => trip.ScheduleInputFingerprint)
             .HasColumnName("scheduling_input_fingerprint")
             .HasMaxLength(64);
+        builder
+            .HasOne<PassengerAggregate>()
+            .WithMany()
+            .HasForeignKey(trip => trip.PassengerId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.OwnsOne(
             trip => trip.BrokerData,
             facts =>

@@ -20,11 +20,10 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public Guid PassengerId { get; private set; }
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
-    public string? BrokerDataFingerPrint { get; set; } = null!;
     public LocalTime? CalculatedPickupTime { get; private set; }
     public LocalTime? ManualPickupTime { get; private set; }
     public string? ScheduleInputFingerprint { get; private set; }
-    public LocalTime? ScheduledPickupTime => CalculatedPickupTime ?? ManualPickupTime;
+    public LocalTime? ScheduledPickupTime => ManualPickupTime ?? CalculatedPickupTime;
 
     public static TripAggregate Create(Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
     {
@@ -42,5 +41,28 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         trip.AddDomainEvent(new TripCreatedDomainEvent(trip.Id, trip.PassengerId, trip.BrokerTripNumber));
 
         return trip;
+    }
+
+    public void UpdateCalculatedSchedule(LocalTime? pickupTime, string? scheduleInputFingerprint)
+    {
+        CalculatedPickupTime = pickupTime;
+        ScheduleInputFingerprint = scheduleInputFingerprint;
+    }
+
+    public void OverridePickupTime(LocalTime pickupTime)
+    {
+        ManualPickupTime = pickupTime;
+    }
+
+    public void RemovePickupOverride()
+    {
+        ManualPickupTime = null;
+    }
+
+    public void UpdateBrokerData(BrokerTripData brokerData)
+    {
+        Guard.Against.Null(brokerData);
+
+        BrokerData = brokerData;
     }
 }

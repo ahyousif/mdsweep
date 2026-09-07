@@ -1,15 +1,21 @@
 namespace Mdsweep.Domain.Trips;
 
 public sealed record BrokerTripData(
-    DateOnly ServiceDate,
-    LocalTime? AppointmentTime,
+    LocalDate ServiceDate,
+    LocalTime? Time,
+    TripDirection Direction,
+    bool IsWillCall,
     string PickupAddress,
     string PickupCity,
+    string? PickupState,
+    string? PickupZip,
     string DropoffAddress,
     string DropoffCity,
-    string? BrokerStatus,
-    bool IsWillCall,
-    string? ImportedPassengerType,
-    decimal? TripCost,
-    decimal? TripMileage
+    string? DropoffState,
+    string? DropoffZip,
+    string? Status,
+    string? PassengerType,
+    string? SpecialNeeds,
+    decimal? Cost,
+    decimal? Mileage
 );
