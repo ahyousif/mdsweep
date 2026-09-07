@@ -84,6 +84,10 @@
 <ng-template #userMenu>
   <div hlmDropdownMenu class="w-64">
     <span hlmDropdownMenuLabel>{{ session().displayName }}</span>
+    <span hlmDropdownMenuLabel>{{ session().tenantName || session().tenantId }}</span>
+    <button hlmDropdownMenuItem type="button" (triggered)="manageAccess.emit()">
+      Tenants and Invitations
+    </button>
     <span hlmDropdownMenuLabel>{{ session().roles.join(' · ') }}</span>
     <div hlmDropdownMenuSeparator></div>
     <span hlmDropdownMenuLabel>Theme</span>

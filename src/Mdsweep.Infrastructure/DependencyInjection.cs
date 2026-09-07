@@ -48,7 +48,6 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(GoogleRoutesOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.ApiKey), "Google Routes API key is required.")
             .ValidateOnStart();
-
         services.AddHttpClient(
             GoogleRouteEstimateProvider.HttpClientName,
             client =>
@@ -57,7 +56,6 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(10);
             }
         );
-
         services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
 
         services.AddScoped<UserManagementAccess>();

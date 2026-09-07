@@ -1,4 +1,4 @@
-﻿using Mdsweep.Infrastructure.Persistence;
+using Mdsweep.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
@@ -12,14 +12,27 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
     {
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var invitation = InvitationAggregate.Create("mdsw-eep2-3456", "driver@example.test", "Synthetic", "Invitee",
-            ["Driver"], "dispatcher-test", NodaTime.SystemClock.Instance.GetCurrentInstant());
+        var invitation = InvitationAggregate.Create(
+            "mdsw-eep2-3456",
+            "driver@example.test",
+            "Synthetic",
+            "Invitee",
+            ["Driver"],
+            "dispatcher-test",
+            NodaTime.SystemClock.Instance.GetCurrentInstant()
+        );
         db.Invitations.Add(invitation);
         await db.SaveChangesAsync();
         var migrator = db.GetService<IMigrator>();
         await migrator.MigrateAsync("20260906001412_UserManagementAndInvitations");
-        Assert.Equal("Driver", await db.Database.SqlQueryRaw<string>("SELECT \"Role\" AS \"Value\" FROM invitations").SingleAsync());
-        Assert.Equal("Dispatcher", await db.Database.SqlQueryRaw<string>("SELECT role AS \"Value\" FROM tenant_memberships").SingleAsync());
+        Assert.Equal(
+            "Driver",
+            await db.Database.SqlQueryRaw<string>("SELECT \"Role\" AS \"Value\" FROM invitations").SingleAsync()
+        );
+        Assert.Equal(
+            "Dispatcher",
+            await db.Database.SqlQueryRaw<string>("SELECT role AS \"Value\" FROM tenant_memberships").SingleAsync()
+        );
         await migrator.MigrateAsync();
         db.ChangeTracker.Clear();
         var upgraded = await db.Invitations.SingleAsync();
@@ -38,43 +51,118 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         if (invitation)
-            db.Invitations.Add(InvitationAggregate.Create("mdsw-eep2-3456", "driver@example.test", "Synthetic", "Invitee",
-                ["Driver", "Dispatcher"], "dispatcher-test", NodaTime.SystemClock.Instance.GetCurrentInstant()));
+            db.Invitations.Add(
+                InvitationAggregate.Create(
+                    "mdsw-eep2-3456",
+                    "driver@example.test",
+                    "Synthetic",
+                    "Invitee",
+                    ["Driver", "Dispatcher"],
+                    "dispatcher-test",
+                    NodaTime.SystemClock.Instance.GetCurrentInstant()
+                )
+            );
         else
             (await db.TenantMemberships.SingleAsync()).SetRoles(["Dispatcher", "Driver"]);
         await db.SaveChangesAsync();
-        var error = await Assert.ThrowsAsync<PostgresException>(() => db.GetService<IMigrator>().MigrateAsync("20260906001412_UserManagementAndInvitations"));
+        var error = await Assert.ThrowsAsync<PostgresException>(() =>
+            db.GetService<IMigrator>().MigrateAsync("20260906001412_UserManagementAndInvitations")
+        );
         Assert.Contains("Cannot downgrade", error.MessageText);
     }
 
     [Fact]
-    public async Task Baseline_upgrade_preserves_existing_User_and_membership()
+    public async Task Baseline_upgrade_preserves_User_and_memberships_in_multiple_Tenants()
     {
-        await using var scope = Application.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var userId = await db.Users.Select(x => x.Id).SingleAsync();
+        // Start with a fresh database: main intentionally cannot downgrade removed preview data.
+        var connection = new NpgsqlConnectionStringBuilder(DatabaseConnectionString) { Database = "baseline_upgrade" };
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(connection.ConnectionString, postgres => postgres.UseNodaTime())
+            .Options;
+        await using var db = new ApplicationDbContext(options);
+        var userId = Guid.NewGuid();
+        var membershipIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
         var migrator = db.GetService<IMigrator>();
         await migrator.MigrateAsync("20260831065755_InitialSchema");
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO tenants (id, name, keycloak_organization_id) VALUES
+                ('mdsw-eep2-3456', 'Synthetic Tenant', 'synthetic-tenant'),
+                ('abcd-efgh-jkmn', 'Another Synthetic Tenant', 'another-organization');
+            INSERT INTO users (id, first_name, last_name, keycloak_user_id)
+                VALUES ({userId}, 'Synthetic', 'User', 'synthetic-user');
+            INSERT INTO tenant_memberships (id, tenant_id, user_id, role) VALUES
+                ({membershipIds[0]}, 'mdsw-eep2-3456', {userId}, 'Dispatcher'),
+                ({membershipIds[1]}, 'abcd-efgh-jkmn', {userId}, 'Driver');
+            """
+        );
         await migrator.MigrateAsync();
         db.ChangeTracker.Clear();
         var user = await db.Users.SingleAsync();
         Assert.Equal(userId, user.Id);
-        Assert.True(user.IsActive);
-        Assert.Equal("mdsw-eep2-3456", user.TenantId);
-        Assert.Equal(new[] { "Dispatcher" }, (await db.TenantMemberships.SingleAsync()).Roles);
+        var memberships = await db.TenantMemberships.ToListAsync();
+        Assert.Equal(membershipIds.Order(), memberships.Select(x => x.Id).Order());
+        Assert.All(memberships, x => Assert.True(x.IsActive));
+        Assert.Equal(new[] { "Dispatcher" }, memberships.Single(x => x.TenantId == "mdsw-eep2-3456").Roles);
+        Assert.Equal(new[] { "Driver" }, memberships.Single(x => x.TenantId == "abcd-efgh-jkmn").Roles);
+        Assert.Equal(
+            0,
+            await db
+                .Database.SqlQueryRaw<int>(
+                    "SELECT count(*)::int AS \"Value\" FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' AND column_name IN ('tenant_id', 'is_active', 'version')"
+                )
+                .SingleAsync()
+        );
         Assert.Empty(await db.Invitations.ToListAsync());
     }
 
     [Fact]
-    public async Task Upgrade_rejects_multiple_memberships_instead_of_selecting_a_role()
+    public async Task Role_upgrade_preserves_membership_access_version_and_history()
     {
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var userId = await db.Users.Select(x => x.Id).SingleAsync();
+        var membership = await db.TenantMemberships.SingleAsync();
+        membership.SetActive(false);
+        membership.Record("dispatcher-test", "Deactivated", NodaTime.SystemClock.Instance.GetCurrentInstant());
+        await db.SaveChangesAsync();
+        var historyId = Assert.Single(membership.History).Id;
         var migrator = db.GetService<IMigrator>();
-        await migrator.MigrateAsync("20260831065755_InitialSchema");
-        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO tenant_memberships (id, tenant_id, user_id, role) VALUES ({Guid.CreateVersion7()}, 'mdsw-eep2-3456', {userId}, 'Driver')");
-        var error = await Assert.ThrowsAsync<PostgresException>(() => migrator.MigrateAsync());
-        Assert.Contains("exactly one Tenant Membership", error.MessageText);
+        await migrator.MigrateAsync("20260906001412_UserManagementAndInvitations");
+        Assert.False(
+            await db.Database.SqlQueryRaw<bool>("SELECT is_active AS \"Value\" FROM tenant_memberships").SingleAsync()
+        );
+        await migrator.MigrateAsync();
+        db.ChangeTracker.Clear();
+        var restored = await db.TenantMemberships.SingleAsync();
+        Assert.Equal(membership.Id, restored.Id);
+        Assert.False(restored.IsActive);
+        Assert.Equal(1, restored.Version);
+        Assert.Equal(historyId, Assert.Single(restored.History).Id);
+    }
+
+    [Fact]
+    public async Task Multiple_Tenants_are_allowed_but_duplicate_memberships_are_rejected()
+    {
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var user = await db.Users.SingleAsync();
+        db.Tenants.Add(TenantAggregate.Create("abcd-efgh-jkmn", "Another Synthetic Tenant", "another-organization"));
+        db.TenantMemberships.Add(TenantMembership.Create("abcd-efgh-jkmn", user.Id, "Driver"));
+        await db.SaveChangesAsync();
+        Assert.Equal(2, await db.TenantMemberships.CountAsync());
+        db.TenantMemberships.Add(TenantMembership.Create("abcd-efgh-jkmn", user.Id, "Administrator"));
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        db.ChangeTracker.Clear();
+        var migrator = db.GetService<IMigrator>();
+        await migrator.MigrateAsync("20260906001412_UserManagementAndInvitations");
+        Assert.Equal(
+            2,
+            await db
+                .Database.SqlQueryRaw<int>("SELECT count(*)::int AS \"Value\" FROM tenant_memberships")
+                .SingleAsync()
+        );
+        await migrator.MigrateAsync();
+        db.ChangeTracker.Clear();
+        Assert.Equal(2, await db.TenantMemberships.CountAsync());
     }
 }

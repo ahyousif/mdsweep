@@ -31,6 +31,23 @@ public sealed class TenantContextTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task New_invitee_can_bootstrap_without_a_membership_and_receive_an_antiforgery_token()
+    {
+        using var client = Application.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Subject", "new-invitee");
+        using var response = await client.GetAsync("/api/auth/session");
+        response.EnsureSuccessStatusCode();
+        var session = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Null, session.GetProperty("userId").ValueKind);
+        Assert.Equal(JsonValueKind.Null, session.GetProperty("activeTenant").ValueKind);
+        Assert.Empty(session.GetProperty("availableTenants").EnumerateArray());
+        Assert.Contains(
+            response.Headers.GetValues("Set-Cookie"),
+            value => value.StartsWith("XSRF-TOKEN=", StringComparison.Ordinal)
+        );
+    }
+
+    [Fact]
     public async Task AuthenticatedUserCanBootstrapAnActiveTenantSession()
     {
         using var client = Application.CreateClient();

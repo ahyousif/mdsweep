@@ -1,9 +1,9 @@
 using System.Security.Claims;
 using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Common.Authorization;
-using Mdsweep.Infrastructure.Identity;
-using Mdsweep.Application.Users;
 using Mdsweep.Api.Features.Users;
+using Mdsweep.Application.Users;
+using Mdsweep.Infrastructure.Identity;
 
 namespace Mdsweep.Api.Configuration;
 
@@ -89,8 +89,13 @@ public static class ApiExtensions
 
         builder.Services.AddAuthorization(options =>
         {
-            options.AddPolicy(AuthorizationPolicies.UsersManage, policy => policy.RequireAuthenticatedUser()
-                .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)));
+            options.AddPolicy(
+                AuthorizationPolicies.UsersManage,
+                policy =>
+                    policy
+                        .RequireAuthenticatedUser()
+                        .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
+            );
             options.AddPolicy(
                 AuthorizationPolicies.TripsViewAll,
                 policy =>
@@ -104,23 +109,17 @@ public static class ApiExtensions
             options.AddPolicy(
                 AuthorizationPolicies.TripsManage,
                 policy =>
-                    policy.AddRequirements(
-                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
-                    )
+                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
             );
             options.AddPolicy(
                 AuthorizationPolicies.TripsImport,
                 policy =>
-                    policy.AddRequirements(
-                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
-                    )
+                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
             );
             options.AddPolicy(
                 AuthorizationPolicies.PassengersManage,
                 policy =>
-                    policy.AddRequirements(
-                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
-                    )
+                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
             );
         });
 

@@ -93,7 +93,7 @@ public static class IdentityEndpoints
 
         var memberships = await tenantAccess.GetMembershipsAsync(userSubject, cancellationToken);
 
-        var membership = memberships.SingleOrDefault(membership => membership.TenantId == request.TenantId);
+        var membership = memberships.FirstOrDefault(membership => membership.TenantId == request.TenantId);
 
         if (membership is null)
         {

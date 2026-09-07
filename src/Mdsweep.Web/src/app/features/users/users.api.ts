@@ -83,8 +83,8 @@ export class UsersApi {
       ),
     );
   }
-  pendingInvitation(): Promise<PendingInvitation> {
-    return firstValueFrom(this.#api.http.get<PendingInvitation>(this.#api.url('invitation')));
+  pendingInvitation(): Promise<PendingInvitation[]> {
+    return firstValueFrom(this.#api.http.get<PendingInvitation[]>(this.#api.url('invitation')));
   }
   async accept(id: string): Promise<void> {
     await firstValueFrom(this.#api.http.get(this.#api.url('auth/antiforgery')));

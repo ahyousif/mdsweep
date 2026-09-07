@@ -1,4 +1,4 @@
-﻿using Mdsweep.Domain.Tenants;
+using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
 using Mdsweep.Infrastructure.Persistence;
 
@@ -24,15 +24,12 @@ public static class DevelopmentIdentitySeeder
         var user = await db.Users.SingleOrDefaultAsync(x => x.KeycloakUserId == DispatcherSubject, cancellationToken);
         if (user is null)
         {
-            user = UserAggregate.Create("Synthetic", "Administrator", DispatcherSubject, tenant.Id, "developer@mdsweep.com");
+            user = UserAggregate.Create("Synthetic", "Administrator", DispatcherSubject, "developer@mdsweep.com");
             db.Users.Add(user);
         }
 
         if (
-            !await db.TenantMemberships.AnyAsync(
-                x => x.UserId == user.Id,
-                cancellationToken
-            )
+            !await db.TenantMemberships.AnyAsync(x => x.UserId == user.Id && x.TenantId == tenant.Id, cancellationToken)
         )
         {
             db.TenantMemberships.Add(TenantMembership.Create(tenant.Id, user.Id, "Administrator"));

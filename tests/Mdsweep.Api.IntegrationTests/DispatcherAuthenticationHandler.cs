@@ -12,11 +12,15 @@ public sealed class DispatcherAuthenticationHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (Request.Headers["X-Test-Anonymous"] == "true") return Task.FromResult(AuthenticateResult.NoResult());
+        if (Request.Headers["X-Test-Anonymous"] == "true")
+            return Task.FromResult(AuthenticateResult.NoResult());
         var identity = new ClaimsIdentity(
             [
                 new Claim("sub", Request.Headers["X-Test-Subject"].FirstOrDefault() ?? "dispatcher-test"),
-                new Claim(CustomClaimTypes.ActiveTenantId, Request.Headers["X-Test-Tenant"].FirstOrDefault() ?? "mdsw-eep2-3456"),
+                new Claim(
+                    CustomClaimTypes.ActiveTenantId,
+                    Request.Headers["X-Test-Tenant"].FirstOrDefault() ?? "mdsw-eep2-3456"
+                ),
             ],
             Scheme.Name
         );

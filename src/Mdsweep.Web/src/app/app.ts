@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -26,6 +26,7 @@ export class App {
   private readonly auth = inject(AuthSessionService);
 
   readonly text = uiText;
+  readonly managingAccess = signal(false);
 
   readonly sessionQuery = injectQuery(() => ({
     queryKey: ['auth', 'session'],
@@ -47,11 +48,6 @@ export class App {
       !roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
     );
   });
-
-  async selectTenant(tenantId: string): Promise<void> {
-    await this.auth.selectTenant(tenantId);
-    await this.sessionQuery.refetch();
-  }
 
   sessionError(): string {
     const error = this.sessionQuery.error();

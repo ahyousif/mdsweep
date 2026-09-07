@@ -1,10 +1,10 @@
 using System.Net.Http.Json;
+using Mdsweep.Application.Users;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Mdsweep.Application.Users;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -31,30 +31,35 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
             {
                 services.RemoveAll<IIdentityAdministration>();
                 services.AddSingleton<TestKeycloakUserAdministration>();
-                services.AddSingleton<IIdentityAdministration>(sp => sp.GetRequiredService<TestKeycloakUserAdministration>());
+                services.AddSingleton<IIdentityAdministration>(sp =>
+                    sp.GetRequiredService<TestKeycloakUserAdministration>()
+                );
                 services
                     .AddAuthentication("Test")
                     .AddScheme<AuthenticationSchemeOptions, DispatcherAuthenticationHandler>("Test", _ => { });
-                services.PostConfigure<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme, options =>
-                {
-                    var configuration = new OpenIdConnectConfiguration
+                services.PostConfigure<OpenIdConnectOptions>(
+                    OpenIdConnectDefaults.AuthenticationScheme,
+                    options =>
                     {
-                        AuthorizationEndpoint = "https://keycloak.test/authorize",
-                        TokenEndpoint = "https://keycloak.test/token",
-                        EndSessionEndpoint = "https://keycloak.test/logout",
-                    };
-                    options.Configuration = configuration;
-                    options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
-                        configuration
-                    );
-                });
+                        var configuration = new OpenIdConnectConfiguration
+                        {
+                            AuthorizationEndpoint = "https://keycloak.test/authorize",
+                            TokenEndpoint = "https://keycloak.test/token",
+                            EndSessionEndpoint = "https://keycloak.test/logout",
+                        };
+                        options.Configuration = configuration;
+                        options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
+                            configuration
+                        );
+                    }
+                );
                 ConfigureTestServices(services);
             });
         });
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant", "synthetic-tenant");
-        var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test", tenant.Id, "dispatcher@example.test");
+        var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test", "dispatcher@example.test");
         db.Tenants.Add(tenant);
         db.Users.Add(user);
         db.TenantMemberships.Add(TenantMembership.Create(tenant.Id, user.Id, "Dispatcher"));
@@ -86,11 +91,26 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         public bool IsMember { get; set; } = true;
         public bool Verified { get; set; } = true;
         public string Email { get; set; } = "driver@example.test";
-        public Task InviteAsync(string organizationId, string email, string firstName, string lastName, CancellationToken ct)
-            => FailEmail ? Task.FromException(new IdentityAdministrationException("Email delivery is not configured. Configure it and retry.")) : Task.CompletedTask;
-        public Task<VerifiedIdentity?> GetVerifiedIdentityAsync(string subject, CancellationToken ct)
-            => Task.FromResult(Verified ? new VerifiedIdentity(subject, Email) : null);
-        public Task<bool> IsOrganizationMemberAsync(string subject, string organizationId, CancellationToken ct) => Task.FromResult(IsMember);
+
+        public Task InviteAsync(
+            string organizationId,
+            string email,
+            string firstName,
+            string lastName,
+            CancellationToken ct
+        ) =>
+            FailEmail
+                ? Task.FromException(
+                    new IdentityAdministrationException("Email delivery is not configured. Configure it and retry.")
+                )
+                : Task.CompletedTask;
+
+        public Task<VerifiedIdentity?> GetVerifiedIdentityAsync(string subject, CancellationToken ct) =>
+            Task.FromResult(Verified ? new VerifiedIdentity(subject, Email) : null);
+
+        public Task<bool> IsOrganizationMemberAsync(string subject, string organizationId, CancellationToken ct) =>
+            Task.FromResult(IsMember);
+
         public Task SendPasswordResetAsync(string subject, CancellationToken ct) => InviteAsync("", "", "", "", ct);
     }
 }

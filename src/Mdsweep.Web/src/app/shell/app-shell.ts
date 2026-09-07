@@ -1,4 +1,4 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { AuthSessionService, type TenantSession } from '@app/core/auth/auth-session.service';
@@ -26,6 +26,7 @@ export class AppShell {
   readonly theme = inject(ThemeService);
 
   readonly session = input.required<TenantSession>();
+  readonly manageAccess = output();
   readonly signOutPending = signal(false);
   readonly signOutError = signal('');
 

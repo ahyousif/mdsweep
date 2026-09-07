@@ -1,14 +1,39 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+type Membership = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  tenantId: string;
+  tenantName?: string;
+  role: string;
+};
+
+function bootstrap(memberships: Membership[], activeTenantId?: string) {
+  const availableTenants = [...new Set(memberships.map((x) => x.tenantId))].map((id) => ({
+    id,
+    name: memberships.find((x) => x.tenantId === id)!.tenantName ?? 'Synthetic Tenant',
+    roles: memberships.filter((x) => x.tenantId === id).map((x) => x.role),
+  }));
+  return {
+    userId: memberships[0]?.userId ?? null,
+    displayName: memberships.length ? `${memberships[0].firstName} ${memberships[0].lastName}` : '',
+    activeTenant:
+      availableTenants.find((x) => x.id === activeTenantId) ??
+      (activeTenantId === undefined && availableTenants.length === 1 ? availableTenants[0] : null),
+    availableTenants,
+  };
+}
+
 // Browser interactions use synthetic API responses. PostgreSQL HTTP tests verify
 // authorization, acceptance, persistence, and history through the real API.
 async function session(page: Page, role = 'Administrator') {
   await page.route('**/api/auth/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/me'))
+    if (path.endsWith('/session'))
       return route.fulfill({
-        json: [
+        json: bootstrap([
           {
             userId: 'admin',
             firstName: 'Synthetic',
@@ -16,7 +41,7 @@ async function session(page: Page, role = 'Administrator') {
             tenantId: 'mdsw-eep2-3456',
             role,
           },
-        ],
+        ]),
       });
     if (path.endsWith('/antiforgery')) return route.fulfill({ json: { token: 'synthetic-token' } });
     return route.fulfill({ status: 204 });
@@ -138,19 +163,21 @@ test('an authenticated invitee can accept without an existing Tenant Membership'
   let accepted = false;
   await page.route('**/api/auth/**', (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith('/me'))
+    if (path.endsWith('/session'))
       return route.fulfill({
-        json: accepted
-          ? [
-              {
-                userId: 'driver',
-                firstName: 'Synthetic',
-                lastName: 'Driver',
-                tenantId: 'mdsw-eep2-3456',
-                role: 'Driver',
-              },
-            ]
-          : [],
+        json: bootstrap(
+          accepted
+            ? [
+                {
+                  userId: 'driver',
+                  firstName: 'Synthetic',
+                  lastName: 'Driver',
+                  tenantId: 'mdsw-eep2-3456',
+                  role: 'Driver',
+                },
+              ]
+            : [],
+        ),
       });
     return route.fulfill({ json: { token: 'synthetic-token' } });
   });
@@ -160,19 +187,25 @@ test('an authenticated invitee can accept without an existing Tenant Membership'
       return route.fulfill({ status: 204 });
     }
     return route.fulfill({
-      json: {
-        id: 'invite',
-        tenantName: 'Synthetic Tenant',
-        roles: ['Driver'],
-        expiresAt: '2030-09-12T12:00:00Z',
-      },
+      json: accepted
+        ? []
+        : [
+            {
+              id: 'invite',
+              tenantName: 'Synthetic Tenant',
+              roles: ['Driver'],
+              expiresAt: '2030-09-12T12:00:00Z',
+            },
+          ],
     });
   });
   await page.goto('/');
   await expect(
     page.getByText('You have been invited to Synthetic Tenant with roles: Driver.'),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Accept invitation to Synthetic Tenant', exact: true })
+    .click();
   await expect(
     page.getByRole('heading', { name: 'My Trips is not available in this build yet.' }),
   ).toBeVisible();
@@ -266,7 +299,9 @@ test('invitation acceptance shows unavailable and failed acceptance feedback', a
 }, testInfo) => {
   await page.route('**/api/auth/**', (route) =>
     route.fulfill({
-      json: route.request().url().endsWith('/me') ? [] : { token: 'synthetic-token' },
+      json: route.request().url().endsWith('/session')
+        ? bootstrap([])
+        : { token: 'synthetic-token' },
     }),
   );
   let available = false;
@@ -276,24 +311,231 @@ test('invitation acceptance shows unavailable and failed acceptance feedback', a
         ? { status: 400, json: { detail: 'Open the invitation email and finish signup first.' } }
         : available
           ? {
-              json: {
-                id: 'invite',
-                tenantName: 'Synthetic Tenant',
-                roles: ['Driver'],
-                expiresAt: '2030-09-12T12:00:00Z',
-              },
+              json: [
+                {
+                  id: 'invite',
+                  tenantName: 'Synthetic Tenant',
+                  roles: ['Driver'],
+                  expiresAt: '2030-09-12T12:00:00Z',
+                },
+              ],
             }
-          : { status: 404, json: {} },
+          : {
+              status: 503,
+              json: { detail: 'Invitations are temporarily unavailable. Try again.' },
+            },
     ),
   );
   await page.goto('/');
-  await expect(page.getByRole('alert')).toContainText('There is no active invitation');
+  await expect(page.getByRole('alert')).toContainText(
+    'Invitations are temporarily unavailable. Try again.',
+  );
   available = true;
   await page.getByRole('button', { name: 'Check again', exact: true }).click();
-  await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Accept invitation to Synthetic Tenant', exact: true })
+    .click();
   await expect(page.getByRole('alert')).toHaveText(
     'Open the invitation email and finish signup first.',
   );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('invitation-feedback.png'), fullPage: true });
+});
+
+test('multiple Tenant access can be selected and switched without mixing Users', async ({
+  page,
+}) => {
+  let activeTenant = '';
+  const tenants = [
+    { tenantId: 'mdsw-eep2-3456', tenantName: 'Alpha Synthetic Tenant', role: 'Administrator' },
+    { tenantId: 'abcd-efgh-jkmn', tenantName: 'Beta Synthetic Tenant', role: 'Dispatcher' },
+  ];
+  await page.route('**/api/auth/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/session'))
+      return route.fulfill({
+        json: bootstrap(
+          tenants.map((tenant) => ({
+            userId: 'same-user',
+            firstName: 'Synthetic',
+            lastName: 'Manager',
+            ...tenant,
+          })),
+          activeTenant,
+        ),
+      });
+    if (path.endsWith('/tenant-context')) activeTenant = route.request().postDataJSON().tenantId;
+    return route.fulfill({ json: { token: 'synthetic-token' } });
+  });
+  await page.route('**/api/invitation', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/users', (route) =>
+    route.fulfill({
+      json: {
+        users: [
+          {
+            id: 'tenant-user',
+            firstName: activeTenant === tenants[0].tenantId ? 'Alpha' : 'Beta',
+            lastName: 'Driver',
+            email: 'synthetic@example.test',
+            roles: ['Driver'],
+            isActive: true,
+            version: 0,
+          },
+        ],
+        invitations: [],
+        isAdministrator: activeTenant === tenants[0].tenantId,
+      },
+    }),
+  );
+  await page.goto('/users');
+  await expect(page.getByRole('heading', { name: 'Tenants and Invitations' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Alpha Synthetic Tenant' }).click();
+  await expect(page.getByRole('button', { name: 'Open user menu' })).toBeVisible();
+  await page.goto('/users');
+  await expect(page.getByRole('cell', { name: 'Alpha Driver', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Invite User', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('combobox')).toHaveCount(0);
+  await expect(dialog.getByText('Tenant', { exact: true })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'Open user menu' }).click();
+  await page.getByRole('menuitem', { name: 'Tenants and Invitations' }).click();
+  await page.getByRole('button', { name: 'Open Beta Synthetic Tenant' }).click();
+  await expect(page.getByRole('button', { name: 'Open user menu' })).toBeVisible();
+  await page.goto('/users');
+  await expect(page.getByRole('cell', { name: 'Beta Driver', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Alpha Driver', exact: true })).toHaveCount(0);
+  expect(activeTenant).toBe(tenants[1].tenantId);
+  await page.getByRole('button', { name: 'Invite User', exact: true }).click();
+  await expect(page.getByRole('checkbox')).toHaveCount(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('existing Users can see and accept another Tenant invitation from their menu', async ({
+  page,
+}, testInfo) => {
+  let accepted = false;
+  await page.route('**/api/auth/**', (route) => {
+    if (route.request().url().endsWith('/session'))
+      return route.fulfill({
+        json: bootstrap(
+          [
+            {
+              userId: 'same-user',
+              firstName: 'Synthetic',
+              lastName: 'Manager',
+              tenantId: 'mdsw-eep2-3456',
+              tenantName: 'Alpha Synthetic Tenant',
+              role: 'Administrator',
+            },
+            ...(accepted
+              ? [
+                  {
+                    userId: 'same-user',
+                    firstName: 'Synthetic',
+                    lastName: 'Manager',
+                    tenantId: 'abcd-efgh-jkmn',
+                    tenantName: 'Beta Synthetic Tenant',
+                    role: 'Driver',
+                  },
+                ]
+              : []),
+          ],
+          'mdsw-eep2-3456',
+        ),
+      });
+    return route.fulfill({ json: { token: 'synthetic-token' } });
+  });
+  await page.route('**/api/users', (route) =>
+    route.fulfill({ json: { users: [], invitations: [], isAdministrator: true } }),
+  );
+  await page.route('**/api/invitation**', (route) => {
+    if (route.request().method() === 'POST') {
+      accepted = true;
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill({
+      json: accepted
+        ? []
+        : [
+            {
+              id: 'second-invite',
+              tenantName: 'Beta Synthetic Tenant',
+              roles: ['Driver'],
+              expiresAt: '2030-09-12T12:00:00Z',
+            },
+          ],
+    });
+  });
+  await page.goto('/users');
+  await page.getByRole('button', { name: 'Open user menu' }).click();
+  await page.getByRole('menuitem', { name: 'Tenants and Invitations' }).click();
+  await expect(page.getByRole('button', { name: 'Open Alpha Synthetic Tenant' })).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath('multiple-tenant-access.png'),
+    fullPage: true,
+  });
+  await page.getByRole('button', { name: 'Accept invitation to Beta Synthetic Tenant' }).click();
+  await expect(page.getByRole('button', { name: 'Open Beta Synthetic Tenant' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open Alpha Synthetic Tenant' })).toBeVisible();
+  await expect(page.getByText('No pending invitations.', { exact: false })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test('switching Tenant reloads another open tab sharing the BFF cookie', async ({ context }) => {
+  const tenants = [
+    { tenantId: 'mdsw-eep2-3456', tenantName: 'Alpha Tenant' },
+    { tenantId: 'abcd-efgh-jkmn', tenantName: 'Beta Tenant' },
+  ];
+  let activeTenant = '';
+  await context.route('**/api/auth/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/session'))
+      return route.fulfill({
+        json: bootstrap(
+          tenants.map((tenant) => ({
+            userId: 'same-user',
+            firstName: 'Synthetic',
+            lastName: 'Manager',
+            role: 'Administrator',
+            ...tenant,
+          })),
+          activeTenant,
+        ),
+      });
+    if (path.endsWith('/tenant-context')) activeTenant = route.request().postDataJSON().tenantId;
+    return route.fulfill({ json: { token: 'synthetic-token' } });
+  });
+  await context.route('**/api/invitation', (route) => route.fulfill({ json: [] }));
+  await context.route('**/api/users', (route) =>
+    route.fulfill({
+      json: {
+        users: [
+          {
+            id: 'tenant-user',
+            firstName: activeTenant === tenants[0].tenantId ? 'Alpha' : 'Beta',
+            lastName: 'User',
+            email: 'synthetic@example.test',
+            roles: ['Driver'],
+            isActive: true,
+            version: 0,
+          },
+        ],
+        invitations: [],
+        isAdministrator: true,
+      },
+    }),
+  );
+  const first = await context.newPage();
+  await first.goto('/users');
+  await first.getByRole('button', { name: 'Open Alpha Tenant' }).click();
+  await expect(first.getByRole('button', { name: 'Open user menu' })).toBeVisible();
+  const second = await context.newPage();
+  await second.goto('/users');
+  await expect(second.getByRole('cell', { name: 'Alpha User', exact: true })).toBeVisible();
+  await first.getByRole('button', { name: 'Open user menu' }).click();
+  await first.getByRole('menuitem', { name: 'Tenants and Invitations' }).click();
+  await first.getByRole('button', { name: 'Open Beta Tenant' }).click();
+  await expect(second.getByRole('cell', { name: 'Beta User', exact: true })).toBeVisible();
+  await expect(second.getByRole('cell', { name: 'Alpha User', exact: true })).toHaveCount(0);
 });

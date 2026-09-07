@@ -1,4 +1,4 @@
-﻿using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Application.Common.Abstractions;
 
 namespace Mdsweep.Application.Users;
 
@@ -19,23 +19,66 @@ public interface IIdentityAdministration
 }
 
 public sealed record VerifiedIdentity(string Subject, string Email);
+
 public sealed class IdentityAdministrationException(string message) : Exception(message);
 
-public sealed record UserModel(Guid Id, string FirstName, string LastName, string? Email, string[] Roles,
-    bool IsActive, int Version);
-public sealed record InvitationModel(Guid Id, string FirstName, string LastName, string Email, string[] Roles,
-    string Status, Instant ExpiresAt, Instant? SentAt, string? DeliveryError, int Version);
-public sealed record HistoryModel(string ActorSubject, string ActorName, string Action, Instant OccurredAt, string? Details);
+public sealed record UserModel(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string? Email,
+    string[] Roles,
+    bool IsActive,
+    int Version
+);
+
+public sealed record InvitationModel(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string Email,
+    string[] Roles,
+    string Status,
+    Instant ExpiresAt,
+    Instant? SentAt,
+    string? DeliveryError,
+    int Version
+);
+
+public sealed record HistoryModel(
+    string ActorSubject,
+    string ActorName,
+    string Action,
+    Instant OccurredAt,
+    string? Details
+);
+
 public sealed record UserManagementModel(UserModel[] Users, InvitationModel[] Invitations, bool IsAdministrator);
+
 public sealed record PendingInvitationModel(Guid Id, string TenantName, string[] Roles, Instant ExpiresAt);
 
 public sealed record ListUsersQuery : IQuery<UserManagementModel>;
+
 public sealed record GetAccessHistoryQuery(Guid Id, bool Invitation) : IQuery<HistoryModel[]>;
-public sealed record InviteUserCommand(string Email, string FirstName, string LastName, string[] Roles) : ICommand<Guid>;
+
+public sealed record InviteUserCommand(string Email, string FirstName, string LastName, string[] Roles)
+    : ICommand<Guid>;
+
 public sealed record SendInvitationCommand(Guid Id) : ICommand<InvitationModel>;
+
 public sealed record RevokeInvitationCommand(Guid Id) : ICommand<bool>;
-public sealed record UpdateUserCommand(Guid Id, string FirstName, string LastName, string[] Roles,
-    bool IsActive, int Version) : ICommand<bool>;
+
+public sealed record UpdateUserCommand(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string[] Roles,
+    bool IsActive,
+    int Version
+) : ICommand<bool>;
+
 public sealed record ResetUserPasswordCommand(Guid Id) : ICommand<bool>;
-public sealed record GetPendingInvitationQuery : IQuery<PendingInvitationModel>;
+
+public sealed record GetPendingInvitationsQuery : IQuery<PendingInvitationModel[]>;
+
 public sealed record AcceptInvitationCommand(Guid Id) : ICommand<bool>;

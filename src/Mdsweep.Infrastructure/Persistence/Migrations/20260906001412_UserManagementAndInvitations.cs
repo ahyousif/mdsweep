@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NodaTime;
 
@@ -12,16 +12,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_tenant_memberships_users_user_id",
-                table: "tenant_memberships");
-
             migrationBuilder.DropIndex(
                 name: "IX_tenant_memberships_tenant_id_user_id_role",
-                table: "tenant_memberships");
-
-            migrationBuilder.DropIndex(
-                name: "IX_tenant_memberships_user_id",
                 table: "tenant_memberships");
 
             migrationBuilder.AddColumn<string>(
@@ -31,28 +23,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 maxLength: 254,
                 nullable: true);
 
-            migrationBuilder.AddColumn<bool>(
-                name: "is_active",
-                table: "users",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<string>(
-                name: "tenant_id",
-                table: "users",
-                type: "character varying(14)",
-                maxLength: 14,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<int>(
-                name: "version",
-                table: "users",
-                type: "integer",
-                nullable: false,
-                defaultValue: 0);
-
             migrationBuilder.AddColumn<string>(
                 name: "normalized_email",
                 table: "users",
@@ -61,25 +31,19 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 computedColumnSql: "lower(email)",
                 stored: true);
 
-            // Upgrade the actual InitialSchema membership rows without choosing a role or
-            // Tenant for ambiguous accounts. Existing synthetic Users retain access.
-            migrationBuilder.Sql("""
-                DO $$ BEGIN
-                    IF EXISTS (
-                        SELECT u.id FROM users u LEFT JOIN tenant_memberships m ON m.user_id = u.id
-                        GROUP BY u.id HAVING count(m.id) <> 1
-                    ) THEN
-                        RAISE EXCEPTION 'Each existing User must have exactly one Tenant Membership before upgrading User management.';
-                    END IF;
-                END $$;
-                UPDATE users u SET tenant_id = m.tenant_id, is_active = true
-                FROM tenant_memberships m WHERE m.user_id = u.id;
-                """);
+            migrationBuilder.AddColumn<bool>(
+                name: "is_active",
+                table: "tenant_memberships",
+                type: "boolean",
+                nullable: false,
+                defaultValue: true);
 
-            migrationBuilder.AddUniqueConstraint(
-                name: "AK_users_id_tenant_id",
-                table: "users",
-                columns: new[] { "id", "tenant_id" });
+            migrationBuilder.AddColumn<int>(
+                name: "version",
+                table: "tenant_memberships",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.CreateTable(
                 name: "invitations",
@@ -119,15 +83,15 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     Action = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     OccurredAt = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
                     Details = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    user_id = table.Column<Guid>(type: "uuid", nullable: false)
+                    membership_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_user_access_history", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_user_access_history_users_user_id",
-                        column: x => x.user_id,
-                        principalTable: "users",
+                        name: "FK_user_access_history_tenant_memberships_membership_id",
+                        column: x => x.membership_id,
+                        principalTable: "tenant_memberships",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -161,25 +125,10 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_users_tenant_id",
-                table: "users",
-                column: "tenant_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_tenant_id",
+                name: "IX_tenant_memberships_tenant_id_user_id",
                 table: "tenant_memberships",
-                column: "tenant_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_user_id",
-                table: "tenant_memberships",
-                column: "user_id",
+                columns: new[] { "tenant_id", "user_id" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_user_id_tenant_id",
-                table: "tenant_memberships",
-                columns: new[] { "user_id", "tenant_id" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_invitation_history_invitation_id",
@@ -187,9 +136,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 column: "invitation_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_invitations_NormalizedEmail",
+                name: "IX_invitations_TenantId_NormalizedEmail",
                 table: "invitations",
-                column: "NormalizedEmail",
+                columns: new[] { "TenantId", "NormalizedEmail" },
                 unique: true,
                 filter: "\"Status\" = 'Pending'");
 
@@ -199,109 +148,28 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 column: "TenantId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_user_access_history_user_id",
+                name: "IX_user_access_history_membership_id",
                 table: "user_access_history",
-                column: "user_id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tenant_memberships_users_user_id_tenant_id",
-                table: "tenant_memberships",
-                columns: new[] { "user_id", "tenant_id" },
-                principalTable: "users",
-                principalColumns: new[] { "id", "tenant_id" },
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_users_tenants_tenant_id",
-                table: "users",
-                column: "tenant_id",
-                principalTable: "tenants",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
+                column: "membership_id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_tenant_memberships_users_user_id_tenant_id",
-                table: "tenant_memberships");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_users_tenants_tenant_id",
-                table: "users");
-
-            migrationBuilder.DropTable(
-                name: "invitation_history");
-
-            migrationBuilder.DropTable(
-                name: "user_access_history");
-
-            migrationBuilder.DropTable(
-                name: "invitations");
-
-            migrationBuilder.DropUniqueConstraint(
-                name: "AK_users_id_tenant_id",
-                table: "users");
-
-            migrationBuilder.DropIndex(
-                name: "IX_users_normalized_email",
-                table: "users");
-
-            migrationBuilder.DropIndex(
-                name: "IX_users_tenant_id",
-                table: "users");
-
-            migrationBuilder.DropIndex(
-                name: "IX_tenant_memberships_tenant_id",
-                table: "tenant_memberships");
-
-            migrationBuilder.DropIndex(
-                name: "IX_tenant_memberships_user_id",
-                table: "tenant_memberships");
-
-            migrationBuilder.DropIndex(
-                name: "IX_tenant_memberships_user_id_tenant_id",
-                table: "tenant_memberships");
-
-            migrationBuilder.DropColumn(
-                name: "normalized_email",
-                table: "users");
-
-            migrationBuilder.DropColumn(
-                name: "email",
-                table: "users");
-
-            migrationBuilder.DropColumn(
-                name: "is_active",
-                table: "users");
-
-            migrationBuilder.DropColumn(
-                name: "tenant_id",
-                table: "users");
-
-            migrationBuilder.DropColumn(
-                name: "version",
-                table: "users");
-
+            migrationBuilder.DropTable(name: "invitation_history");
+            migrationBuilder.DropTable(name: "user_access_history");
+            migrationBuilder.DropTable(name: "invitations");
+            migrationBuilder.DropIndex(name: "IX_users_normalized_email", table: "users");
+            migrationBuilder.DropIndex(name: "IX_tenant_memberships_tenant_id_user_id", table: "tenant_memberships");
+            migrationBuilder.DropColumn(name: "normalized_email", table: "users");
+            migrationBuilder.DropColumn(name: "email", table: "users");
+            migrationBuilder.DropColumn(name: "is_active", table: "tenant_memberships");
+            migrationBuilder.DropColumn(name: "version", table: "tenant_memberships");
             migrationBuilder.CreateIndex(
                 name: "IX_tenant_memberships_tenant_id_user_id_role",
                 table: "tenant_memberships",
                 columns: new[] { "tenant_id", "user_id", "role" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_user_id",
-                table: "tenant_memberships",
-                column: "user_id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_tenant_memberships_users_user_id",
-                table: "tenant_memberships",
-                column: "user_id",
-                principalTable: "users",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
         }
     }
 }
