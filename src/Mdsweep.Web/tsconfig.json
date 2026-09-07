@@ -96,6 +96,9 @@
       ],
       "@spartan-ng/helm/typography": [
         "./src/app/ui/typography/src/index.ts"
+      ],
+      "@spartan-ng/helm/tabs": [
+        "./src/app/ui/tabs/src/index.ts"
       ]
     }
   },

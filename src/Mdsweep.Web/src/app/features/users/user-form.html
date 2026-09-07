@@ -47,37 +47,40 @@
         }
       </div>
     }
-    <fieldset
-      hlmFieldSet
-      [attr.aria-describedby]="
-        prefix() +
-        '-roles-help' +
-        (form.controls.roles.invalid && form.controls.roles.touched
-          ? ' ' + prefix() + '-roles-error'
-          : '')
-      "
-    >
-      <legend hlmFieldLegend>Roles</legend>
-      <p hlmFieldDescription [id]="prefix() + '-roles-help'">Choose one or two roles.</p>
-      <div hlmFieldGroup data-slot="checkbox-group">
-        @for (role of availableRoles(); track role) {
-          <div hlmField orientation="horizontal">
-            <hlm-checkbox
-              [inputId]="prefix() + '-role-' + role"
-              [checked]="form.controls.roles.value.includes(role)"
-              [disabled]="
-                form.controls.roles.value.length >= 2 && !form.controls.roles.value.includes(role)
-              "
-              (checkedChange)="setRole(role, $event)"
-            />
-            <label hlmFieldLabel [for]="prefix() + '-role-' + role">{{ role }}</label>
-          </div>
-        }
-      </div>
+    <div class="flex flex-col gap-3">
+      <fieldset
+        hlmFieldSet
+        [attr.aria-describedby]="
+          prefix() +
+          '-roles-help' +
+          (form.controls.roles.invalid && form.controls.roles.touched
+            ? ' ' + prefix() + '-roles-error'
+            : '')
+        "
+      >
+        <legend hlmFieldLegend>Roles</legend>
+        <p hlmFieldDescription [id]="prefix() + '-roles-help'">Choose one or two roles.</p>
+        <div hlmFieldGroup data-slot="checkbox-group">
+          @for (role of availableRoles(); track role) {
+            <div hlmField orientation="horizontal">
+              <hlm-checkbox
+                [inputId]="prefix() + '-role-' + role"
+                [checked]="form.controls.roles.value.includes(role)"
+                [disabled]="
+                  form.controls.roles.value.length >= 2 && !form.controls.roles.value.includes(role)
+                "
+                (checkedChange)="setRole(role, $event)"
+              />
+              <label hlmFieldLabel [for]="prefix() + '-role-' + role">{{ role }}</label>
+            </div>
+          }
+        </div>
+      </fieldset>
+      <!-- Keep the error outside the fieldset to avoid Chrome collapsing its container-query controls. -->
       @if (form.controls.roles.invalid && form.controls.roles.touched) {
         <hlm-field-error [id]="prefix() + '-roles-error'">Choose one or two roles.</hlm-field-error>
       }
-    </fieldset>
+    </div>
     @if (!inviting()) {
       <div hlmField orientation="horizontal">
         <hlm-checkbox [inputId]="prefix() + '-active'" formControlName="isActive" />

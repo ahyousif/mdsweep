@@ -1,5 +1,7 @@
 # Users and Invitations
 
+The Users page has separate **Users** and **Invitations** tabs, with Users selected by default. Search filters both lists. **Invite User** opens the invitation dialog from either tab. After an invitation is saved, the Invitations tab opens and search clears so its delivery status and Resend, Revoke, and History actions are visible.
+
 Open **Users** in the application sidebar. An Administrator can invite and manage all three roles; a Dispatcher sees and manages Users whose only role is Driver. A User can access multiple Tenants through separate memberships, each with one or two distinct roles chosen from Administrator, Dispatcher, and Driver. Editing supports names, roles, and active access. Password resets send a Keycloak email; the application never accepts or displays passwords. Names edited here are shared MDSweep User profile names; credentials and the external identity remain owned by Keycloak. Roles, active access, version checks, and access history are specific to the selected Tenant.
 
 Choose **Invite User** to open the invitation dialog for the current Tenant. There is no Tenant selection in this form. The dialog reuses the User form with Spartan fields, checkboxes, descriptions, and validation messages, keeps entered details visible when a request fails, and closes after the invitation is saved. Cancel, the close button, or Escape dismisses it when no request is in progress.

@@ -32,7 +32,7 @@ export class AppShell {
 
   readonly navigation = [
     { label: 'Trips', route: '/trips', icon: 'lucideRoute' },
-    { label: 'Users', route: '/users', icon: 'lucideUsers' },
+    { label: 'Users & Invitations', route: '/users', icon: 'lucideUsers' },
   ];
 
   setTheme(theme: ThemePreference): void {

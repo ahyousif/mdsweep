@@ -121,6 +121,11 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Invitations', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByRole('tabpanel', { name: 'Users', exact: true })).toBeHidden();
   await expect(page.getByRole('status')).toContainText('Email delivery failed');
   expect(invitation).toMatchObject({ roles: ['Driver', 'Dispatcher'] });
   await expect(
@@ -130,6 +135,7 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   await expect(page.getByRole('status')).toHaveText('Invitation email sent.');
   await page.getByRole('button', { name: 'Revoke invitation for Jordan Example' }).click();
   await expect(page.getByRole('cell', { name: 'Revoked', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Users', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Taylor Example', exact: true }).click();
   await page.getByLabel('First name', { exact: true }).fill('Taylor Updated');
   await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
@@ -146,16 +152,40 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   await page.screenshot({ path: testInfo.outputPath('users.png'), fullPage: true });
 });
 
-test('Dispatcher invitations offer only the Driver role', async ({ page }) => {
-  await session(page, 'Dispatcher');
-  await page.route('**/api/users', (route) =>
-    route.fulfill({ json: { users: [], invitations: [], isAdministrator: false } }),
-  );
-  await page.goto('/users');
-  await page.getByRole('button', { name: 'Invite User', exact: true }).click();
-  await expect(page.getByRole('checkbox', { name: 'Driver', exact: true })).toBeChecked();
-  await expect(page.getByRole('checkbox')).toHaveCount(1);
-});
+for (const role of ['Dispatcher', 'Administrator']) {
+  test(`${role} can clear and reselect invitation roles`, async ({ page }) => {
+    await session(page, role);
+    await page.route('**/api/users', (route) =>
+      route.fulfill({
+        json: { users: [], invitations: [], isAdministrator: role === 'Administrator' },
+      }),
+    );
+    await page.goto('/users');
+    await page.getByRole('button', { name: 'Invite User', exact: true }).click();
+    const driver = page.getByRole('checkbox', { name: 'Driver', exact: true });
+    const roles = page.getByRole('checkbox');
+    const error = page.getByRole('alert').filter({ hasText: 'Choose one or two roles.' });
+    await expect(driver).toBeChecked();
+    await expect(roles).toHaveCount(role === 'Administrator' ? 3 : 1);
+    await driver.click();
+    await expect(error).toBeVisible();
+    await expect(roles).toHaveCount(role === 'Administrator' ? 3 : 1);
+    for (const checkbox of await roles.all()) {
+      await expect(checkbox).toBeVisible();
+      await expect(checkbox).toBeEnabled();
+      await expect(checkbox).not.toBeChecked();
+    }
+    await driver.click();
+    await expect(driver).toBeChecked();
+    await expect(error).toHaveCount(0);
+    if (role === 'Administrator') {
+      await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
+      await expect(
+        page.getByRole('checkbox', { name: 'Administrator', exact: true }),
+      ).toBeDisabled();
+    }
+  });
+}
 
 test('an authenticated invitee can accept without an existing Tenant Membership', async ({
   page,
@@ -287,7 +317,16 @@ test('Users list errors recover to accessible empty results', async ({ page }) =
   failing = false;
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
   await page.getByRole('searchbox', { name: 'Search Users and Invitations' }).fill('Nobody');
+  await expect(page.getByRole('tab', { name: 'Users', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await expect(page.getByRole('heading', { name: 'No Users match.', exact: true })).toBeVisible();
+  await expect(page.getByRole('tabpanel', { name: 'Invitations', exact: true })).toBeHidden();
+  await page.getByRole('tab', { name: 'Users', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: 'Invitations', exact: true })).toBeFocused();
+  await expect(page.getByRole('tabpanel', { name: 'Users', exact: true })).toBeHidden();
   await expect(
     page.getByRole('heading', { name: 'No invitations match.', exact: true }),
   ).toBeVisible();

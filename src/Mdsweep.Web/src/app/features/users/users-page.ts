@@ -11,6 +11,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { HlmInput } from '@spartan-ng/helm/input';
+import { HlmTabsImports } from '@spartan-ng/helm/tabs';
 import { HlmTableImports } from '@spartan-ng/helm/table';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
@@ -42,6 +43,7 @@ type Action =
     ...HlmCardImports,
     ...HlmDialogImports,
     ...HlmTableImports,
+    HlmTabsImports,
   ],
   templateUrl: './users-page.html',
 })
@@ -50,11 +52,16 @@ export default class UsersPage {
   readonly #queries = inject(QueryClient);
   readonly listing = injectQuery(() => usersQueryOptions(this.#api));
   readonly search = signal('');
+  readonly activeTab = signal('users');
   readonly inviting = signal(false);
   readonly editing = signal<ManagedUser | null>(null);
   readonly message = signal('');
   readonly error = signal('');
   readonly selectedHistory = signal<{ id: string; invitation: boolean; name: string } | null>(null);
+  readonly visibleHistory = computed(() => {
+    const selected = this.selectedHistory();
+    return selected?.invitation === (this.activeTab() === 'invitations') ? selected : null;
+  });
   readonly editingValue = computed(() => {
     const user = this.editing();
     return user ? { ...user, email: user.email ?? '' } : null;
@@ -77,6 +84,10 @@ export default class UsersPage {
   readonly mutation = injectMutation(() => ({
     mutationFn: (action: Action) => this.perform(action),
     onSuccess: async (invitation: Invitation | void, action: Action) => {
+      if (action.kind === 'invite') {
+        this.activeTab.set('invitations');
+        this.search.set('');
+      }
       this.inviting.set(false);
       this.editing.set(null);
       this.message.set(
