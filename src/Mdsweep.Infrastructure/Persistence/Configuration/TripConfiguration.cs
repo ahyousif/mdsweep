@@ -1,4 +1,3 @@
-using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Infrastructure.Persistence.Configuration;
@@ -18,15 +17,10 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
             .HasMaxLength(100)
             .IsRequired();
         builder.HasIndex(trip => new { trip.TenantId, trip.BrokerTripNumber }).IsUnique();
-        builder
-            .HasOne(trip => trip.Passenger)
-            .WithMany()
-            .HasForeignKey(trip => trip.PassengerId)
-            .OnDelete(DeleteBehavior.Restrict);
         builder.Property(trip => trip.ScheduledPickupTime).HasColumnName("scheduled_pickup_time").HasColumnType("time");
-        builder.Property(trip => trip.EstimatedTravelMinutes).HasColumnName("estimated_travel_minutes");
+        builder.Property(trip => trip.CalculatedPickupTime).HasColumnName("estimated_travel_minutes");
         builder
-            .Property(trip => trip.SchedulingInputFingerprint)
+            .Property(trip => trip.ScheduleInputFingerprint)
             .HasColumnName("scheduling_input_fingerprint")
             .HasMaxLength(64);
         builder.OwnsOne(
@@ -50,18 +44,11 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
                 facts.Property(value => value.BrokerStatus).HasColumnName("broker_status").HasMaxLength(100);
                 facts.Property(value => value.IsWillCall).HasColumnName("is_will_call");
                 facts
-                    .Property(value => value.MobilityRequirement)
-                    .HasColumnName("mobility_requirement")
-                    .HasConversion<string>()
-                    .HasMaxLength(60)
-                    .IsRequired();
-                facts
-                    .Property(value => value.RawImportedPassengerType)
+                    .Property(value => value.ImportedPassengerType)
                     .HasColumnName("raw_imported_passenger_type")
                     .HasMaxLength(200);
                 facts.Property(value => value.TripCost).HasColumnName("trip_cost").HasPrecision(10, 2);
                 facts.Property(value => value.TripMileage).HasColumnName("trip_mileage").HasPrecision(10, 2);
-                facts.Ignore(value => value.RequiredVehicleCapability);
             }
         );
     }

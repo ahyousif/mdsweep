@@ -1,5 +1,4 @@
 using Mdsweep.Domain.Common.Abstractions;
-using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
 
 namespace Mdsweep.Domain.Trips;
@@ -19,12 +18,13 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
 
     public string? TenantId { get; set; }
     public Guid PassengerId { get; private set; }
-    public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
-    public LocalTime? ScheduledPickupTime { get; private set; }
-    public int? EstimatedTravelMinutes { get; private set; }
-    public string? SchedulingInputFingerprint { get; private set; }
+    public string? BrokerDataFingerPrint { get; set; } = null!;
+    public LocalTime? CalculatedPickupTime { get; private set; }
+    public LocalTime? ManualPickupTime { get; private set; }
+    public string? ScheduleInputFingerprint { get; private set; }
+    public LocalTime? ScheduledPickupTime => CalculatedPickupTime ?? ManualPickupTime;
 
     public static TripAggregate Create(Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
     {
@@ -32,41 +32,15 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         Guard.Against.NullOrWhiteSpace(brokerTripNumber, nameof(brokerTripNumber));
         Guard.Against.Null(brokerData, nameof(brokerData));
 
-        var trip = new TripAggregate(Guid.CreateVersion7(), passengerId, brokerTripNumber.ToUpperInvariant(), brokerData);
+        var trip = new TripAggregate(
+            Guid.CreateVersion7(),
+            passengerId,
+            brokerTripNumber.ToUpperInvariant(),
+            brokerData
+        );
 
         trip.AddDomainEvent(new TripCreatedDomainEvent(trip.Id, trip.PassengerId, trip.BrokerTripNumber));
 
         return trip;
-    }
-
-    public void ReconcileBrokerData(BrokerTripData brokerData)
-    {
-        Guard.Against.Null(brokerData, nameof(brokerData));
-
-        if (BrokerData == brokerData)
-        {
-            return;
-        }
-
-        BrokerData = brokerData;
-
-        AddDomainEvent(new TripBrokerDataReconciledDomainEvent(Id, BrokerTripNumber));
-    }
-
-    public void SetScheduledPickupTime(LocalTime scheduledPickupTime)
-    {
-        ScheduledPickupTime = scheduledPickupTime;
-    }
-
-    public void ApplyScheduledPickupTime(
-        LocalTime? scheduledPickupTime,
-        int? estimatedTravelMinutes,
-        string schedulingInputFingerprint
-    )
-    {
-        ScheduledPickupTime = scheduledPickupTime;
-        EstimatedTravelMinutes = estimatedTravelMinutes;
-        SchedulingInputFingerprint = schedulingInputFingerprint;
-
     }
 }

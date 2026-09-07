@@ -17,6 +17,7 @@ global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
 global using NodaTime;
+global using NodaTime.Text;
 global using Wolverine;
 global using Wolverine.EntityFrameworkCore;
 global using Wolverine.EntityFrameworkCore.Internals;

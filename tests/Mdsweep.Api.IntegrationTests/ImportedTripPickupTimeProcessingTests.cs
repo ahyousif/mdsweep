@@ -26,7 +26,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
 
         var trip = await WaitForPickupTime();
         Assert.Equal(new LocalTime(9, 5), trip.ScheduledPickupTime);
-        Assert.Equal(37, trip.EstimatedTravelMinutes);
+        Assert.Equal(37, trip.CalculatedPickupTime);
         Assert.Equal(1, routeEstimator.CallCount);
         Assert.Equal("mdsw-eep2-3456", trip.TenantId);
     }
@@ -61,7 +61,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
 
         var trip = await WaitForPickupTimeCleared();
         Assert.Null(trip.ScheduledPickupTime);
-        Assert.Null(trip.EstimatedTravelMinutes);
+        Assert.Null(trip.CalculatedPickupTime);
         Assert.Equal(1, routeEstimator.CallCount);
     }
 
