@@ -13,8 +13,15 @@ public sealed class SetScheduledPickupTimeHandler(IRepository repository)
         {
             return Result.NotFound();
         }
-
-        trip.SetScheduledPickupTime(command.ScheduledPickupTime);
+        
+        if(command.PickupTime.HasValue)
+        {
+            trip.OverridePickupTime(command.PickupTime.Value);
+        }
+        else
+        {
+            trip.RemovePickupOverride();
+        }
 
         await repository.UpdateAsync(trip, ct);
 

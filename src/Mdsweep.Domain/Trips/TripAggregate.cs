@@ -43,12 +43,6 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         return trip;
     }
 
-    public void UpdateCalculatedSchedule(LocalTime? pickupTime, string? scheduleInputFingerprint)
-    {
-        CalculatedPickupTime = pickupTime;
-        ScheduleInputFingerprint = scheduleInputFingerprint;
-    }
-
     public void OverridePickupTime(LocalTime pickupTime)
     {
         ManualPickupTime = pickupTime;
@@ -64,5 +58,11 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         Guard.Against.Null(brokerData);
 
         BrokerData = brokerData;
+    }
+
+    public void UpdateCalculatedSchedule(LocalTime? pickupTime, string? scheduleInputFingerprint)
+    {
+        CalculatedPickupTime = pickupTime;
+        ScheduleInputFingerprint = scheduleInputFingerprint;
     }
 }
