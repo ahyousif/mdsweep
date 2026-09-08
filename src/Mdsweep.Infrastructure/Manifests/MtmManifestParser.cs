@@ -182,7 +182,7 @@ internal static class MtmManifestParser
             }
         }
 
-        return new MtmManifestReadResult([], problems);
+        return new MtmManifestReadResult(rows, problems);
     }
 
     private static Dictionary<string, int> ReadHeaders(IReadOnlyList<string> row)

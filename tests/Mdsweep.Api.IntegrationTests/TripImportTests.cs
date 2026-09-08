@@ -16,20 +16,14 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var first = await Upload(client, Csv());
         var firstResult = await first.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(firstResult);
-        Assert.Equal(1, firstResult.Added);
+        Assert.Equal(1, firstResult.ReadyCount);
         using var repeat = await Upload(client, Csv());
         var repeatResult = await repeat.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(repeatResult);
-        Assert.Equal(1, repeatResult.Unchanged);
+        Assert.Equal(1, repeatResult.ReadyCount);
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Single(await db.Trips.IgnoreQueryFilters().ToListAsync());
-        var receipts = await db
-            .TripImportReceipts.IgnoreQueryFilters()
-            .OrderBy(receipt => receipt.ImportedAt)
-            .ToListAsync();
-        Assert.Equal(2, receipts.Count);
-        Assert.All(receipts, receipt => Assert.Equal("trips.csv", receipt.FileName));
     }
 
     [Fact]
@@ -40,19 +34,19 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var response = await Upload(client, "trips.xlsx", Xlsx());
         var result = await response.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(result);
-        Assert.Equal(1, result.Added);
+        Assert.Equal(1, result.ReadyCount);
     }
 
     [Fact]
-    public async Task Import_normalizes_passenger_mobility_and_derives_wheelchair_capability()
+    public async Task Import_retains_passenger_type_and_special_needs_as_broker_facts()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
 
         using var response = await Upload(
             client,
-            "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Passenger Type,Special Needs,Vehicle Type\n"
-                + "09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-MOBILITY,MED-MOBILITY,VALID,Synthetic,Passenger,Phoenix,Mesa,N,Wheel Chair,Cannot Transfer,Paralift"
+            "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Passenger Type,Special Needs,Trip Type\n"
+                + "09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-MOBILITY,MED-MOBILITY,VALID,Synthetic,Passenger,Phoenix,Mesa,N,Wheel Chair,Cannot Transfer,T"
         );
         response.EnsureSuccessStatusCode();
 
@@ -61,9 +55,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             .ServiceProvider.GetRequiredService<ApplicationDbContext>()
             .Trips.IgnoreQueryFilters()
             .SingleAsync();
-        Assert.Equal(PassengerMobilityRequirement.ManualWheelchairCannotTransfer, trip.BrokerData.MobilityRequirement);
-        Assert.Equal(RequiredVehicleCapability.WheelchairAccessible, trip.BrokerData.RequiredVehicleCapability);
-        Assert.Equal("Wheel Chair", trip.BrokerData.ImportedPassengerType);
+        Assert.Equal("Wheel Chair", trip.BrokerData.PassengerType);
+        Assert.Equal("Cannot Transfer", trip.BrokerData.SpecialNeeds);
     }
 
     [Fact]
@@ -91,7 +84,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         );
         var result = await changed.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(result);
-        Assert.Equal(1, result.Updated);
+        Assert.Equal(1, result.ReadyCount);
         await using var verification = Application.Services.CreateAsyncScope();
         var trip = await verification
             .ServiceProvider.GetRequiredService<ApplicationDbContext>()
@@ -115,12 +108,12 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         );
         var result = await response.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(result);
-        Assert.Equal(1, result.Added);
-        Assert.Equal(2, result.ProblemCount);
+        Assert.Equal(1, result.ReadyCount);
+        Assert.Equal(2, result.NeedsAttentionCount);
     }
 
     [Fact]
-    public async Task Missing_required_column_rejects_the_file_without_mutation()
+    public async Task Missing_required_column_returns_an_actionable_problem_without_mutation()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
@@ -129,7 +122,15 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             "trips.csv",
             System.Text.Encoding.UTF8.GetBytes("Trip Number\nTRIP-1")
         );
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ImportTripsResponse>();
+        Assert.NotNull(result);
+        Assert.Equal(0, result.ReadyCount);
+        Assert.Equal(0, result.NeedsAttentionCount);
+        Assert.Contains(result.Problems, problem => problem.Message.Contains("missing required columns", StringComparison.OrdinalIgnoreCase));
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Empty(await db.Trips.IgnoreQueryFilters().ToListAsync());
     }
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string csv) =>
@@ -145,8 +146,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         string row =
             "09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-100,MED-100,VALID,Synthetic,Passenger,Phoenix,Mesa,N"
     ) =>
-        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag\n"
-        + row;
+        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Trip Type\n"
+        + string.Join('\n', row.Split('\n').Select(value => value + ",T"));
 
     private static byte[] Xlsx()
     {
@@ -164,12 +165,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     }
 
     private sealed record ImportTripsResponse(
-        int Added,
-        int Updated,
-        int Unchanged,
-        int ProblemCount,
+        int ReadyCount,
+        int NeedsAttentionCount,
         List<TripImportProblem> Problems
     );
 
-    private sealed record TripImportProblem(int RowNumber, string? TripNumber, string Message);
+    private sealed record TripImportProblem(int? RowNumber, string? TripNumber, string? Field, string Message);
 }

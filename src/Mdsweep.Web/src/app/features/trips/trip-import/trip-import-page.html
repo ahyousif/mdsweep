@@ -21,19 +21,19 @@
     <section hlmCard>
       <div hlmCardHeader>
         <h3 hlmCardTitle>
-          @if (importResult.problemCount === 0) {
+          @if (importResult.needsAttentionCount === 0) {
             Import complete
           } @else {
             Import complete with problems
           }
         </h3>
         <p hlmCardDescription>
-          {{ importResult.total }} trips processed · {{ importResult.added }} added · {{ importResult.updated }} updated · {{ importResult.unchanged }} already up to date
+          {{ importResult.readyCount }} trips ready · {{ importResult.needsAttentionCount }} need attention
         </p>
       </div>
-      @if (importResult.problemCount > 0) {
+      @if (importResult.needsAttentionCount > 0) {
         <div hlmCardContent>
-          <h4 class="mb-3 text-sm font-semibold">Import problems ({{ importResult.problemCount }})</h4>
+          <h4 class="mb-3 text-sm font-semibold">Import problems ({{ importResult.needsAttentionCount }})</h4>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="border-b text-left text-muted-foreground"><tr><th class="px-3 py-2 font-medium">Row</th><th class="px-3 py-2 font-medium">Trip</th><th class="px-3 py-2 font-medium">Problem</th></tr></thead>

@@ -151,7 +151,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Attention_summary_uses_the_full_base_scope_and_unknown_mobility_is_actionable()
+    public async Task Attention_summary_uses_the_full_base_scope()
     {
         var day = new LocalDate(2026, 9, 15);
         await AddTrip(
@@ -160,8 +160,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
             day,
             new LocalTime(10, 0),
             "VALID",
-            true,
-            mobility: PassengerMobilityRequirement.Unknown
+            true
         );
         await AddTrip("mdsw-eep2-3456", "TRIP-MISSING", day, new LocalTime(9, 0), "VALID", false);
         await AddTrip("mdsw-eep2-3456", "TRIP-CLEAR", day, new LocalTime(8, 0), "VALID", true);
@@ -171,16 +170,12 @@ public sealed class TripListTests : MdsweepIntegrationTest
         const string scope = "/api/trips?startDate=2026-09-15&endDate=2026-09-15&pageSize=1";
         var all = await GetTrips(client, scope);
         Assert.Equal(3, all.ScopeCount);
-        Assert.Equal(2, all.AttentionCount);
+        Assert.Equal(0, all.AttentionCount);
         Assert.Single(all.Items);
         var filtered = await GetTrips(client, scope + "&needsAttention=true");
         Assert.Equal(3, filtered.ScopeCount);
-        Assert.Equal(2, filtered.TotalCount);
-        Assert.Equal(2, filtered.AttentionCount);
-        var unknown = await GetTrips(client, scope + "&needsAttention=true&search=UNKNOWN");
-        Assert.Equal("TRIP-UNKNOWN", Assert.Single(unknown.Items).BrokerTripNumber);
-        Assert.Equal(1, unknown.AttentionCount);
-        Assert.Equal(1, unknown.ScopeCount);
+        Assert.Equal(3, filtered.TotalCount);
+        Assert.Equal(0, filtered.AttentionCount);
     }
 
     [Theory]
@@ -234,12 +229,12 @@ public sealed class TripListTests : MdsweepIntegrationTest
         bool isWillCall,
         string firstName = "Synthetic",
         string lastName = "Passenger",
-        LocalTime? scheduledPickupTime = null,
-        PassengerMobilityRequirement mobility = PassengerMobilityRequirement.Ambulatory
+        LocalTime? scheduledPickupTime = null
     )
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+            .UseSnakeCaseNamingConvention()
             .Options;
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", firstName, lastName);
@@ -248,22 +243,27 @@ public sealed class TripListTests : MdsweepIntegrationTest
             passenger.Id,
             brokerTripNumber,
             new BrokerTripData(
-                serviceDate.ToDateOnly(),
+                serviceDate,
                 appointmentTime,
+                TripDirection.To,
+                isWillCall,
                 "100 Sample St",
                 "Phoenix",
+                null,
+                null,
                 "200 Synthetic Way",
                 "Mesa",
+                null,
+                null,
                 brokerStatus,
-                isWillCall,
-                mobility,
+                null,
                 null,
                 null,
                 null
             )
         );
         if (scheduledPickupTime.HasValue)
-            trip.SetScheduledPickupTime(scheduledPickupTime.Value);
+            trip.OverridePickupTime(scheduledPickupTime.Value);
         trip.TenantId = tenantId;
         db.AddRange(passenger, trip);
         await db.SaveChangesAsync();

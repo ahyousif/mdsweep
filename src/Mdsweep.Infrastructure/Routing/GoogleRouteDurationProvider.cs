@@ -4,7 +4,7 @@ using Mdsweep.Infrastructure.Http;
 
 namespace Mdsweep.Infrastructure.Routing;
 
-internal sealed class GoogleRouteDurationProvider(
+public sealed class GoogleRouteDurationProvider(
     IHttpClientFactory httpClientFactory,
     IOptions<GoogleRoutesOptions> options,
     ILogger<GoogleRouteDurationProvider> logger

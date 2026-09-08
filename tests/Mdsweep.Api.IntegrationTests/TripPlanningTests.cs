@@ -58,6 +58,7 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+            .UseSnakeCaseNamingConvention()
             .Options;
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", "Synthetic", "Passenger");
@@ -66,15 +67,20 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
             passenger.Id,
             brokerTripNumber,
             new BrokerTripData(
-                new DateOnly(2026, 9, 15),
+                new LocalDate(2026, 9, 15),
                 new LocalTime(10, 0),
+                TripDirection.To,
+                false,
                 "100 Sample St",
                 "Phoenix",
+                null,
+                null,
                 "200 Synthetic Way",
                 "Mesa",
+                null,
+                null,
                 "VALID",
-                false,
-                PassengerMobilityRequirement.Ambulatory,
+                null,
                 null,
                 null,
                 null

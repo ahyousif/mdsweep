@@ -1,4 +1,5 @@
-using Mdsweep.Application.Trips.Routing;
+using Ardalis.Result;
+using Mdsweep.Application.Trips.Scheduling;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
 using NodaTime;
@@ -11,8 +12,8 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
 
     protected override void ConfigureTestServices(IServiceCollection services)
     {
-        services.RemoveAll<IRouteEstimator>();
-        services.AddSingleton<IRouteEstimator>(routeEstimator);
+        services.RemoveAll<IRouteDurationProvider>();
+        services.AddSingleton<IRouteDurationProvider>(routeEstimator);
     }
 
     [Fact]
@@ -25,8 +26,8 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         response.EnsureSuccessStatusCode();
 
         var trip = await WaitForPickupTime();
-        Assert.Equal(new LocalTime(9, 5), trip.ScheduledPickupTime);
-        Assert.Equal(37, trip.CalculatedPickupTime);
+        Assert.Equal(new LocalTime(9, 8), trip.ScheduledPickupTime);
+        Assert.Equal(new LocalTime(9, 8), trip.CalculatedPickupTime);
         Assert.Equal(1, routeEstimator.CallCount);
         Assert.Equal("mdsw-eep2-3456", trip.TenantId);
     }
@@ -56,7 +57,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         initial.EnsureSuccessStatusCode();
         await WaitForPickupTime();
 
-        using var willCall = await Upload(client, Row(willCall: "Y"));
+        using var willCall = await Upload(client, Row(willCall: "Y", tripType: "F"));
         willCall.EnsureSuccessStatusCode();
 
         var trip = await WaitForPickupTimeCleared();
@@ -108,19 +109,19 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
             }
         );
 
-    private static string Row(string willCall = "N") =>
-        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag\n"
-        + $"09/15/2026,200 Synthetic Way,100 Sample St,10:00,TRIP-PICKUP,MED-PICKUP,VALID,Synthetic,Passenger,Phoenix,Mesa,{willCall}";
+    private static string Row(string willCall = "N", string tripType = "T") =>
+        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Trip Type\n"
+        + $"09/15/2026,200 Synthetic Way,100 Sample St,10:00,TRIP-PICKUP,MED-PICKUP,VALID,Synthetic,Passenger,Phoenix,Mesa,{willCall},{tripType}";
 
-    private sealed class FakeRouteEstimator : IRouteEstimator
+    private sealed class FakeRouteEstimator : IRouteDurationProvider
     {
         private int callCount;
         public int CallCount => Volatile.Read(ref callCount);
 
-        public Task<TimeSpan?> EstimateDurationAsync(RouteLocation pickup, RouteLocation dropoff, CancellationToken ct)
+        public Task<Result<Duration>> GetDurationAsync(string origin, string destination, CancellationToken ct)
         {
             Interlocked.Increment(ref callCount);
-            return Task.FromResult<TimeSpan?>(TimeSpan.FromMinutes(37));
+            return Task.FromResult(Result.Success(Duration.FromMinutes(37)));
         }
     }
 }

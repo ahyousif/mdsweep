@@ -3,18 +3,15 @@ import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '@app/core/api/api-client';
 
 export type TripImportProblem = {
-  rowNumber: number;
+  rowNumber: number | null;
   tripNumber: string | null;
+  field: string | null;
   message: string;
 };
 
 export type TripImportResult = {
-  fileName: string;
-  total: number;
-  added: number;
-  updated: number;
-  unchanged: number;
-  problemCount: number;
+  readyCount: number;
+  needsAttentionCount: number;
   problems: TripImportProblem[];
 };
 

@@ -2,7 +2,7 @@ using Mdsweep.Application.Trips.Import.Manifest;
 
 namespace Mdsweep.Infrastructure.Manifests;
 
-internal sealed class MtmManifestReader : IMtmManifestReader
+public sealed class MtmManifestReader : IMtmManifestReader
 {
     public Task<MtmManifestReadResult> ReadAsync(string fileName, ReadOnlyMemory<byte> content, CancellationToken ct)
     {

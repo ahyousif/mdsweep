@@ -1,6 +1,6 @@
 namespace Mdsweep.Infrastructure.Routing;
 
-internal sealed class GoogleRoutesOptions
+public sealed class GoogleRoutesOptions
 {
     public const string SectionName = "GoogleRoutes";
 
