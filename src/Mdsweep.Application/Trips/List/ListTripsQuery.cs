@@ -8,7 +8,7 @@ public sealed record ListTripsQuery(
     LocalDate? EndDate = null,
     string? Search = null,
     bool? NeedsAttention = null,
-    string? BrokerStatus = null,
+    string? Status = null,
     bool? IsWillCall = null,
     int Page = 1,
     int PageSize = 50,

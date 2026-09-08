@@ -1,3 +1,4 @@
+using Mdsweep.Api.Common.Contracts;
 using Mdsweep.Application.Trips;
 using Mdsweep.Domain.Trips;
 
@@ -8,9 +9,8 @@ public sealed record TripResponse(
     string BrokerTripNumber,
     string PassengerFirstName,
     string PassengerLastName,
-    string? BrokerMemberId,
+    string? MemberId,
     LocalDate ServiceDate,
-    LocalTime? Time,
     TripDirection Direction,
     string? BrokerStatus,
     bool IsWillCall,
@@ -21,14 +21,8 @@ public sealed record TripResponse(
     LocalTime? ScheduledPickupTime,
     LocalTime? CalculatedPickupTime,
     LocalTime? ManualPickupTime,
-    string PickupAddress,
-    string PickupCity,
-    string? PickupState,
-    string? PickupZip,
-    string DropoffAddress,
-    string DropoffCity,
-    string? DropoffState,
-    string? DropoffZip
+    AddressResponse Pickup,
+    AddressResponse Dropoff
 )
 {
     public static TripResponse FromModel(TripModel model) =>
@@ -39,7 +33,6 @@ public sealed record TripResponse(
             model.PassengerLastName,
             model.BrokerMemberId,
             model.ServiceDate,
-            model.Time,
             model.Direction,
             model.BrokerStatus,
             model.IsWillCall,
@@ -50,13 +43,7 @@ public sealed record TripResponse(
             model.ScheduledPickupTime,
             model.CalculatedPickupTime,
             model.ManualPickupTime,
-            model.PickupAddress,
-            model.PickupCity,
-            model.PickupState,
-            model.PickupZip,
-            model.DropoffAddress,
-            model.DropoffCity,
-            model.DropoffState,
-            model.DropoffZip
+            new AddressResponse(model.PickupAddress, model.PickupCity, model.PickupState, model.PickupZip),
+            new AddressResponse(model.DropoffAddress, model.DropoffCity, model.DropoffState, model.DropoffZip)
         );
 }

@@ -6,7 +6,7 @@ namespace Mdsweep.Application.Trips.Specifications;
 
 public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Guid, TripsSpecification>
 {
-    public TripsSpecification WithTripDateRange(LocalDate? startDate, LocalDate? endDate)
+    public TripsSpecification WithDateRange(LocalDate? startDate, LocalDate? endDate)
     {
         if (startDate.HasValue)
         {
@@ -21,18 +21,55 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
         return this;
     }
 
-    public TripsSpecification WithBrokerTripNumbers(IReadOnlyCollection<string> tripNumbers)
+    public TripsSpecification WithSearch(string? query)
     {
-        if (tripNumbers.Count == 0)
+        if (!string.IsNullOrWhiteSpace(query))
         {
-            return this;
-        }
+            var value = query.Trim().ToUpperInvariant();
 
-        Spec.Add(query => query.Where(trip => tripNumbers.Contains(trip.BrokerTripNumber)));
+            Spec.Add(q =>
+                q.Where(trip =>
+                    trip.BrokerTripNumber.Contains(value)
+                    || trip.Passenger.FirstName.Contains(value)
+                    || trip.Passenger.LastName.Contains(value)
+                )
+            );
+        }
 
         return this;
     }
 
+    public TripsSpecification WithStatus(string? status)
+    {
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            Spec.Add(query => query.Where(trip => trip.BrokerData.Status == status));
+        }
+
+        return this;
+    }
+
+    public TripsSpecification WithTripNumbers(IReadOnlyCollection<string> tripNumbers)
+    {
+        if (tripNumbers.Count > 0)
+        {
+            Spec.Add(query => query.Where(trip => tripNumbers.Contains(trip.BrokerTripNumber)));
+        }
+
+        return this;
+    }
+
+    public TripsSpecification WithWillCall(bool? willCall)
+    {
+        if (willCall.HasValue)
+        {
+            Spec.Add(query => query.Where(trip => trip.BrokerData.IsWillCall == willCall));
+        }
+
+        return this;
+    }
+
+    // sorting
     public TripsSpecification OrderBy(TripSortBy sortBy, SortDirection direction, bool groupByDate = false)
     {
         var descending = direction switch

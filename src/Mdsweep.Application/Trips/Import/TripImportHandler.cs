@@ -42,7 +42,7 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
         var memberIds = rows.Select(row => row.MemberId).Distinct().ToArray();
 
         var existingTrips = await repository.ListAsync(
-            new TripsSpecification().WithBrokerTripNumbers(tripNumbers).Build(),
+            new TripsSpecification().WithTripNumbers(tripNumbers).Build(),
             ct
         );
 
