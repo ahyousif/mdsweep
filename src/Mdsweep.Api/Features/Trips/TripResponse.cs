@@ -10,18 +10,25 @@ public sealed record TripResponse(
     string PassengerLastName,
     string? BrokerMemberId,
     LocalDate ServiceDate,
-    LocalTime? AppointmentTime,
+    LocalTime? Time,
+    TripDirection Direction,
     string? BrokerStatus,
     bool IsWillCall,
-    PassengerMobilityRequirement MobilityRequirement,
+    string? PassengerType,
+    string? SpecialNeeds,
     decimal? TripCost,
     decimal? TripMileage,
     LocalTime? ScheduledPickupTime,
-    int? EstimatedTravelMinutes,
+    LocalTime? CalculatedPickupTime,
+    LocalTime? ManualPickupTime,
     string PickupAddress,
     string PickupCity,
+    string? PickupState,
+    string? PickupZip,
     string DropoffAddress,
-    string DropoffCity
+    string DropoffCity,
+    string? DropoffState,
+    string? DropoffZip
 )
 {
     public static TripResponse FromModel(TripModel model) =>
@@ -32,17 +39,24 @@ public sealed record TripResponse(
             model.PassengerLastName,
             model.BrokerMemberId,
             model.ServiceDate,
-            model.AppointmentTime,
+            model.Time,
+            model.Direction,
             model.BrokerStatus,
             model.IsWillCall,
-            model.MobilityRequirement,
+            model.PassengerType,
+            model.SpecialNeeds,
             model.TripCost,
             model.TripMileage,
             model.ScheduledPickupTime,
-            model.EstimatedTravelMinutes,
+            model.CalculatedPickupTime,
+            model.ManualPickupTime,
             model.PickupAddress,
             model.PickupCity,
+            model.PickupState,
+            model.PickupZip,
             model.DropoffAddress,
-            model.DropoffCity
+            model.DropoffCity,
+            model.DropoffState,
+            model.DropoffZip
         );
 }

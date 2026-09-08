@@ -27,30 +27,25 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("BrokerMemberId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("broker_member_id");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("first_name");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("last_name");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -64,20 +59,17 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(14)
-                        .HasColumnType("character varying(14)")
-                        .HasColumnName("id");
+                        .HasColumnType("character varying(14)");
 
                     b.Property<string>("KeycloakOrganizationId")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("keycloak_organization_id");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
+                        .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
 
@@ -120,95 +112,34 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.ToTable("tenant_memberships", (string)null);
                 });
 
-            modelBuilder.Entity("Mdsweep.Domain.TripImports.TripImportReceipt", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<int>("Added")
-                        .HasColumnType("integer")
-                        .HasColumnName("added");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("content_hash");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("file_name");
-
-                    b.Property<Instant>("ImportedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("imported_at");
-
-                    b.Property<int>("ProblemCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("problem_count");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasMaxLength(14)
-                        .HasColumnType("character varying(14)")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<int>("Total")
-                        .HasColumnType("integer")
-                        .HasColumnName("total");
-
-                    b.Property<int>("Unchanged")
-                        .HasColumnType("integer")
-                        .HasColumnName("unchanged");
-
-                    b.Property<int>("Updated")
-                        .HasColumnType("integer")
-                        .HasColumnName("updated");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("trip_import_receipts", (string)null);
-                });
-
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("BrokerTripNumber")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("broker_trip_number");
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<int?>("EstimatedTravelMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("estimated_travel_minutes");
+                    b.Property<LocalTime?>("CalculatedPickupTime")
+                        .HasColumnType("time");
+
+                    b.Property<LocalTime?>("ManualPickupTime")
+                        .HasColumnType("time");
 
                     b.Property<Guid>("PassengerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("passenger_id");
+                        .HasColumnType("uuid");
 
-                    b.Property<LocalTime?>("ScheduledPickupTime")
-                        .HasColumnType("time")
-                        .HasColumnName("scheduled_pickup_time");
-
-                    b.Property<string>("SchedulingInputFingerprint")
+                    b.Property<string>("ScheduleInputFingerprint")
                         .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("scheduling_input_fingerprint");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(14)
-                        .HasColumnType("character varying(14)")
-                        .HasColumnName("tenant_id");
+                        .HasColumnType("character varying(14)");
 
                     b.HasKey("Id");
 
@@ -281,14 +212,14 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                             b1.Property<Guid>("TripAggregateId")
                                 .HasColumnType("uuid");
 
-                            b1.Property<LocalTime?>("AppointmentTime")
-                                .HasColumnType("time")
-                                .HasColumnName("appointment_time");
+                            b1.Property<decimal?>("Cost")
+                                .HasPrecision(10, 2)
+                                .HasColumnType("numeric(10,2)")
+                                .HasColumnName("trip_cost");
 
-                            b1.Property<string>("BrokerStatus")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)")
-                                .HasColumnName("broker_status");
+                            b1.Property<int>("Direction")
+                                .HasColumnType("integer")
+                                .HasColumnName("direction");
 
                             b1.Property<string>("DropoffAddress")
                                 .IsRequired()
@@ -302,15 +233,29 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(200)")
                                 .HasColumnName("dropoff_city");
 
+                            b1.Property<string>("DropoffState")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("dropoff_state");
+
+                            b1.Property<string>("DropoffZip")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("dropoff_zip");
+
                             b1.Property<bool>("IsWillCall")
                                 .HasColumnType("boolean")
                                 .HasColumnName("is_will_call");
 
-                            b1.Property<string>("MobilityRequirement")
-                                .IsRequired()
-                                .HasMaxLength(60)
-                                .HasColumnType("character varying(60)")
-                                .HasColumnName("mobility_requirement");
+                            b1.Property<decimal?>("Mileage")
+                                .HasPrecision(10, 2)
+                                .HasColumnType("numeric(10,2)")
+                                .HasColumnName("trip_mileage");
+
+                            b1.Property<string>("PassengerType")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("passenger_type");
 
                             b1.Property<string>("PickupAddress")
                                 .IsRequired()
@@ -324,24 +269,33 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(200)")
                                 .HasColumnName("pickup_city");
 
-                            b1.Property<string>("RawImportedPassengerType")
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)")
-                                .HasColumnName("raw_imported_passenger_type");
+                            b1.Property<string>("PickupState")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("pickup_state");
 
-                            b1.Property<DateOnly>("ServiceDate")
+                            b1.Property<string>("PickupZip")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("pickup_zip");
+
+                            b1.Property<LocalDate>("ServiceDate")
                                 .HasColumnType("date")
                                 .HasColumnName("service_date");
 
-                            b1.Property<decimal?>("TripCost")
-                                .HasPrecision(10, 2)
-                                .HasColumnType("numeric(10,2)")
-                                .HasColumnName("trip_cost");
+                            b1.Property<string>("SpecialNeeds")
+                                .HasMaxLength(500)
+                                .HasColumnType("character varying(500)")
+                                .HasColumnName("special_needs");
 
-                            b1.Property<decimal?>("TripMileage")
-                                .HasPrecision(10, 2)
-                                .HasColumnType("numeric(10,2)")
-                                .HasColumnName("trip_mileage");
+                            b1.Property<string>("Status")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("broker_status");
+
+                            b1.Property<LocalTime?>("Time")
+                                .HasColumnType("time")
+                                .HasColumnName("broker_time");
 
                             b1.HasKey("TripAggregateId");
 
