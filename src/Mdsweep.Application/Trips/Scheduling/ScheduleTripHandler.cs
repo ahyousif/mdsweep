@@ -5,9 +5,9 @@ namespace Mdsweep.Application.Trips.Scheduling;
 
 public sealed class ScheduleTripHandler(IRepository repository, IRouteDurationProvider routeDurationProvider)
 {
-    public async Task Handle(ScheduleTripCommand message, CancellationToken ct)
+    public async Task Handle(ScheduleTripCommand command, CancellationToken ct)
     {
-        var trip = await repository.GetByIdAsync<TripAggregate, Guid>(message.TripId, ct);
+        var trip = await repository.GetByIdAsync<TripAggregate, Guid>(command.TripId, ct);
 
         if (trip is null)
         {
@@ -17,6 +17,11 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteDurationPr
         if (trip.BrokerData.Direction == TripDirection.From)
         {
             var brokerPickupTime = trip.BrokerData.IsWillCall ? null : trip.BrokerData.Time;
+
+            if (trip.CalculatedPickupTime == brokerPickupTime && trip.ScheduleInputFingerprint is null)
+            {
+                return;
+            }
 
             trip.UpdateCalculatedSchedule(brokerPickupTime, scheduleInputFingerprint: null);
 

@@ -112,10 +112,10 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                             await repository.UpdateAsync(existingTrip, ct);
                         }
 
+                        outgoingMessages.Add(new ScheduleTripCommand(existingTrip.Id));
+
                         readyCount++;
                     }
-
-                    outgoingMessages.Add(new ScheduleTripCommand(existingTrip.Id));
                 }
                 else
                 {

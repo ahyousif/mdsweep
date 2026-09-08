@@ -25,12 +25,12 @@ public static class PersistenceExtensions
             (db, connectionString) =>
                 db.UseNpgsql(
                         connectionString.Value,
-                        npgsql =>
-                            npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
+                        opts => opts.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
                     )
                     // Narrowly suppresses Wolverine-managed conjoined-tenancy runtime filters,
                     // which do not change the EF migration model.
                     .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
+                    .UseSnakeCaseNamingConvention()
         );
 
         options.Services.AddWolverineConjoinedTenancyWorkaround();

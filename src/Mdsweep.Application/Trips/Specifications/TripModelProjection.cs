@@ -14,19 +14,26 @@ internal sealed class TripModelProjection : Specification<TripAggregate, TripMod
             trip.Passenger.FirstName,
             trip.Passenger.LastName,
             trip.Passenger.BrokerMemberId,
-            LocalDate.FromDateOnly(trip.BrokerData.ServiceDate),
-            trip.BrokerData.AppointmentTime,
-            trip.BrokerData.BrokerStatus,
+            trip.BrokerData.ServiceDate,
+            trip.BrokerData.Time,
+            trip.BrokerData.Direction,
+            trip.BrokerData.Status,
             trip.BrokerData.IsWillCall,
-            trip.BrokerData.MobilityRequirement,
-            trip.BrokerData.TripCost,
-            trip.BrokerData.TripMileage,
+            trip.BrokerData.PassengerType,
+            trip.BrokerData.SpecialNeeds,
+            trip.BrokerData.Cost,
+            trip.BrokerData.Mileage,
             trip.ScheduledPickupTime,
             trip.CalculatedPickupTime,
+            trip.ManualPickupTime,
             trip.BrokerData.PickupAddress,
             trip.BrokerData.PickupCity,
+            trip.BrokerData.PickupState,
+            trip.BrokerData.PickupZip,
             trip.BrokerData.DropoffAddress,
-            trip.BrokerData.DropoffCity
+            trip.BrokerData.DropoffCity,
+            trip.BrokerData.DropoffState,
+            trip.BrokerData.DropoffZip
         ));
     }
 }

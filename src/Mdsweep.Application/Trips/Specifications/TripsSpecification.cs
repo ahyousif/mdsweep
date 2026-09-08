@@ -6,6 +6,21 @@ namespace Mdsweep.Application.Trips.Specifications;
 
 public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Guid, TripsSpecification>
 {
+    public TripsSpecification WithTripDateRange(LocalDate? startDate, LocalDate? endDate)
+    {
+        if (startDate.HasValue)
+        {
+            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate >= startDate.Value));
+        }
+
+        if (endDate.HasValue)
+        {
+            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate <= endDate.Value));
+        }
+
+        return this;
+    }
+
     public TripsSpecification WithBrokerTripNumbers(IReadOnlyCollection<string> tripNumbers)
     {
         if (tripNumbers.Count == 0)

@@ -1,3 +1,5 @@
+using Mdsweep.Domain.Trips;
+
 namespace Mdsweep.Application.Trips;
 
 public sealed record TripModel(
@@ -7,15 +9,23 @@ public sealed record TripModel(
     string PassengerLastName,
     string? BrokerMemberId,
     LocalDate ServiceDate,
-    LocalTime? AppointmentTime,
+    LocalTime? Time,
+    TripDirection Direction,
     string? BrokerStatus,
     bool IsWillCall,
+    string? PassengerType,
+    string? SpecialNeeds,
     decimal? TripCost,
     decimal? TripMileage,
     LocalTime? ScheduledPickupTime,
-    int? EstimatedTravelMinutes,
+    LocalTime? CalculatedPickupTime,
+    LocalTime? ManualPickupTime,
     string PickupAddress,
     string PickupCity,
+    string? PickupState,
+    string? PickupZip,
     string DropoffAddress,
-    string DropoffCity
+    string DropoffCity,
+    string? DropoffState,
+    string? DropoffZip
 );

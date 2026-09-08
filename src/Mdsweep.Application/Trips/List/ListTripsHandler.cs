@@ -8,30 +8,9 @@ public sealed class ListTripsHandler(IRepository repository)
 {
     public async Task<Result<ListTripsResult>> Handle(ListTripsQuery query, CancellationToken ct)
     {
-        var trips = new TripsSpecification()
-            .WithTripDateRange(query.StartDate, query.EndDate)
-            .WithSearch(query.Search)
-            .WithBrokerStatus(query.BrokerStatus)
-            .WithWillCall(query.IsWillCall);
+        var trips = new TripsSpecification().WithTripDateRange(query.StartDate, query.EndDate);
 
-        var scopeCount = await repository.CountAsync(trips.Build(), ct);
-        var attentionCount = await repository.CountAsync(
-            new TripsSpecification()
-                .WithTripDateRange(query.StartDate, query.EndDate)
-                .WithSearch(query.Search)
-                .WithBrokerStatus(query.BrokerStatus)
-                .WithWillCall(query.IsWillCall)
-                .WithNeedsAttention(true)
-                .Build(),
-            ct
-        );
-        var totalCount = query.NeedsAttention switch
-        {
-            true => attentionCount,
-            false => scopeCount - attentionCount,
-            _ => scopeCount,
-        };
-        trips.WithNeedsAttention(query.NeedsAttention);
+        var count = await repository.CountAsync(trips.Build(), ct);
 
         var items = await repository.ListAsync(
             trips
@@ -41,16 +20,8 @@ public sealed class ListTripsHandler(IRepository repository)
             ct
         );
 
-        var totalPages = (long)Math.Ceiling(totalCount / (double)query.PageSize);
+        var totalPages = (long)Math.Ceiling(count / (double)query.PageSize);
 
-        return new ListTripsResult(
-            items,
-            totalCount,
-            query.Page,
-            query.PageSize,
-            totalPages,
-            scopeCount,
-            attentionCount
-        );
+        return new ListTripsResult(items, count, query.Page, query.PageSize, totalPages, count, 0);
     }
 }
