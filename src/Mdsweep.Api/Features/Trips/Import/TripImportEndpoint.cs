@@ -5,7 +5,7 @@ using Mdsweep.Application.Trips.Import;
 
 namespace Mdsweep.Api.Features.Trips.Import;
 
-public static class ImportTripsEndpoint
+public static class TripImportEndpoint
 {
     [Tags(TripConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.TripsImport)]
