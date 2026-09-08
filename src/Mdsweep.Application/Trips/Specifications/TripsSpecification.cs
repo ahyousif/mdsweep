@@ -21,6 +21,7 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
         return this;
     }
 
+#pragma warning disable CA1862 // EF Core does not translate StringComparison overloads.
     public TripsSpecification WithSearch(string? query)
     {
         if (!string.IsNullOrWhiteSpace(query))
@@ -29,21 +30,28 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
 
             Spec.Add(q =>
                 q.Where(trip =>
-                    trip.BrokerTripNumber.Contains(value)
-                    || trip.Passenger.FirstName.Contains(value)
-                    || trip.Passenger.LastName.Contains(value)
+                    trip.BrokerTripNumber.ToUpper().Contains(value)
+                    || trip.Passenger.FirstName.ToUpper().Contains(value)
+                    || trip.Passenger.LastName.ToUpper().Contains(value)
+                    || (
+                        trip.Passenger.BrokerMemberId != null && trip.Passenger.BrokerMemberId.ToUpper().Contains(value)
+                    )
+                    || trip.BrokerData.PickupAddress.ToUpper().Contains(value)
+                    || trip.BrokerData.PickupCity.ToUpper().Contains(value)
+                    || trip.BrokerData.DropoffAddress.ToUpper().Contains(value)
+                    || trip.BrokerData.DropoffCity.ToUpper().Contains(value)
                 )
             );
         }
-
         return this;
     }
+#pragma warning restore CA1862
 
-    public TripsSpecification WithStatus(string? status)
+    public TripsSpecification WithBrokerStatus(string? brokerStatus)
     {
-        if (!string.IsNullOrWhiteSpace(status))
+        if (!string.IsNullOrWhiteSpace(brokerStatus))
         {
-            Spec.Add(query => query.Where(trip => trip.BrokerData.Status == status));
+            Spec.Add(query => query.Where(trip => trip.BrokerData.Status == brokerStatus));
         }
 
         return this;

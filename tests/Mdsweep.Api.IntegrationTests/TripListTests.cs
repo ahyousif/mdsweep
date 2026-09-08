@@ -11,190 +11,109 @@ namespace Mdsweep.Api.IntegrationTests;
 public sealed class TripListTests : MdsweepIntegrationTest
 {
     [Fact]
-    public async Task Dispatcher_can_list_trips_with_default_parameters_then_filter_sort_and_page_only_the_active_tenants_trips()
+    public async Task Dispatcher_lists_only_active_tenant_trips_and_filters_by_date_range()
     {
-        await AddTrip("mdsw-eep2-3456", "TRIP-A", new LocalDate(2026, 9, 15), new LocalTime(10, 0), "VALID", false);
-        await AddTrip("mdsw-eep2-3456", "TRIP-B", new LocalDate(2026, 9, 15), new LocalTime(9, 0), "VALID", true);
-        await AddTrip("mdsw-eep2-3456", "TRIP-C", new LocalDate(2026, 9, 16), new LocalTime(11, 0), "TURN BACK", false);
-        await AddTrip("mdsw-eep2-3456", "TRIP-D", new LocalDate(2026, 9, 15), new LocalTime(11, 0), "VALID", false);
-        await AddTrip("mdsw-other-000", "TRIP-OTHER", new LocalDate(2026, 9, 15), new LocalTime(8, 0), "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-14", new LocalDate(2026, 9, 14), "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-15", new LocalDate(2026, 9, 15), "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-16", new LocalDate(2026, 9, 16), "VALID", true);
+        await AddTrip("mdsw-other-000", "TRIP-OTHER", new LocalDate(2026, 9, 15), "VALID", false);
         using var client = Application.CreateClient();
 
-        var unfiltered = await GetTrips(client, "/api/trips");
-        Assert.Equal(4, unfiltered.TotalCount);
-        Assert.Equal(["TRIP-B", "TRIP-A", "TRIP-D", "TRIP-C"], unfiltered.Items.Select(trip => trip.BrokerTripNumber));
-        Assert.DoesNotContain(unfiltered.Items, trip => trip.BrokerTripNumber == "TRIP-OTHER");
-
-        var serviceDate = await GetTrips(client, "/api/trips?serviceDate=2026-09-15");
-        Assert.Equal(3, serviceDate.TotalCount);
-        Assert.All(serviceDate.Items, trip => Assert.Equal("2026-09-15", trip.ServiceDate));
-        var tripA = serviceDate.Items.Single(trip => trip.BrokerTripNumber == "TRIP-A");
-        Assert.Equal("100 Sample St", tripA.PickupAddress);
-        Assert.Equal("Mesa", tripA.DropoffCity);
-
-        var combinedFilters = await GetTrips(
-            client,
-            "/api/trips?serviceDate=2026-09-15&brokerStatus=VALID&isWillCall=false&sortBy=brokerTripNumber&sortDirection=descending"
-        );
-        Assert.Equal(2, combinedFilters.TotalCount);
-        Assert.Equal(["TRIP-D", "TRIP-A"], combinedFilters.Items.Select(trip => trip.BrokerTripNumber));
-
-        var ascending = await GetTrips(client, "/api/trips?sortBy=appointmentTime&sortDirection=ascending");
-        var descending = await GetTrips(client, "/api/trips?sortBy=appointmentTime&sortDirection=descending");
-        Assert.Equal(["TRIP-B", "TRIP-A", "TRIP-D", "TRIP-C"], ascending.Items.Select(trip => trip.BrokerTripNumber));
-        Assert.Equal(["TRIP-C", "TRIP-D", "TRIP-A", "TRIP-B"], descending.Items.Select(trip => trip.BrokerTripNumber));
-
-        var firstPage = await GetTrips(client, "/api/trips?page=1&pageSize=2");
-        var secondPage = await GetTrips(client, "/api/trips?page=2&pageSize=2");
-        Assert.Equal(4, firstPage.TotalCount);
-        Assert.Equal(["TRIP-B", "TRIP-A"], firstPage.Items.Select(trip => trip.BrokerTripNumber));
-        Assert.Equal(["TRIP-D", "TRIP-C"], secondPage.Items.Select(trip => trip.BrokerTripNumber));
-    }
-
-    [Fact]
-    public async Task Dispatcher_filters_date_ranges_searches_passengers_and_identifies_trips_with_problems()
-    {
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-EARLY",
-            new LocalDate(2026, 9, 14),
-            new LocalTime(11, 0),
-            "VALID",
-            false,
-            "Early",
-            "Rider"
-        );
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-SEARCH",
-            new LocalDate(2026, 9, 15),
-            new LocalTime(10, 0),
-            "VALID",
-            false,
-            "Searchable",
-            "Passenger"
-        );
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-CLEAR",
-            new LocalDate(2026, 9, 16),
-            new LocalTime(9, 0),
-            "VALID",
-            true,
-            "Clear",
-            "Rider"
-        );
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-LATE",
-            new LocalDate(2026, 9, 17),
-            new LocalTime(8, 0),
-            "TURN BACK",
-            false,
-            "Late",
-            "Rider"
-        );
-        using var client = Application.CreateClient();
+        var all = await GetTrips(client, "/api/trips");
+        Assert.Equal(3, all.TotalCount);
+        Assert.DoesNotContain(all.Items, trip => trip.BrokerTripNumber == "TRIP-OTHER");
 
         var range = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-16");
-        Assert.Equal(["TRIP-SEARCH", "TRIP-CLEAR"], range.Items.Select(trip => trip.BrokerTripNumber));
+        Assert.Equal(["TRIP-15", "TRIP-16"], range.Items.Select(trip => trip.BrokerTripNumber));
 
-        var passengerSearch = await GetTrips(client, "/api/trips?search=searchable");
-        Assert.Equal(["TRIP-SEARCH"], passengerSearch.Items.Select(trip => trip.BrokerTripNumber));
-
-        var tripSearch = await GetTrips(client, "/api/trips?search=late");
-        Assert.Equal(["TRIP-LATE"], tripSearch.Items.Select(trip => trip.BrokerTripNumber));
-
-        var problems = await GetTrips(client, "/api/trips?needsAttention=true&sortBy=brokerTripNumber");
-        Assert.Equal(["TRIP-EARLY", "TRIP-LATE", "TRIP-SEARCH"], problems.Items.Select(trip => trip.BrokerTripNumber));
-
-        var clear = await GetTrips(client, "/api/trips?needsAttention=false");
-        Assert.Equal(["TRIP-CLEAR"], clear.Items.Select(trip => trip.BrokerTripNumber));
-    }
-
-    [Fact]
-    public async Task Default_chronology_uses_appointment_fallback_and_keeps_multiple_days_together()
-    {
-        var day = new LocalDate(2026, 9, 15);
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-PLANNED",
-            day,
-            new LocalTime(10, 0),
-            "VALID",
-            false,
-            scheduledPickupTime: new LocalTime(8, 30)
-        );
-        await AddTrip("mdsw-eep2-3456", "TRIP-FALLBACK", day, new LocalTime(8, 0), "VALID", false);
-        await AddTrip("mdsw-eep2-3456", "TRIP-LATER", day, new LocalTime(9, 0), "VALID", false);
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-TOMORROW",
-            day.PlusDays(1),
-            new LocalTime(7, 0),
-            "VALID",
-            false,
-            scheduledPickupTime: new LocalTime(6, 0)
-        );
-        using var client = Application.CreateClient();
-
-        var single = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-15");
-        Assert.Equal(
-            ["TRIP-FALLBACK", "TRIP-PLANNED", "TRIP-LATER"],
-            single.Items.Select(trip => trip.BrokerTripNumber)
-        );
-        var week = await GetTrips(client, "/api/trips?startDate=2026-09-13&endDate=2026-09-19");
-        Assert.Equal(
-            ["TRIP-FALLBACK", "TRIP-PLANNED", "TRIP-LATER", "TRIP-TOMORROW"],
-            week.Items.Select(trip => trip.BrokerTripNumber)
-        );
-    }
-
-    [Fact]
-    public async Task Attention_summary_uses_the_full_base_scope()
-    {
-        var day = new LocalDate(2026, 9, 15);
-        await AddTrip(
-            "mdsw-eep2-3456",
-            "TRIP-UNKNOWN",
-            day,
-            new LocalTime(10, 0),
-            "VALID",
-            true
-        );
-        await AddTrip("mdsw-eep2-3456", "TRIP-MISSING", day, new LocalTime(9, 0), "VALID", false);
-        await AddTrip("mdsw-eep2-3456", "TRIP-CLEAR", day, new LocalTime(8, 0), "VALID", true);
-        await AddTrip("mdsw-eep2-3456", "OUTSIDE-SCOPE", day.PlusDays(1), new LocalTime(9, 0), "TURN BACK", false);
-        await AddTrip("mdsw-other-000", "TRIP-OTHER", day, new LocalTime(9, 0), "TURN BACK", false);
-        using var client = Application.CreateClient();
-        const string scope = "/api/trips?startDate=2026-09-15&endDate=2026-09-15&pageSize=1";
-        var all = await GetTrips(client, scope);
-        Assert.Equal(3, all.ScopeCount);
-        Assert.Equal(0, all.AttentionCount);
-        Assert.Single(all.Items);
-        var filtered = await GetTrips(client, scope + "&needsAttention=true");
-        Assert.Equal(3, filtered.ScopeCount);
-        Assert.Equal(3, filtered.TotalCount);
-        Assert.Equal(0, filtered.AttentionCount);
+        var trip = range.Items.Single(trip => trip.BrokerTripNumber == "TRIP-15");
+        Assert.Equal("2026-09-15", trip.ServiceDate);
+        Assert.Equal("100 Sample St", trip.Pickup.Address);
+        Assert.Equal("Mesa", trip.Dropoff.City);
     }
 
     [Theory]
-    [InlineData("/api/trips?page=0", "page")]
-    [InlineData("/api/trips?pageSize=101", "pageSize")]
-    [InlineData("/api/trips?sortBy=999", "sortBy")]
-    [InlineData("/api/trips?sortDirection=999", "sortDirection")]
-    [InlineData("/api/trips?serviceDate=15-09-2026", "serviceDate")]
-    public async Task Dispatcher_receives_an_actionable_validation_response_for_unsupported_list_parameters(
-        string url,
-        string validationKey
-    )
+    [InlineData("case-123")]
+    [InlineData("ADA")]
+    [InlineData("lovelace")]
+    [InlineData("member-42")]
+    [InlineData("upper road")]
+    [InlineData("phoenix")]
+    [InlineData("synthetic way")]
+    [InlineData("mesa")]
+    public async Task Dispatcher_searches_trip_fields_case_insensitively(string search)
     {
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "CASE-123",
+            new LocalDate(2026, 9, 15),
+            "VALID",
+            false,
+            firstName: "Ada",
+            lastName: "Lovelace",
+            brokerMemberId: "MEMBER-42",
+            pickupAddress: "100 Upper Road",
+            pickupCity: "Phoenix",
+            dropoffAddress: "200 Synthetic Way",
+            dropoffCity: "Mesa"
+        );
+        await AddTrip(
+            "mdsw-eep2-3456",
+            "OTHER-456",
+            new LocalDate(2026, 9, 15),
+            "VALID",
+            false,
+            firstName: "Other",
+            lastName: "Rider",
+            pickupAddress: "300 Different Street",
+            pickupCity: "Tempe",
+            dropoffAddress: "400 Separate Avenue",
+            dropoffCity: "Chandler"
+        );
         using var client = Application.CreateClient();
 
-        using var response = await client.GetAsync(url);
+        var result = await GetTrips(client, $"/api/trips?search={Uri.EscapeDataString(search)}");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        await AssertValidationError(response, validationKey);
+        Assert.Equal(["CASE-123"], result.Items.Select(trip => trip.BrokerTripNumber));
+    }
+
+    [Fact]
+    public async Task Dispatcher_filters_by_broker_status_and_will_call()
+    {
+        var date = new LocalDate(2026, 9, 15);
+        await AddTrip("mdsw-eep2-3456", "VALID-WILL-CALL", date, "VALID", true);
+        await AddTrip("mdsw-eep2-3456", "VALID-NOT-WILL-CALL", date, "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TURN-BACK", date, "TURN BACK", true);
+        using var client = Application.CreateClient();
+
+        var result = await GetTrips(client, "/api/trips?brokerStatus=VALID&isWillCall=true");
+
+        Assert.Equal(["VALID-WILL-CALL"], result.Items.Select(trip => trip.BrokerTripNumber));
+    }
+
+    [Fact]
+    public async Task Dispatcher_paginates_within_its_safety_limits()
+    {
+        var date = new LocalDate(2026, 9, 15);
+        await AddTrip("mdsw-eep2-3456", "TRIP-A", date, "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-B", date, "VALID", false);
+        await AddTrip("mdsw-eep2-3456", "TRIP-C", date, "VALID", false);
+        using var client = Application.CreateClient();
+
+        var firstPage = await GetTrips(client, "/api/trips?page=1&pageSize=2");
+        var secondPage = await GetTrips(client, "/api/trips?page=2&pageSize=2");
+        Assert.Equal(3, firstPage.TotalCount);
+        Assert.Equal(2, firstPage.Items.Count);
+        Assert.Single(secondPage.Items);
+        Assert.Empty(firstPage.Items.Select(trip => trip.Id).Intersect(secondPage.Items.Select(trip => trip.Id)));
+
+        using var invalidPage = await client.GetAsync("/api/trips?page=0");
+        Assert.Equal(HttpStatusCode.BadRequest, invalidPage.StatusCode);
+        await AssertValidationError(invalidPage, "page");
+
+        using var oversizedPage = await client.GetAsync("/api/trips?pageSize=101");
+        Assert.Equal(HttpStatusCode.BadRequest, oversizedPage.StatusCode);
+        await AssertValidationError(oversizedPage, "pageSize");
     }
 
     private static async Task<PagedTripResponse> GetTrips(HttpClient client, string url)
@@ -224,12 +143,15 @@ public sealed class TripListTests : MdsweepIntegrationTest
         string tenantId,
         string brokerTripNumber,
         LocalDate serviceDate,
-        LocalTime appointmentTime,
         string brokerStatus,
         bool isWillCall,
         string firstName = "Synthetic",
         string lastName = "Passenger",
-        LocalTime? scheduledPickupTime = null
+        string? brokerMemberId = null,
+        string pickupAddress = "100 Sample St",
+        string pickupCity = "Phoenix",
+        string dropoffAddress = "200 Synthetic Way",
+        string dropoffCity = "Mesa"
     )
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -237,22 +159,22 @@ public sealed class TripListTests : MdsweepIntegrationTest
             .UseSnakeCaseNamingConvention()
             .Options;
         await using var db = new ApplicationDbContext(options);
-        var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", firstName, lastName);
+        var passenger = PassengerAggregate.Create(brokerMemberId ?? $"MED-{brokerTripNumber}", firstName, lastName);
         passenger.TenantId = tenantId;
         var trip = TripAggregate.Create(
             passenger.Id,
             brokerTripNumber,
             new BrokerTripData(
                 serviceDate,
-                appointmentTime,
+                new LocalTime(10, 0),
                 TripDirection.To,
                 isWillCall,
-                "100 Sample St",
-                "Phoenix",
+                pickupAddress,
+                pickupCity,
                 null,
                 null,
-                "200 Synthetic Way",
-                "Mesa",
+                dropoffAddress,
+                dropoffCity,
                 null,
                 null,
                 brokerStatus,
@@ -262,29 +184,14 @@ public sealed class TripListTests : MdsweepIntegrationTest
                 null
             )
         );
-        if (scheduledPickupTime.HasValue)
-            trip.OverridePickupTime(scheduledPickupTime.Value);
         trip.TenantId = tenantId;
         db.AddRange(passenger, trip);
         await db.SaveChangesAsync();
     }
 
-    private sealed record PagedTripResponse(
-        List<TripResponse> Items,
-        int TotalCount,
-        int Page,
-        int PageSize,
-        int ScopeCount,
-        int AttentionCount
-    );
+    private sealed record PagedTripResponse(List<TripResponse> Items, long TotalCount, int Page, int PageSize, long TotalPages);
 
-    private sealed record TripResponse(
-        Guid Id,
-        string BrokerTripNumber,
-        string ServiceDate,
-        string PickupAddress,
-        string PickupCity,
-        string DropoffAddress,
-        string DropoffCity
-    );
+    private sealed record TripResponse(Guid Id, string BrokerTripNumber, string ServiceDate, AddressResponse Pickup, AddressResponse Dropoff);
+
+    private sealed record AddressResponse(string Address, string City, string? State, string? Zip);
 }

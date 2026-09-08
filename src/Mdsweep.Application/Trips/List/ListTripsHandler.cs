@@ -1,4 +1,5 @@
 using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Application.Common.Models;
 using Mdsweep.Application.Common.Specifications;
 using Mdsweep.Application.Trips.Specifications;
 
@@ -11,13 +12,13 @@ public sealed class ListTripsHandler(IRepository repository)
         var spec = new TripsSpecification()
             .WithDateRange(query.StartDate, query.EndDate)
             .WithSearch(query.Search)
-            .WithStatus(query.Status)
+            .WithBrokerStatus(query.BrokerStatus)
             .WithWillCall(query.IsWillCall);
 
         var count = await repository.CountAsync(spec.Build(), ct);
 
         var items = await repository.ListAsync(
-            spec.OrderBy(query.SortBy, query.SortDirection, query.StartDate != query.EndDate)
+            spec.OrderBy(TripSortBy.ScheduledPickupTime, SortDirection.Ascending)
                 .WithPagination(query.Page, query.PageSize)
                 .Build(TripModelProjection.Instance),
             ct
