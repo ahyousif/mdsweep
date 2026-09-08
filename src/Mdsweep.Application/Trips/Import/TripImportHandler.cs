@@ -1,6 +1,7 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Passengers.Specifications;
 using Mdsweep.Application.Trips.Import.Manifest;
+using Mdsweep.Application.Trips.Scheduling;
 using Mdsweep.Application.Trips.Specifications;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
@@ -9,7 +10,10 @@ namespace Mdsweep.Application.Trips.Import;
 
 public sealed class TripImportHandler(IMtmManifestReader manifestReader, IRepository repository)
 {
-    public async Task<Result<TripImportSummary>> Handle(TripImportCommand command, CancellationToken ct)
+    public async Task<(Result<TripImportSummary> Result, OutgoingMessages Messages)> Handle(
+        TripImportCommand command,
+        CancellationToken ct
+    )
     {
         var manifest = await manifestReader.ReadAsync(command.FileName, command.Content, ct);
 
@@ -17,16 +21,19 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
 
         if (rows.Count == 0)
         {
-            return Result.Success(
-                new TripImportSummary(
-                    ReadyCount: 0,
-                    NeedsAttentionCount: manifest
-                        .Problems.Where(x => x.RowNumber.HasValue)
-                        .Select(x => x.RowNumber)
-                        .Distinct()
-                        .Count(),
-                    Problems: manifest.Problems
-                )
+            return (
+                Result.Success(
+                    new TripImportSummary(
+                        ReadyCount: 0,
+                        NeedsAttentionCount: manifest
+                            .Problems.Where(x => x.RowNumber.HasValue)
+                            .Select(x => x.RowNumber)
+                            .Distinct()
+                            .Count(),
+                        Problems: manifest.Problems
+                    )
+                ),
+                []
             );
         }
 
@@ -57,6 +64,8 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
             .ToHashSet();
+
+        var outgoingMessages = new OutgoingMessages();
 
         foreach (var row in rows)
         {
@@ -105,6 +114,8 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
 
                         readyCount++;
                     }
+
+                    outgoingMessages.Add(new ScheduleTripCommand(existingTrip.Id));
                 }
                 else
                 {
@@ -125,6 +136,8 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
 
                     await repository.AddAsync(trip, ct);
 
+                    outgoingMessages.Add(new ScheduleTripCommand(trip.Id));
+
                     tripsByNumber.Add(row.TripNumber, trip);
 
                     readyCount++;
@@ -132,17 +145,17 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
             }
         }
 
-        return Result.Success(
-            new TripImportSummary(
-                ReadyCount: readyCount,
-                NeedsAttentionCount: problems
-                    .Where(problem => problem.RowNumber.HasValue)
-                    .Select(problem => problem.RowNumber)
-                    .Distinct()
-                    .Count(),
-                Problems: problems
-            )
+        var summary = new TripImportSummary(
+            ReadyCount: readyCount,
+            NeedsAttentionCount: problems
+                .Where(problem => problem.RowNumber.HasValue)
+                .Select(problem => problem.RowNumber)
+                .Distinct()
+                .Count(),
+            Problems: problems
         );
+
+        return (Result.Success(summary), outgoingMessages);
     }
 
     private static async Task ReconcilePassengerAsync(
