@@ -92,6 +92,30 @@ public sealed class TripListTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task Dispatcher_exposes_trip_times_by_direction_and_will_call_status()
+    {
+        var date = new LocalDate(2026, 9, 15);
+        await AddTrip("TO", "TO-TRIP", date, "VALID", false);
+        await AddTrip("FROM", "FROM-TRIP", date, "VALID", false, direction: TripDirection.From);
+        await AddTrip("WILL-CALL", "WILL-CALL-TRIP", date, "VALID", true, direction: TripDirection.From);
+        using var client = Application.CreateClient();
+
+        var trips = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-15");
+
+        var toTrip = trips.Items.Single(trip => trip.BrokerTripNumber == "TO-TRIP");
+        Assert.Equal("10:00:00", toTrip.AppointmentTime);
+        Assert.Null(toTrip.ReturnPickupTime);
+
+        var fromTrip = trips.Items.Single(trip => trip.BrokerTripNumber == "FROM-TRIP");
+        Assert.Null(fromTrip.AppointmentTime);
+        Assert.Equal("10:00:00", fromTrip.ReturnPickupTime);
+
+        var willCallTrip = trips.Items.Single(trip => trip.BrokerTripNumber == "WILL-CALL-TRIP");
+        Assert.Null(willCallTrip.AppointmentTime);
+        Assert.Null(willCallTrip.ReturnPickupTime);
+    }
+
+    [Fact]
     public async Task Dispatcher_paginates_within_its_safety_limits()
     {
         var date = new LocalDate(2026, 9, 15);
@@ -145,6 +169,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
         LocalDate serviceDate,
         string brokerStatus,
         bool isWillCall,
+        TripDirection direction = TripDirection.To,
         string firstName = "Synthetic",
         string lastName = "Passenger",
         string? brokerMemberId = null,
@@ -167,7 +192,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
             new BrokerTripData(
                 serviceDate,
                 new LocalTime(10, 0),
-                TripDirection.To,
+                direction,
                 isWillCall,
                 pickupAddress,
                 pickupCity,
@@ -191,7 +216,15 @@ public sealed class TripListTests : MdsweepIntegrationTest
 
     private sealed record PagedTripResponse(List<TripResponse> Items, long TotalCount, int Page, int PageSize, long TotalPages);
 
-    private sealed record TripResponse(Guid Id, string BrokerTripNumber, string ServiceDate, AddressResponse Pickup, AddressResponse Dropoff);
+    private sealed record TripResponse(
+        Guid Id,
+        string BrokerTripNumber,
+        string ServiceDate,
+        string? AppointmentTime,
+        string? ReturnPickupTime,
+        AddressResponse Pickup,
+        AddressResponse Dropoff
+    );
 
     private sealed record AddressResponse(string Address, string City, string? State, string? Zip);
 }
