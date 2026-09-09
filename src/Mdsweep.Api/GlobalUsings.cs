@@ -15,5 +15,6 @@ global using NodaTime;
 global using NodaTime.Serialization.SystemTextJson;
 global using NodaTime.Text;
 global using Wolverine;
+global using Wolverine.FluentValidation;
 global using Wolverine.Http;
 global using IResult = Microsoft.AspNetCore.Http.IResult;
