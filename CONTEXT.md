@@ -66,6 +66,9 @@ Facts supplied by the broker for a Trip, retained separately from Tenant operati
 The dispatcher's planned time for a driver to pick up the passenger, based on appointment time and operational judgment.
 _Avoid_: Pickup Time
 
+**Pickup Buffer**:
+The number of minutes a Tenant reserves before the estimated travel duration when calculating a Scheduled Pickup Time.
+
 **Will-call Trip**:
 A return trip whose pickup time is not scheduled until the passenger reports being ready.
 

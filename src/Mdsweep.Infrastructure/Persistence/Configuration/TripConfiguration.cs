@@ -21,9 +21,9 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
 
         builder.Property(trip => trip.ManualPickupTime).HasColumnType("time");
 
-        builder.Property(trip => trip.EstimatedTravelMinutes);
+        builder.Property(trip => trip.EstimatedTravelMinutes).HasColumnName("estimated_travel_minutes");
 
-        builder.Property(trip => trip.EstimatedDistanceMeters);
+        builder.Property(trip => trip.EstimatedDistanceMeters).HasColumnName("estimated_distance_meters");
 
         builder.Property(trip => trip.ScheduleInputFingerprint).HasMaxLength(64);
 

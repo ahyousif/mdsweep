@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using Mdsweep.Application.Trips.Scheduling;
+using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
 using NodaTime;
@@ -17,7 +18,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
     }
 
     [Fact]
-    public async Task Import_persists_route_estimate_and_calculates_pickup_time_from_its_duration()
+    public async Task Import_uses_the_default_tenant_pickup_buffer()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
@@ -32,6 +33,38 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         Assert.Equal(12_345, trip.EstimatedDistanceMeters);
         Assert.Equal(1, routeEstimator.CallCount);
         Assert.Equal("mdsw-eep2-3456", trip.TenantId);
+    }
+
+    [Fact]
+    public async Task Import_uses_a_custom_tenant_pickup_buffer()
+    {
+        await SetPickupBufferMinutes(30);
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+
+        using var response = await Upload(client, Row());
+        response.EnsureSuccessStatusCode();
+
+        var trip = await WaitForCalculatedPickupTime(new LocalTime(8, 52));
+        Assert.Equal(new LocalTime(8, 52), trip.ScheduledPickupTime);
+    }
+
+    [Fact]
+    public async Task Changing_the_tenant_pickup_buffer_recalculates_the_schedule()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var initial = await Upload(client, Row());
+        initial.EnsureSuccessStatusCode();
+        await WaitForPickupTime();
+
+        await SetPickupBufferMinutes(30);
+        using var repeat = await Upload(client, Row());
+        repeat.EnsureSuccessStatusCode();
+
+        var trip = await WaitForCalculatedPickupTime(new LocalTime(8, 52));
+        Assert.Equal(new LocalTime(8, 52), trip.ScheduledPickupTime);
+        Assert.Equal(2, routeEstimator.CallCount);
     }
 
     [Fact]
@@ -89,7 +122,9 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         Assert.Equal(1, routeEstimator.CallCount);
     }
 
-    private async Task<TripAggregate> WaitForPickupTime()
+    private Task<TripAggregate> WaitForPickupTime() => WaitForCalculatedPickupTime(new LocalTime(9, 7));
+
+    private async Task<TripAggregate> WaitForCalculatedPickupTime(LocalTime expectedPickupTime)
     {
         for (var attempt = 0; attempt < 50; attempt++)
         {
@@ -98,12 +133,21 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
                 .ServiceProvider.GetRequiredService<ApplicationDbContext>()
                 .Trips.IgnoreQueryFilters()
                 .SingleOrDefaultAsync();
-            if (trip?.ScheduledPickupTime is not null)
+            if (trip?.CalculatedPickupTime == expectedPickupTime)
                 return trip;
             await Task.Delay(100);
         }
 
         throw new Xunit.Sdk.XunitException("The imported trip pickup time was not populated.");
+    }
+
+    private async Task SetPickupBufferMinutes(int pickupBufferMinutes)
+    {
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var tenant = await db.Tenants.SingleAsync();
+        tenant.SetPickupBufferMinutes(pickupBufferMinutes);
+        await db.SaveChangesAsync();
     }
 
     private async Task<TripAggregate> WaitForPickupTimeCleared()

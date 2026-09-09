@@ -71,6 +71,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("PickupBufferMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(15)
+                        .HasColumnName("pickup_buffer_minutes");
+
                     b.HasKey("Id");
 
                     b.HasIndex("KeycloakOrganizationId")

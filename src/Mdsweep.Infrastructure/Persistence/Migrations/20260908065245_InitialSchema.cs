@@ -33,7 +33,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
                     name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    keycloak_organization_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                    keycloak_organization_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    pickup_buffer_minutes = table.Column<int>(type: "integer", nullable: false, defaultValue: 15)
                 },
                 constraints: table =>
                 {

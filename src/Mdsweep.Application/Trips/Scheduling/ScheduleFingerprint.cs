@@ -6,7 +6,7 @@ namespace Mdsweep.Application.Trips.Scheduling;
 
 public static class ScheduleFingerprint
 {
-    public static string Create(BrokerTripData data)
+    public static string Create(BrokerTripData data, int pickupBufferMinutes)
     {
         Guard.Against.Null(data);
 
@@ -24,7 +24,8 @@ public static class ScheduleFingerprint
             data.DropoffAddress,
             data.DropoffCity,
             data.DropoffState,
-            data.DropoffZip
+            data.DropoffZip,
+            pickupBufferMinutes
         );
 
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));

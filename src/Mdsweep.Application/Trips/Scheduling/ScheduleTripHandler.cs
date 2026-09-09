@@ -1,4 +1,5 @@
 using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Application.Trips.Scheduling;
@@ -30,19 +31,23 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimatePr
             return;
         }
 
-        var fingerprint = ScheduleFingerprint.Create(trip.BrokerData);
-
-        if (trip.ScheduleInputFingerprint == fingerprint)
-        {
-            return;
-        }
-
         if (trip.BrokerData.Time is null)
         {
             trip.UpdateCalculatedSchedule(pickupTime: null, scheduleInputFingerprint: null);
 
             await repository.UpdateAsync(trip, ct);
 
+            return;
+        }
+
+        var tenant = await repository.GetByIdAsync<TenantAggregate, string>(trip.TenantId!, ct);
+
+        Guard.Against.Null(tenant, $"Tenant '{trip.TenantId}' was not found for trip scheduling.");
+
+        var fingerprint = ScheduleFingerprint.Create(trip.BrokerData, tenant.PickupBufferMinutes);
+
+        if (trip.ScheduleInputFingerprint == fingerprint)
+        {
             return;
         }
 
@@ -75,7 +80,8 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimatePr
 
         var calculatedPickupTime = TripSchedulingPolicy.CalculatePickupTime(
             trip.BrokerData.Time.Value,
-            estimate.Value.Duration
+            estimate.Value.Duration,
+            tenant.PickupBufferMinutes
         );
 
         var travelMinutes = TripSchedulingPolicy.CalculateTravelMinutes(estimate.Value.Duration);
