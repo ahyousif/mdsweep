@@ -12,12 +12,12 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
 
     protected override void ConfigureTestServices(IServiceCollection services)
     {
-        services.RemoveAll<IRouteDurationProvider>();
-        services.AddSingleton<IRouteDurationProvider>(routeEstimator);
+        services.RemoveAll<IRouteEstimateProvider>();
+        services.AddSingleton<IRouteEstimateProvider>(routeEstimator);
     }
 
     [Fact]
-    public async Task Import_populates_pickup_time_in_the_importing_tenant()
+    public async Task Import_persists_route_estimate_and_calculates_pickup_time_from_its_duration()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
@@ -26,8 +26,10 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         response.EnsureSuccessStatusCode();
 
         var trip = await WaitForPickupTime();
-        Assert.Equal(new LocalTime(9, 8), trip.ScheduledPickupTime);
-        Assert.Equal(new LocalTime(9, 8), trip.CalculatedPickupTime);
+        Assert.Equal(new LocalTime(9, 7), trip.ScheduledPickupTime);
+        Assert.Equal(new LocalTime(9, 7), trip.CalculatedPickupTime);
+        Assert.Equal(38, trip.EstimatedTravelMinutes);
+        Assert.Equal(12_345, trip.EstimatedDistanceMeters);
         Assert.Equal(1, routeEstimator.CallCount);
         Assert.Equal("mdsw-eep2-3456", trip.TenantId);
     }
@@ -49,6 +51,25 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
     }
 
     [Fact]
+    public async Task Failed_route_estimate_clears_stale_estimate_values()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var initial = await Upload(client, Row());
+        initial.EnsureSuccessStatusCode();
+        await WaitForPickupTime();
+
+        routeEstimator.ShouldFail = true;
+        using var changedRoute = await Upload(client, Row(deliveryAddress: "201 Different Way"));
+        changedRoute.EnsureSuccessStatusCode();
+
+        var trip = await WaitForPickupTimeCleared();
+        Assert.Null(trip.EstimatedTravelMinutes);
+        Assert.Null(trip.EstimatedDistanceMeters);
+        Assert.Equal(2, routeEstimator.CallCount);
+    }
+
+    [Fact]
     public async Task Will_call_change_clears_the_populated_pickup_time_without_routing()
     {
         using var client = Application.CreateClient();
@@ -63,6 +84,8 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         var trip = await WaitForPickupTimeCleared();
         Assert.Null(trip.ScheduledPickupTime);
         Assert.Null(trip.CalculatedPickupTime);
+        Assert.Null(trip.EstimatedTravelMinutes);
+        Assert.Null(trip.EstimatedDistanceMeters);
         Assert.Equal(1, routeEstimator.CallCount);
     }
 
@@ -109,19 +132,29 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
             }
         );
 
-    private static string Row(string willCall = "N", string tripType = "T") =>
+    private static string Row(string willCall = "N", string tripType = "T", string deliveryAddress = "200 Synthetic Way") =>
         "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Trip Type\n"
-        + $"09/15/2026,200 Synthetic Way,100 Sample St,10:00,TRIP-PICKUP,MED-PICKUP,VALID,Synthetic,Passenger,Phoenix,Mesa,{willCall},{tripType}";
+        + $"09/15/2026,{deliveryAddress},100 Sample St,10:00,TRIP-PICKUP,MED-PICKUP,VALID,Synthetic,Passenger,Phoenix,Mesa,{willCall},{tripType}";
 
-    private sealed class FakeRouteEstimator : IRouteDurationProvider
+    private sealed class FakeRouteEstimator : IRouteEstimateProvider
     {
         private int callCount;
+        private volatile bool shouldFail;
         public int CallCount => Volatile.Read(ref callCount);
+        public bool ShouldFail
+        {
+            get => shouldFail;
+            set => shouldFail = value;
+        }
 
-        public Task<Result<Duration>> GetDurationAsync(string origin, string destination, CancellationToken ct)
+        public Task<Result<RouteEstimate>> GetEstimateAsync(string origin, string destination, CancellationToken ct)
         {
             Interlocked.Increment(ref callCount);
-            return Task.FromResult(Result.Success(Duration.FromMinutes(37)));
+            return Task.FromResult(
+                shouldFail
+                    ? Result<RouteEstimate>.Error("Synthetic route-estimation failure.")
+                    : Result.Success(new RouteEstimate(Duration.FromSeconds(2_221), 12_345))
+            );
         }
     }
 }

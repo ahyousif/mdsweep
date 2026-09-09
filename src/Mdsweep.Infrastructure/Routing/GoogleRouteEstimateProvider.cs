@@ -4,23 +4,20 @@ using Mdsweep.Infrastructure.Http;
 
 namespace Mdsweep.Infrastructure.Routing;
 
-public sealed class GoogleRouteDurationProvider(
+public sealed class GoogleRouteEstimateProvider(
     IHttpClientFactory httpClientFactory,
     IOptions<GoogleRoutesOptions> options,
-    ILogger<GoogleRouteDurationProvider> logger
-) : IRouteDurationProvider
+    ILogger<GoogleRouteEstimateProvider> logger
+) : IRouteEstimateProvider
 {
     public const string HttpClientName = "GoogleRoutes";
 
     private const string RouteEndpoint = "directions/v2:computeRoutes";
-
     private const string ApiKeyHeader = "X-Goog-Api-Key";
-
     private const string FieldMaskHeader = "X-Goog-FieldMask";
+    private const string EstimateFieldMask = "routes.duration,routes.distanceMeters";
 
-    private const string DurationFieldMask = "routes.duration";
-
-    public async Task<Result<Duration>> GetDurationAsync(string origin, string destination, CancellationToken ct)
+    public async Task<Result<RouteEstimate>> GetEstimateAsync(string origin, string destination, CancellationToken ct)
     {
         Guard.Against.NullOrWhiteSpace(origin);
         Guard.Against.NullOrWhiteSpace(destination);
@@ -38,7 +35,7 @@ public sealed class GoogleRouteDurationProvider(
                 }
             )
             .WithHeader(ApiKeyHeader, options.Value.ApiKey!)
-            .WithHeader(FieldMaskHeader, DurationFieldMask)
+            .WithHeader(FieldMaskHeader, EstimateFieldMask)
             .WithSuccessRequired(false)
             .SendAsync(ct);
 
@@ -60,22 +57,22 @@ public sealed class GoogleRouteDurationProvider(
                 (int)response.StatusCode
             );
 
-            return Result<Duration>.Error("Unable to calculate a route for the supplied addresses.");
+            return Result<RouteEstimate>.Error("Unable to calculate a route for the supplied addresses.");
         }
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(ct));
 
-        if (!TryGetDuration(document.RootElement, out var duration))
+        if (!TryGetEstimate(document.RootElement, out var estimate))
         {
-            return Result<Duration>.Error("Google Routes did not return a travel duration.");
+            return Result<RouteEstimate>.Error("Google Routes did not return a route estimate.");
         }
 
-        return Result.Success(duration);
+        return Result.Success(estimate);
     }
 
-    private static bool TryGetDuration(JsonElement root, out Duration duration)
+    private static bool TryGetEstimate(JsonElement root, out RouteEstimate estimate)
     {
-        duration = default;
+        estimate = default!;
 
         if (
             !root.TryGetProperty("routes", out var routes)
@@ -88,7 +85,10 @@ public sealed class GoogleRouteDurationProvider(
 
         var route = routes[0];
 
-        if (!route.TryGetProperty("duration", out var durationElement))
+        if (
+            !route.TryGetProperty("duration", out var durationElement)
+            || !route.TryGetProperty("distanceMeters", out var distanceMetersElement)
+        )
         {
             return false;
         }
@@ -99,12 +99,13 @@ public sealed class GoogleRouteDurationProvider(
             string.IsNullOrWhiteSpace(value)
             || !value.EndsWith('s')
             || !double.TryParse(value[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+            || !distanceMetersElement.TryGetInt32(out var distanceMeters)
         )
         {
             return false;
         }
 
-        duration = Duration.FromSeconds(seconds);
+        estimate = new RouteEstimate(Duration.FromSeconds(seconds), distanceMeters);
 
         return true;
     }

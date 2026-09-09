@@ -8,8 +8,10 @@ internal static class TripSchedulingPolicy
 
     public static LocalTime CalculatePickupTime(LocalTime appointmentTime, Duration travelDuration)
     {
-        var travelMinutes = (int)Math.Ceiling(travelDuration.TotalMinutes);
+        var travelMinutes = CalculateTravelMinutes(travelDuration);
 
         return appointmentTime.PlusMinutes(-(travelMinutes + PickupBufferMinutes));
     }
+
+    public static int CalculateTravelMinutes(Duration travelDuration) => (int)Math.Ceiling(travelDuration.TotalMinutes);
 }

@@ -126,6 +126,14 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.Property<LocalTime?>("CalculatedPickupTime")
                         .HasColumnType("time");
 
+                    b.Property<int?>("EstimatedDistanceMeters")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_distance_meters");
+
+                    b.Property<int?>("EstimatedTravelMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_travel_minutes");
+
                     b.Property<LocalTime?>("ManualPickupTime")
                         .HasColumnType("time");
 

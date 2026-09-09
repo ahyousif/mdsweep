@@ -24,6 +24,8 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public BrokerTripData BrokerData { get; private set; } = null!;
     public LocalTime? CalculatedPickupTime { get; private set; }
     public LocalTime? ManualPickupTime { get; private set; }
+    public int? EstimatedTravelMinutes { get; private set; }
+    public int? EstimatedDistanceMeters { get; private set; }
     public string? ScheduleInputFingerprint { get; private set; }
     public LocalTime? ScheduledPickupTime => ManualPickupTime ?? CalculatedPickupTime;
 
@@ -62,9 +64,16 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         BrokerData = brokerData;
     }
 
-    public void UpdateCalculatedSchedule(LocalTime? pickupTime, string? scheduleInputFingerprint)
+    public void UpdateCalculatedSchedule(
+        LocalTime? pickupTime,
+        string? scheduleInputFingerprint,
+        int? estimatedTravelMinutes = null,
+        int? estimatedDistanceMeters = null
+    )
     {
         CalculatedPickupTime = pickupTime;
         ScheduleInputFingerprint = scheduleInputFingerprint;
+        EstimatedTravelMinutes = estimatedTravelMinutes;
+        EstimatedDistanceMeters = estimatedDistanceMeters;
     }
 }

@@ -3,7 +3,7 @@ using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Application.Trips.Scheduling;
 
-public sealed class ScheduleTripHandler(IRepository repository, IRouteDurationProvider routeDurationProvider)
+public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimateProvider routeEstimateProvider)
 {
     public async Task Handle(ScheduleTripCommand command, CancellationToken ct)
     {
@@ -60,9 +60,9 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteDurationPr
             trip.BrokerData.DropoffZip
         );
 
-        var duration = await routeDurationProvider.GetDurationAsync(origin, destination, ct);
+        var estimate = await routeEstimateProvider.GetEstimateAsync(origin, destination, ct);
 
-        if (!duration.IsSuccess)
+        if (!estimate.IsSuccess)
         {
             // Never leave an old calculated time behind after
             // the scheduling inputs changed.
@@ -73,9 +73,14 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteDurationPr
             return;
         }
 
-        var calculatedPickupTime = TripSchedulingPolicy.CalculatePickupTime(trip.BrokerData.Time.Value, duration.Value);
+        var calculatedPickupTime = TripSchedulingPolicy.CalculatePickupTime(
+            trip.BrokerData.Time.Value,
+            estimate.Value.Duration
+        );
 
-        trip.UpdateCalculatedSchedule(calculatedPickupTime, fingerprint);
+        var travelMinutes = TripSchedulingPolicy.CalculateTravelMinutes(estimate.Value.Duration);
+
+        trip.UpdateCalculatedSchedule(calculatedPickupTime, fingerprint, travelMinutes, estimate.Value.DistanceMeters);
 
         await repository.UpdateAsync(trip, ct);
     }

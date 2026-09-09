@@ -20,6 +20,8 @@ public sealed record TripModel(
     LocalTime? ScheduledPickupTime,
     LocalTime? CalculatedPickupTime,
     LocalTime? ManualPickupTime,
+    int? EstimatedTravelMinutes,
+    int? EstimatedDistanceMeters,
     string PickupAddress,
     string PickupCity,
     string? PickupState,

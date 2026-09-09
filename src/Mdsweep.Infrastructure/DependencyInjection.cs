@@ -51,7 +51,7 @@ public static class DependencyInjection
         //     .ValidateOnStart();
         //
         // services.AddHttpClient(
-        //     GoogleRouteDurationProvider.HttpClientName,
+        //     GoogleRouteEstimateProvider.HttpClientName,
         //     client =>
         //     {
         //         client.BaseAddress = new Uri("https://routes.googleapis.com/");
@@ -59,8 +59,8 @@ public static class DependencyInjection
         //     }
         // );
         //
-        // services.AddScoped<IRouteDurationProvider, GoogleRouteDurationProvider>();
-        services.AddSingleton<IRouteDurationProvider, DisabledRouteDurationProvider>();
+        // services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
+        services.AddSingleton<IRouteEstimateProvider, DisabledRouteEstimateProvider>();
 
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 

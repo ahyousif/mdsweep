@@ -23,6 +23,8 @@ public sealed record TripResponse(
     LocalTime? ScheduledPickupTime,
     LocalTime? CalculatedPickupTime,
     LocalTime? ManualPickupTime,
+    int? EstimatedTravelMinutes,
+    int? EstimatedDistanceMeters,
     AddressResponse Pickup,
     AddressResponse Dropoff
 )
@@ -47,6 +49,8 @@ public sealed record TripResponse(
             model.ScheduledPickupTime,
             model.CalculatedPickupTime,
             model.ManualPickupTime,
+            model.EstimatedTravelMinutes,
+            model.EstimatedDistanceMeters,
             new AddressResponse(model.PickupAddress, model.PickupCity, model.PickupState, model.PickupZip),
             new AddressResponse(model.DropoffAddress, model.DropoffCity, model.DropoffState, model.DropoffZip)
         );

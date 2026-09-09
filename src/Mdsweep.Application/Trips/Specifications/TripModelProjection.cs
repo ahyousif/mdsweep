@@ -26,6 +26,8 @@ internal sealed class TripModelProjection : Specification<TripAggregate, TripMod
             trip.ScheduledPickupTime,
             trip.CalculatedPickupTime,
             trip.ManualPickupTime,
+            trip.EstimatedTravelMinutes,
+            trip.EstimatedDistanceMeters,
             trip.BrokerData.PickupAddress,
             trip.BrokerData.PickupCity,
             trip.BrokerData.PickupState,
