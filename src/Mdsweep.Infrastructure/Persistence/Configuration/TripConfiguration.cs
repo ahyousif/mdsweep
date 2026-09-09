@@ -18,9 +18,8 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
 
         builder.Property(trip => trip.CalculatedPickupTime).HasColumnType("time");
         builder.Property(trip => trip.ManualPickupTime).HasColumnType("time");
-        builder.Property(trip => trip.EstimatedTravelMinutes).HasColumnName("estimated_travel_minutes");
-        builder.Property(trip => trip.EstimatedDistanceMeters).HasColumnName("estimated_distance_meters");
-        builder.Property(trip => trip.ScheduleInputFingerprint).HasMaxLength(64);
+        builder.Property(trip => trip.EstimatedTravelMinutes);
+        builder.Property(trip => trip.EstimatedDistanceMeters);
 
         builder
             .HasOne<PassengerAggregate>()
@@ -41,8 +40,14 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
             brokerData =>
             {
                 brokerData.Property(value => value.ServiceDate).HasColumnName("service_date").IsRequired();
-                brokerData.Property(value => value.AppointmentTime).HasColumnName("appointment_time").HasColumnType("time");
-                brokerData.Property(value => value.BrokerPickupTime).HasColumnName("broker_pickup_time").HasColumnType("time");
+                brokerData
+                    .Property(value => value.AppointmentTime)
+                    .HasColumnName("appointment_time")
+                    .HasColumnType("time");
+                brokerData
+                    .Property(value => value.BrokerPickupTime)
+                    .HasColumnName("broker_pickup_time")
+                    .HasColumnType("time");
                 brokerData.Property(value => value.Direction).HasColumnName("direction");
                 brokerData.Property(value => value.IsWillCall).HasColumnName("is_will_call");
                 brokerData

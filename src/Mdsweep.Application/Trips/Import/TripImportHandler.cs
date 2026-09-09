@@ -110,9 +110,12 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                             existingTrip.UpdateBrokerData(brokerData);
 
                             await repository.UpdateAsync(existingTrip, ct);
-                        }
 
-                        outgoingMessages.Add(new ScheduleTripCommand(existingTrip.Id));
+                            if (existingTrip.RequiresRouteEstimate)
+                            {
+                                outgoingMessages.Add(new ScheduleTripCommand(existingTrip.Id));
+                            }
+                        }
 
                         readyCount++;
                     }
@@ -136,7 +139,10 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
 
                     await repository.AddAsync(trip, ct);
 
-                    outgoingMessages.Add(new ScheduleTripCommand(trip.Id));
+                    if (trip.RequiresRouteEstimate)
+                    {
+                        outgoingMessages.Add(new ScheduleTripCommand(trip.Id));
+                    }
 
                     tripsByNumber.Add(row.TripNumber, trip);
 

@@ -84,8 +84,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     calculated_pickup_time = table.Column<LocalTime>(type: "time", nullable: true),
                     manual_pickup_time = table.Column<LocalTime>(type: "time", nullable: true),
                     estimated_travel_minutes = table.Column<int>(type: "integer", nullable: true),
-                    estimated_distance_meters = table.Column<int>(type: "integer", nullable: true),
-                    schedule_input_fingerprint = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true)
+                    estimated_distance_meters = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {

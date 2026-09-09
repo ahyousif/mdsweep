@@ -23,15 +23,12 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
-
     public LocalTime? CalculatedPickupTime { get; private set; }
     public LocalTime? ManualPickupTime { get; private set; }
     public int? EstimatedTravelMinutes { get; private set; }
     public int? EstimatedDistanceMeters { get; private set; }
-    public string? ScheduleInputFingerprint { get; private set; }
 
-    public LocalTime? ScheduledPickupTime =>
-        ManualPickupTime ?? CalculatedPickupTime ?? BrokerData.BrokerPickupTime;
+    public LocalTime? ScheduledPickupTime => ManualPickupTime ?? CalculatedPickupTime ?? BrokerData.BrokerPickupTime;
 
     public bool RequiresRouteEstimate => BrokerData.AppointmentTime is not null;
 
@@ -68,14 +65,10 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         Guard.Against.Null(brokerData);
 
         BrokerData = brokerData;
+        ClearRouteEstimate();
     }
 
-    public void ApplyRouteEstimate(
-        Duration duration,
-        int distanceMeters,
-        int pickupBufferMinutes,
-        string scheduleInputFingerprint
-    )
+    public void ApplyRouteEstimate(Duration duration, int distanceMeters, int pickupBufferMinutes)
     {
         Guard.Against.Invalid(
             BrokerData.AppointmentTime is null,
@@ -88,7 +81,6 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
 
         EstimatedTravelMinutes = travelMinutes;
         EstimatedDistanceMeters = distanceMeters;
-        ScheduleInputFingerprint = scheduleInputFingerprint;
     }
 
     public void ClearRouteEstimate()
@@ -96,6 +88,5 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         CalculatedPickupTime = null;
         EstimatedTravelMinutes = null;
         EstimatedDistanceMeters = null;
-        ScheduleInputFingerprint = null;
     }
 }

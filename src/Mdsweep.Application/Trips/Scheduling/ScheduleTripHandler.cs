@@ -28,13 +28,6 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimatePr
 
         Guard.Against.Null(tenant, $"Tenant '{trip.TenantId}' was not found for trip scheduling.");
 
-        var fingerprint = ScheduleFingerprint.Create(trip.BrokerData, tenant.PickupBufferMinutes);
-
-        if (trip.ScheduleInputFingerprint == fingerprint)
-        {
-            return;
-        }
-
         var origin = FormatAddress(
             trip.BrokerData.PickupAddress,
             trip.BrokerData.PickupCity,
@@ -57,12 +50,7 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimatePr
         }
         else
         {
-            trip.ApplyRouteEstimate(
-                estimate.Value.Duration,
-                estimate.Value.DistanceMeters,
-                tenant.PickupBufferMinutes,
-                fingerprint
-            );
+            trip.ApplyRouteEstimate(estimate.Value.Duration, estimate.Value.DistanceMeters, tenant.PickupBufferMinutes);
         }
 
         await repository.UpdateAsync(trip, ct);

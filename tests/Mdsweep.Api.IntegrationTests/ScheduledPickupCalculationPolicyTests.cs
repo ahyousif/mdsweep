@@ -10,7 +10,7 @@ public sealed class ScheduledPickupCalculationPolicyTests
     {
         var trip = CreateTrip();
         var calculatedPickupTime = new LocalTime(9, 5);
-        trip.ApplyRouteEstimate(Duration.Zero, 0, 55, "synthetic-fingerprint");
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55);
         trip.OverridePickupTime(new LocalTime(8, 55));
 
         Assert.Equal(new LocalTime(8, 55), trip.ScheduledPickupTime);
@@ -22,12 +22,33 @@ public sealed class ScheduledPickupCalculationPolicyTests
     {
         var trip = CreateTrip();
         var calculatedPickupTime = new LocalTime(9, 5);
-        trip.ApplyRouteEstimate(Duration.Zero, 0, 55, "synthetic-fingerprint");
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55);
         trip.OverridePickupTime(new LocalTime(8, 55));
 
         trip.RemovePickupOverride();
 
         Assert.Equal(calculatedPickupTime, trip.ScheduledPickupTime);
+    }
+
+    [Fact]
+    public void Updating_broker_data_clears_the_route_estimate_before_using_a_broker_pickup_time()
+    {
+        var trip = CreateTrip();
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55);
+
+        trip.UpdateBrokerData(
+            trip.BrokerData with
+            {
+                AppointmentTime = null,
+                BrokerPickupTime = new LocalTime(14, 30),
+                Direction = TripDirection.From,
+            }
+        );
+
+        Assert.Null(trip.CalculatedPickupTime);
+        Assert.Null(trip.EstimatedTravelMinutes);
+        Assert.Null(trip.EstimatedDistanceMeters);
+        Assert.Equal(new LocalTime(14, 30), trip.ScheduledPickupTime);
     }
 
     private static TripAggregate CreateTrip() =>

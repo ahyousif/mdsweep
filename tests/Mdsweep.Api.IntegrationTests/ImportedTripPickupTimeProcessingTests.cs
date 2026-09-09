@@ -50,7 +50,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
     }
 
     [Fact]
-    public async Task Changing_the_tenant_pickup_buffer_recalculates_the_schedule()
+    public async Task Changed_trip_recalculates_using_the_current_tenant_pickup_buffer()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
@@ -59,7 +59,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         await WaitForPickupTime();
 
         await SetPickupBufferMinutes(30);
-        using var repeat = await Upload(client, Row());
+        using var repeat = await Upload(client, Row(deliveryAddress: "201 Different Way"));
         repeat.EnsureSuccessStatusCode();
 
         var trip = await WaitForCalculatedPickupTime(new LocalTime(8, 52));
@@ -97,6 +97,7 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         changedRoute.EnsureSuccessStatusCode();
 
         var trip = await WaitForPickupTimeCleared();
+        await WaitForRouteEstimateCallCount(2);
         Assert.Null(trip.EstimatedTravelMinutes);
         Assert.Null(trip.EstimatedDistanceMeters);
         Assert.Equal(2, routeEstimator.CallCount);
@@ -165,6 +166,21 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
         }
 
         throw new Xunit.Sdk.XunitException("The will-call import did not clear the pickup time.");
+    }
+
+    private async Task WaitForRouteEstimateCallCount(int expectedCallCount)
+    {
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            if (routeEstimator.CallCount == expectedCallCount)
+            {
+                return;
+            }
+
+            await Task.Delay(100);
+        }
+
+        throw new Xunit.Sdk.XunitException("The expected route estimate was not requested.");
     }
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string csv) =>

@@ -146,10 +146,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PassengerId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ScheduleInputFingerprint")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(14)
