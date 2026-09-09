@@ -69,6 +69,7 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
             new BrokerTripData(
                 new LocalDate(2026, 9, 15),
                 new LocalTime(10, 0),
+                null,
                 TripDirection.To,
                 false,
                 "100 Sample St",

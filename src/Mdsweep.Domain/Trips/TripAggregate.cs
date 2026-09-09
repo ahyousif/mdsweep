@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Domain.Common.Extensions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
 
@@ -22,12 +23,17 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
+
     public LocalTime? CalculatedPickupTime { get; private set; }
     public LocalTime? ManualPickupTime { get; private set; }
     public int? EstimatedTravelMinutes { get; private set; }
     public int? EstimatedDistanceMeters { get; private set; }
     public string? ScheduleInputFingerprint { get; private set; }
-    public LocalTime? ScheduledPickupTime => ManualPickupTime ?? CalculatedPickupTime;
+
+    public LocalTime? ScheduledPickupTime =>
+        ManualPickupTime ?? CalculatedPickupTime ?? BrokerData.BrokerPickupTime;
+
+    public bool RequiresRouteEstimate => BrokerData.AppointmentTime is not null;
 
     public static TripAggregate Create(Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
     {
@@ -64,16 +70,32 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         BrokerData = brokerData;
     }
 
-    public void UpdateCalculatedSchedule(
-        LocalTime? pickupTime,
-        string? scheduleInputFingerprint,
-        int? estimatedTravelMinutes = null,
-        int? estimatedDistanceMeters = null
+    public void ApplyRouteEstimate(
+        Duration duration,
+        int distanceMeters,
+        int pickupBufferMinutes,
+        string scheduleInputFingerprint
     )
     {
-        CalculatedPickupTime = pickupTime;
+        Guard.Against.Invalid(
+            BrokerData.AppointmentTime is null,
+            "A trip requires an appointment time before a route estimate can be applied."
+        );
+
+        var travelMinutes = (int)Math.Ceiling(duration.TotalMinutes);
+
+        CalculatedPickupTime = BrokerData.AppointmentTime!.Value.PlusMinutes(-(travelMinutes + pickupBufferMinutes));
+
+        EstimatedTravelMinutes = travelMinutes;
+        EstimatedDistanceMeters = distanceMeters;
         ScheduleInputFingerprint = scheduleInputFingerprint;
-        EstimatedTravelMinutes = estimatedTravelMinutes;
-        EstimatedDistanceMeters = estimatedDistanceMeters;
+    }
+
+    public void ClearRouteEstimate()
+    {
+        CalculatedPickupTime = null;
+        EstimatedTravelMinutes = null;
+        EstimatedDistanceMeters = null;
+        ScheduleInputFingerprint = null;
     }
 }

@@ -310,9 +310,13 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("broker_status");
 
-                            b1.Property<LocalTime?>("Time")
+                            b1.Property<LocalTime?>("AppointmentTime")
                                 .HasColumnType("time")
-                                .HasColumnName("broker_time");
+                                .HasColumnName("appointment_time");
+
+                            b1.Property<LocalTime?>("BrokerPickupTime")
+                                .HasColumnType("time")
+                                .HasColumnName("broker_pickup_time");
 
                             b1.HasKey("TripAggregateId");
 

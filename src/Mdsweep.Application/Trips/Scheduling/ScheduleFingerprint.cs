@@ -6,15 +6,18 @@ namespace Mdsweep.Application.Trips.Scheduling;
 
 public static class ScheduleFingerprint
 {
+    private const int Version = 1;
+
     public static string Create(BrokerTripData data, int pickupBufferMinutes)
     {
         Guard.Against.Null(data);
 
         var value = string.Join(
             '\u001F',
-            TripSchedulingPolicy.Version,
+            Version,
             data.ServiceDate,
-            data.Time,
+            data.AppointmentTime,
+            data.BrokerPickupTime,
             data.Direction,
             data.IsWillCall,
             data.PickupAddress,

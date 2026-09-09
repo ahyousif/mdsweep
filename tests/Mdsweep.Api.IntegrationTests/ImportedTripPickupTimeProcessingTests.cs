@@ -176,7 +176,11 @@ public sealed class ImportedTripPickupTimeProcessingTests : MdsweepIntegrationTe
             }
         );
 
-    private static string Row(string willCall = "N", string tripType = "T", string deliveryAddress = "200 Synthetic Way") =>
+    private static string Row(
+        string willCall = "N",
+        string tripType = "T",
+        string deliveryAddress = "200 Synthetic Way"
+    ) =>
         "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Trip Type\n"
         + $"09/15/2026,{deliveryAddress},100 Sample St,10:00,TRIP-PICKUP,MED-PICKUP,VALID,Synthetic,Passenger,Phoenix,Mesa,{willCall},{tripType}";
 

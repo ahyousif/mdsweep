@@ -191,7 +191,8 @@ public sealed class TripListTests : MdsweepIntegrationTest
             brokerTripNumber,
             new BrokerTripData(
                 serviceDate,
-                new LocalTime(10, 0),
+                direction == TripDirection.To ? new LocalTime(10, 0) : null,
+                direction == TripDirection.From && !isWillCall ? new LocalTime(10, 0) : null,
                 direction,
                 isWillCall,
                 pickupAddress,

@@ -179,7 +179,8 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
     {
         return new BrokerTripData(
             ServiceDate: row.ServiceDate,
-            Time: row.Time,
+            AppointmentTime: row.Direction == TripDirection.To ? row.Time : null,
+            BrokerPickupTime: row.Direction == TripDirection.From && !row.IsWillCall ? row.Time : null,
             Direction: row.Direction,
             IsWillCall: row.IsWillCall,
             PickupAddress: row.PickupAddress,

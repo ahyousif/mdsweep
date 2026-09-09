@@ -2,7 +2,8 @@ namespace Mdsweep.Domain.Trips;
 
 public sealed record BrokerTripData(
     LocalDate ServiceDate,
-    LocalTime? Time,
+    LocalTime? AppointmentTime,
+    LocalTime? BrokerPickupTime,
     TripDirection Direction,
     bool IsWillCall,
     string PickupAddress,

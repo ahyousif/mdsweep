@@ -10,7 +10,7 @@ public sealed class ScheduledPickupCalculationPolicyTests
     {
         var trip = CreateTrip();
         var calculatedPickupTime = new LocalTime(9, 5);
-        trip.UpdateCalculatedSchedule(calculatedPickupTime, "synthetic-fingerprint");
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55, "synthetic-fingerprint");
         trip.OverridePickupTime(new LocalTime(8, 55));
 
         Assert.Equal(new LocalTime(8, 55), trip.ScheduledPickupTime);
@@ -22,7 +22,7 @@ public sealed class ScheduledPickupCalculationPolicyTests
     {
         var trip = CreateTrip();
         var calculatedPickupTime = new LocalTime(9, 5);
-        trip.UpdateCalculatedSchedule(calculatedPickupTime, "synthetic-fingerprint");
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55, "synthetic-fingerprint");
         trip.OverridePickupTime(new LocalTime(8, 55));
 
         trip.RemovePickupOverride();
@@ -30,8 +30,29 @@ public sealed class ScheduledPickupCalculationPolicyTests
         Assert.Equal(calculatedPickupTime, trip.ScheduledPickupTime);
     }
 
-    private static TripAggregate CreateTrip() => TripAggregate.Create(Guid.CreateVersion7(), "TRIP-SCHEDULED", new BrokerTripData(
-        new LocalDate(2026, 9, 15), new LocalTime(10, 0), TripDirection.To, false,
-        "100 Sample St", "Phoenix", null, null, "200 Synthetic Way", "Mesa", null, null,
-        "VALID", null, null, null, null));
+    private static TripAggregate CreateTrip() =>
+        TripAggregate.Create(
+            Guid.CreateVersion7(),
+            "TRIP-SCHEDULED",
+            new BrokerTripData(
+                new LocalDate(2026, 9, 15),
+                new LocalTime(10, 0),
+                null,
+                TripDirection.To,
+                false,
+                "100 Sample St",
+                "Phoenix",
+                null,
+                null,
+                "200 Synthetic Way",
+                "Mesa",
+                null,
+                null,
+                "VALID",
+                null,
+                null,
+                null,
+                null
+            )
+        );
 }

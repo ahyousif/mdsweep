@@ -15,25 +15,9 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimatePr
             return;
         }
 
-        if (trip.BrokerData.Direction == TripDirection.From)
+        if (!trip.RequiresRouteEstimate)
         {
-            var brokerPickupTime = trip.BrokerData.IsWillCall ? null : trip.BrokerData.Time;
-
-            if (trip.CalculatedPickupTime == brokerPickupTime && trip.ScheduleInputFingerprint is null)
-            {
-                return;
-            }
-
-            trip.UpdateCalculatedSchedule(brokerPickupTime, scheduleInputFingerprint: null);
-
-            await repository.UpdateAsync(trip, ct);
-
-            return;
-        }
-
-        if (trip.BrokerData.Time is null)
-        {
-            trip.UpdateCalculatedSchedule(pickupTime: null, scheduleInputFingerprint: null);
+            trip.ClearRouteEstimate();
 
             await repository.UpdateAsync(trip, ct);
 
@@ -69,24 +53,17 @@ public sealed class ScheduleTripHandler(IRepository repository, IRouteEstimatePr
 
         if (!estimate.IsSuccess)
         {
-            // Never leave an old calculated time behind after
-            // the scheduling inputs changed.
-            trip.UpdateCalculatedSchedule(pickupTime: null, scheduleInputFingerprint: null);
-
-            await repository.UpdateAsync(trip, ct);
-
-            return;
+            trip.ClearRouteEstimate();
         }
-
-        var calculatedPickupTime = TripSchedulingPolicy.CalculatePickupTime(
-            trip.BrokerData.Time.Value,
-            estimate.Value.Duration,
-            tenant.PickupBufferMinutes
-        );
-
-        var travelMinutes = TripSchedulingPolicy.CalculateTravelMinutes(estimate.Value.Duration);
-
-        trip.UpdateCalculatedSchedule(calculatedPickupTime, fingerprint, travelMinutes, estimate.Value.DistanceMeters);
+        else
+        {
+            trip.ApplyRouteEstimate(
+                estimate.Value.Duration,
+                estimate.Value.DistanceMeters,
+                tenant.PickupBufferMinutes,
+                fingerprint
+            );
+        }
 
         await repository.UpdateAsync(trip, ct);
     }
