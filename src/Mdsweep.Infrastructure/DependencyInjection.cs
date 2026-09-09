@@ -42,25 +42,22 @@ public static class DependencyInjection
         services.AddScoped<ITenantAccess, TenantAccess>();
         services.AddScoped<IMtmManifestReader, MtmManifestReader>();
 
-        // Route estimation is intentionally disabled until a routing provider is selected and configured.
-        // To re-enable Google Routes, restore this block and replace the disabled provider registration below.
-        // services
-        //     .AddOptions<GoogleRoutesOptions>()
-        //     .Bind(configuration.GetSection(GoogleRoutesOptions.SectionName))
-        //     .Validate(options => !string.IsNullOrWhiteSpace(options.ApiKey), "Google Routes API key is required.")
-        //     .ValidateOnStart();
-        //
-        // services.AddHttpClient(
-        //     GoogleRouteEstimateProvider.HttpClientName,
-        //     client =>
-        //     {
-        //         client.BaseAddress = new Uri("https://routes.googleapis.com/");
-        //         client.Timeout = TimeSpan.FromSeconds(10);
-        //     }
-        // );
-        //
-        // services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
-        services.AddSingleton<IRouteEstimateProvider, DisabledRouteEstimateProvider>();
+        services
+            .AddOptions<GoogleRoutesOptions>()
+            .Bind(configuration.GetSection(GoogleRoutesOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ApiKey), "Google Routes API key is required.")
+            .ValidateOnStart();
+
+        services.AddHttpClient(
+            GoogleRouteEstimateProvider.HttpClientName,
+            client =>
+            {
+                client.BaseAddress = new Uri("https://routes.googleapis.com/");
+                client.Timeout = TimeSpan.FromSeconds(10);
+            }
+        );
+
+        services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
 
         services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
 
