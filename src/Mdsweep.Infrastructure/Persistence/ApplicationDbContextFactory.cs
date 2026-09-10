@@ -9,7 +9,7 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
         options.UseNpgsql(
             "Host=localhost;Database=mdsweep_design;Username=postgres;Password=postgres",
             npgsql => npgsql.UseNodaTime()
-        );
+        ).UseSnakeCaseNamingConvention();
 
         return new ApplicationDbContext(options.Options);
     }

@@ -23,12 +23,15 @@ public sealed class UserAggregate : AggregateRoot<Guid>
 
     public static UserAggregate Create(string firstName, string lastName, string keycloakUserId, string email)
     {
-        Guard.Against.Null(firstName, nameof(firstName));
-        Guard.Against.Null(lastName, nameof(lastName));
-        Guard.Against.Null(keycloakUserId, nameof(keycloakUserId));
-
-        var user = new UserAggregate(Guid.CreateVersion7(), firstName, lastName, keycloakUserId);
-        user.Email = Guard.Against.NullOrWhiteSpace(email, nameof(email));
+        var user = new UserAggregate(
+            Guid.CreateVersion7(),
+            firstName: Guard.Against.Null(firstName, nameof(firstName)),
+            lastName: Guard.Against.Null(lastName, nameof(lastName)),
+            keycloakUserId: Guard.Against.Null(keycloakUserId, nameof(keycloakUserId))
+        )
+        {
+            Email = Guard.Against.NullOrWhiteSpace(email, nameof(email)),
+        };
 
         user.AddDomainEvent(new UserCreatedDomainEvent(user.Id));
 

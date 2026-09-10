@@ -17,14 +17,14 @@ public static class DevelopmentIdentitySeeder
         );
         if (tenant is null)
         {
-            tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant", TenantOrganizationId);
+            tenant = TenantAggregate.Create("mdsw-eep2-3456", "MDSweep Tenant", TenantOrganizationId);
             db.Tenants.Add(tenant);
         }
 
         var user = await db.Users.SingleOrDefaultAsync(x => x.KeycloakUserId == DispatcherSubject, cancellationToken);
         if (user is null)
         {
-            user = UserAggregate.Create("Synthetic", "Administrator", DispatcherSubject, "developer@mdsweep.com");
+            user = UserAggregate.Create("MDSweep", "Developer", DispatcherSubject, "developer@mdsweep.com");
             db.Users.Add(user);
         }
 
@@ -32,7 +32,9 @@ public static class DevelopmentIdentitySeeder
             !await db.TenantMemberships.AnyAsync(x => x.UserId == user.Id && x.TenantId == tenant.Id, cancellationToken)
         )
         {
-            db.TenantMemberships.Add(TenantMembership.Create(tenant.Id, user.Id, "Administrator"));
+            db.TenantMemberships.Add(
+                TenantMembership.Create(tenant.Id, user.Id, "MDSweep Developer", ["Administrator"])
+            );
         }
 
         await db.SaveChangesAsync(cancellationToken);

@@ -32,7 +32,7 @@ public sealed class AccessFailureMiddleware(RequestDelegate next)
 
     private static bool IsAccess(HttpContext context) =>
         context.Request.Path.StartsWithSegments("/api/users")
-        || context.Request.Path.StartsWithSegments("/api/invitation");
+        || context.Request.Path.StartsWithSegments("/api/invitations");
 
     private static Task Conflict(HttpContext context) =>
         Results

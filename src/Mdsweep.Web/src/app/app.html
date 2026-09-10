@@ -15,9 +15,11 @@
       }
     </div>
   </main>
-} @else if (activeSession() === null || managingAccess()) {
+} @else if (activeSession() === null || managingAccess() || invitationToken() !== null) {
   <app-invitation-welcome
     [hasAccess]="activeSession() !== null"
+    [token]="invitationToken()"
+    (accepted)="invitationAccepted()"
     (closed)="managingAccess.set(false)"
   />
 } @else if (isDriverOnly()) {
@@ -26,7 +28,7 @@
       <div hlmCardHeader>
         <h1 hlmCardTitle>My Trips is not available in this build yet.</h1>
         <button hlmBtn variant="outline" type="button" (click)="managingAccess.set(true)">
-          Tenants and Invitations
+          Tenant access
         </button>
       </div>
     </section>

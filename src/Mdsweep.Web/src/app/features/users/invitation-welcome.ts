@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, input, output, signal } from '@angular/core';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
@@ -9,11 +8,10 @@ import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-quer
 import { AuthSessionService } from '@app/core/auth/auth-session.service';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { UsersApi } from './users.api';
-import { userQueryKeys } from './users.queries';
 
 @Component({
   selector: 'app-invitation-welcome',
-  imports: [DatePipe, HlmButton, HlmSpinner, HlmMuted, HlmAlertImports, HlmCardImports],
+  imports: [HlmButton, HlmSpinner, HlmMuted, HlmAlertImports, HlmCardImports],
   templateUrl: './invitation-welcome.html',
 })
 export class InvitationWelcome {
@@ -21,7 +19,9 @@ export class InvitationWelcome {
   readonly #auth = inject(AuthSessionService);
   readonly #queries = inject(QueryClient);
   readonly hasAccess = input(false);
+  readonly token = input<string | null>(null);
   readonly closed = output();
+  readonly accepted = output();
   readonly error = signal('');
   readonly sessions = injectQuery(() => ({
     queryKey: ['auth', 'memberships'],
@@ -34,28 +34,15 @@ export class InvitationWelcome {
       this.error.set(httpErrorMessage(error, 'Could not switch Tenant. Try again.')),
   }));
   readonly signingOut = signal(false);
-  readonly invitation = injectQuery(() => ({
-    queryKey: userQueryKeys.invitation,
-    queryFn: () => this.#api.pendingInvitation(),
-    retry: false,
-  }));
   readonly acceptance = injectMutation(() => ({
-    mutationFn: (id: string) => this.#api.accept(id),
+    mutationFn: (token: string) => this.#api.accept(token),
     onSuccess: async () => {
-      await Promise.all([
-        this.#queries.invalidateQueries({ queryKey: ['auth'] }),
-        this.#queries.invalidateQueries({ queryKey: userQueryKeys.invitation }),
-      ]);
+      await this.#queries.invalidateQueries({ queryKey: ['auth'] });
+      this.accepted.emit();
     },
     onError: (error: unknown) =>
       this.error.set(httpErrorMessage(error, 'The invitation could not be accepted. Try again.')),
   }));
-  invitationError(): string {
-    return httpErrorMessage(
-      this.invitation.error(),
-      'The invitations could not be checked. Try again.',
-    );
-  }
   async signOut(): Promise<void> {
     this.signingOut.set(true);
     try {

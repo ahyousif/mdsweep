@@ -1,6 +1,6 @@
 <main class="grid min-h-svh place-items-center p-4">
   <section hlmCard class="w-full max-w-lg">
-    <div hlmCardHeader><h1 hlmCardTitle>Tenants and Invitations</h1></div>
+    <div hlmCardHeader><h1 hlmCardTitle>Tenant access</h1></div>
     <div hlmCardContent class="grid gap-4">
       @if (sessions.isPending()) {
         <p role="status"><hlm-spinner aria-hidden="true" /> Loading your access...</p>
@@ -24,46 +24,24 @@
           </button>
         }
       }
-      @if (invitation.isPending()) {
-        <p role="status"><hlm-spinner aria-hidden="true" /> Checking your invitations...</p>
-      } @else if (invitation.isError()) {
-        <div hlmAlert variant="destructive" role="alert">
-          <p hlmAlertDescription>{{ invitationError() }}</p>
-        </div>
-        <button hlmBtn variant="outline" type="button" (click)="invitation.refetch()">
-          Check again
+      @if (token(); as invitationToken) {
+        <p>Accept this invitation to add its Tenant access to your account.</p>
+        <button
+          hlmBtn
+          type="button"
+          [disabled]="acceptance.isPending() || selection.isPending() || signingOut()"
+          (click)="acceptance.mutate(invitationToken)"
+        >
+          @if (acceptance.isPending()) {
+            <hlm-spinner aria-hidden="true" />
+          }
+          {{ acceptance.isPending() ? 'Accepting...' : 'Accept invitation' }}
         </button>
-      } @else {
-        @for (pending of invitation.data(); track pending.id) {
-          <section hlmCard>
-            <div hlmCardContent class="grid gap-4">
-              <p>
-                You have been invited to {{ pending.tenantName }} with roles:
-                {{ pending.roles.join(' and ') }}.
-              </p>
-              <p hlmMuted>Expires {{ pending.expiresAt | date: 'medium' }}.</p>
-              <button
-                hlmBtn
-                type="button"
-                [disabled]="acceptance.isPending() || selection.isPending() || signingOut()"
-                (click)="acceptance.mutate(pending.id)"
-                [attr.aria-label]="'Accept invitation to ' + pending.tenantName"
-              >
-                @if (acceptance.isPending()) {
-                  <hlm-spinner aria-hidden="true" />
-                }
-                {{ acceptance.isPending() ? 'Accepting...' : 'Accept invitation' }}
-              </button>
-            </div>
-          </section>
-        } @empty {
-          <p hlmMuted>
-            No pending invitations. Ask an Administrator if you need access to another Tenant.
-          </p>
-          <button hlmBtn variant="outline" type="button" (click)="invitation.refetch()">
-            Check again
-          </button>
-        }
+      } @else if (!hasAccess() && !sessions.isPending()) {
+        <p hlmMuted>
+          You do not have Tenant access. Open the secure link from your invitation email or ask an
+          Administrator for access.
+        </p>
       }
       @if (error()) {
         <div hlmAlert variant="destructive" role="alert">

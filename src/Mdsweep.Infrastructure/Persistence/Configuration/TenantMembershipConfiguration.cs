@@ -7,32 +7,21 @@ public sealed class TenantMembershipConfiguration : IEntityTypeConfiguration<Ten
 {
     public void Configure(EntityTypeBuilder<TenantMembership> builder)
     {
-        builder.ToTable(
-            "tenant_memberships",
-            table =>
-                table.HasCheckConstraint(
-                    "ck_tenant_memberships_roles",
-                    "cardinality(roles) BETWEEN 1 AND 2 AND roles <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(roles, NULL) IS NULL AND (cardinality(roles) = 1 OR roles[1] <> roles[2])"
-                )
-        );
-        builder.HasKey(membership => membership.Id);
-        builder.Property(membership => membership.Id).HasColumnName("id");
-        builder.Property(membership => membership.TenantId).HasColumnName("tenant_id").HasMaxLength(14);
-        builder.Property(membership => membership.UserId).HasColumnName("user_id");
-        builder.Property(membership => membership.Roles).HasColumnName("roles").HasColumnType("text[]");
-        builder.HasIndex(membership => new { membership.TenantId, membership.UserId }).IsUnique();
-        builder.Property(membership => membership.DisplayName).HasColumnName("display_name").HasMaxLength(401);
-        builder.Property(membership => membership.IsActive).HasColumnName("is_active");
-        builder.Property(membership => membership.Version).HasColumnName("version").IsConcurrencyToken();
-        builder
-            .HasOne<TenantAggregate>()
-            .WithMany()
-            .HasForeignKey(membership => membership.TenantId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder
-            .HasOne<UserAggregate>()
-            .WithMany()
-            .HasForeignKey(membership => membership.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.ToTable("tenant_memberships");
+
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.TenantId).HasMaxLength(14).IsRequired();
+        builder.Property(x => x.UserId).IsRequired();
+        builder.Property(x => x.Roles).HasColumnType("text[]").IsRequired();
+        builder.Property(x => x.DisplayName).HasMaxLength(100);
+        builder.Property(x => x.IsActive).IsRequired();
+
+        builder.HasIndex(x => new { x.TenantId, x.UserId }).IsUnique();
+
+        builder.HasOne<TenantAggregate>().WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<UserAggregate>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
     }
 }

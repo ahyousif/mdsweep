@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -24,9 +25,11 @@ import { InvitationWelcome } from './features/users/invitation-welcome';
 })
 export class App {
   private readonly auth = inject(AuthSessionService);
+  private readonly document = inject(DOCUMENT);
 
   readonly text = uiText;
   readonly managingAccess = signal(false);
+  readonly invitationToken = signal(this.readInvitationToken());
 
   readonly sessionQuery = injectQuery(() => ({
     queryKey: ['auth', 'session'],
@@ -57,5 +60,16 @@ export class App {
     }
 
     return error instanceof Error ? error.message : '';
+  }
+
+  invitationAccepted(): void {
+    this.invitationToken.set(null);
+    this.document.defaultView?.history.replaceState({}, '', '/');
+  }
+
+  private readInvitationToken(): string | null {
+    const location = this.document.defaultView?.location;
+    if (location?.pathname !== '/invitation/accept') return null;
+    return new URLSearchParams(location.search).get('token');
   }
 }

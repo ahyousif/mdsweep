@@ -91,19 +91,24 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         public bool IsMember { get; set; } = true;
         public bool Verified { get; set; } = true;
         public string Email { get; set; } = "driver@example.test";
+        public string? LastInvitationToken { get; private set; }
 
         public Task InviteAsync(
             string organizationId,
             string email,
             string firstName,
             string lastName,
+            string invitationToken,
             CancellationToken ct
-        ) =>
-            FailEmail
+        )
+        {
+            LastInvitationToken = invitationToken;
+            return FailEmail
                 ? Task.FromException(
                     new IdentityAdministrationException("Email delivery is not configured. Configure it and retry.")
                 )
                 : Task.CompletedTask;
+        }
 
         public Task<VerifiedIdentity?> GetVerifiedIdentityAsync(string subject, CancellationToken ct) =>
             Task.FromResult(Verified ? new VerifiedIdentity(subject, Email) : null);
@@ -111,6 +116,11 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         public Task<bool> IsOrganizationMemberAsync(string subject, string organizationId, CancellationToken ct) =>
             Task.FromResult(IsMember);
 
-        public Task SendPasswordResetAsync(string subject, CancellationToken ct) => InviteAsync("", "", "", "", ct);
+        public Task SendPasswordResetAsync(string subject, CancellationToken ct) =>
+            FailEmail
+                ? Task.FromException(
+                    new IdentityAdministrationException("Email delivery is not configured. Configure it and retry.")
+                )
+                : Task.CompletedTask;
     }
 }

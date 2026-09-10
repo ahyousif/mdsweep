@@ -14,16 +14,14 @@ public sealed class DispatcherAuthenticationHandler(
     {
         if (Request.Headers["X-Test-Anonymous"] == "true")
             return Task.FromResult(AuthenticateResult.NoResult());
-        var identity = new ClaimsIdentity(
-            [
-                new Claim("sub", Request.Headers["X-Test-Subject"].FirstOrDefault() ?? "dispatcher-test"),
-                new Claim(
-                    CustomClaimTypes.ActiveTenantId,
-                    Request.Headers["X-Test-Tenant"].FirstOrDefault() ?? "mdsw-eep2-3456"
-                ),
-            ],
-            Scheme.Name
-        );
+        var claims = new List<Claim>
+        {
+            new("sub", Request.Headers["X-Test-Subject"].FirstOrDefault() ?? "dispatcher-test"),
+        };
+        var tenantId = Request.Headers["X-Test-Tenant"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(tenantId))
+            claims.Add(new Claim(CustomClaimTypes.ActiveTenantId, tenantId));
+        var identity = new ClaimsIdentity(claims, Scheme.Name);
         return Task.FromResult(
             AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name))
         );

@@ -18,6 +18,7 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
             "Synthetic",
             "Invitee",
             ["Driver"],
+            new string('a', 64),
             NodaTime.SystemClock.Instance.GetCurrentInstant()
         );
         db.Invitations.Add(invitation);
@@ -56,6 +57,7 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
                     "Synthetic",
                     "Invitee",
                     ["Driver", "Dispatcher"],
+                    new string('a', 64),
                     NodaTime.SystemClock.Instance.GetCurrentInstant()
                 )
             );

@@ -27,30 +27,37 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("BrokerMemberId")
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("broker_member_id");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("first_name");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("last_name");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_passengers");
 
                     b.HasIndex("TenantId", "BrokerMemberId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_passengers_tenant_id_broker_member_id");
 
                     b.ToTable("passengers", (string)null);
                 });
@@ -59,17 +66,20 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(14)
-                        .HasColumnType("character varying(14)");
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("id");
 
                     b.Property<string>("KeycloakOrganizationId")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("keycloak_organization_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
 
                     b.Property<int>("PickupBufferMinutes")
                         .ValueGeneratedOnAdd()
@@ -77,10 +87,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(15)
                         .HasColumnName("pickup_buffer_minutes");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_tenants");
 
                     b.HasIndex("KeycloakOrganizationId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_tenants_keycloak_organization_id");
 
                     b.ToTable("tenants", (string)null);
                 });
@@ -92,11 +104,19 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Role")
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(401)
+                        .HasColumnType("character varying(401)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.PrimitiveCollection<string[]>("Roles")
                         .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("role");
+                        .HasColumnType("text[]")
+                        .HasColumnName("roles");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
@@ -108,29 +128,43 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
 
-                    b.HasIndex("UserId");
+                    b.HasKey("Id")
+                        .HasName("pk_tenant_memberships");
 
-                    b.HasIndex("TenantId", "UserId", "Role")
-                        .IsUnique();
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_tenant_memberships_user_id");
 
-                    b.ToTable("tenant_memberships", (string)null);
+                    b.HasIndex("TenantId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tenant_memberships_tenant_id_user_id");
+
+                    b.ToTable("tenant_memberships", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_tenant_memberships_roles", "cardinality(roles) BETWEEN 1 AND 2 AND roles <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(roles, NULL) IS NULL AND (cardinality(roles) = 1 OR roles[1] <> roles[2])");
+                        });
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("BrokerTripNumber")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("broker_trip_number");
 
                     b.Property<LocalTime?>("CalculatedPickupTime")
-                        .HasColumnType("time");
+                        .HasColumnType("time")
+                        .HasColumnName("calculated_pickup_time");
 
                     b.Property<int?>("EstimatedDistanceMeters")
                         .HasColumnType("integer")
@@ -141,24 +175,117 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnName("estimated_travel_minutes");
 
                     b.Property<LocalTime?>("ManualPickupTime")
-                        .HasColumnType("time");
+                        .HasColumnType("time")
+                        .HasColumnName("manual_pickup_time");
 
                     b.Property<Guid>("PassengerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("passenger_id");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(14)
-                        .HasColumnType("character varying(14)");
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("tenant_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_trips");
 
-                    b.HasIndex("PassengerId");
+                    b.HasIndex("PassengerId")
+                        .HasDatabaseName("ix_trips_passenger_id");
 
                     b.HasIndex("TenantId", "BrokerTripNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_trips_tenant_id_broker_trip_number");
 
                     b.ToTable("trips", (string)null);
+                });
+
+            modelBuilder.Entity("Mdsweep.Domain.Users.InvitationAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AcceptedUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accepted_user_id");
+
+                    b.Property<string>("DeliveryError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("delivery_error");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<Instant>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("last_name");
+
+                    b.PrimitiveCollection<string[]>("Roles")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("roles");
+
+                    b.Property<Instant?>("SentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invitations");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_invitations_tenant_id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_token_hash");
+
+                    b.HasIndex("TenantId", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invitations_tenant_id_email")
+                        .HasFilter("status = 'Pending'");
+
+                    b.ToTable("invitations", (string)null);
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Users.UserAggregate", b =>
@@ -167,6 +294,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -186,10 +319,16 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("last_name");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email");
 
                     b.HasIndex("KeycloakUserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_keycloak_user_id");
 
                     b.ToTable("users", (string)null);
                 });
@@ -200,13 +339,15 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_memberships_tenants_tenant_id");
 
                     b.HasOne("Mdsweep.Domain.Users.UserAggregate", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_tenant_memberships_users_user_id");
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
@@ -215,12 +356,22 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("PassengerId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_trips_passengers_passenger_id");
 
                     b.OwnsOne("Mdsweep.Domain.Trips.BrokerTripData", "BrokerData", b1 =>
                         {
                             b1.Property<Guid>("TripAggregateId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<LocalTime?>("AppointmentTime")
+                                .HasColumnType("time")
+                                .HasColumnName("appointment_time");
+
+                            b1.Property<LocalTime?>("BrokerPickupTime")
+                                .HasColumnType("time")
+                                .HasColumnName("broker_pickup_time");
 
                             b1.Property<decimal?>("Cost")
                                 .HasPrecision(10, 2)
@@ -303,26 +454,29 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(100)")
                                 .HasColumnName("broker_status");
 
-                            b1.Property<LocalTime?>("AppointmentTime")
-                                .HasColumnType("time")
-                                .HasColumnName("appointment_time");
-
-                            b1.Property<LocalTime?>("BrokerPickupTime")
-                                .HasColumnType("time")
-                                .HasColumnName("broker_pickup_time");
-
                             b1.HasKey("TripAggregateId");
 
                             b1.ToTable("trips");
 
                             b1.WithOwner()
-                                .HasForeignKey("TripAggregateId");
+                                .HasForeignKey("TripAggregateId")
+                                .HasConstraintName("fk_trips_trips_id");
                         });
 
                     b.Navigation("BrokerData")
                         .IsRequired();
 
                     b.Navigation("Passenger");
+                });
+
+            modelBuilder.Entity("Mdsweep.Domain.Users.InvitationAggregate", b =>
+                {
+                    b.HasOne("Mdsweep.Domain.Tenants.TenantAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_invitations_tenants_tenant_id");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,6 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Common.Extensions;
-using Mdsweep.Domain.Tenants.Events;
 
 namespace Mdsweep.Domain.Tenants;
 
@@ -9,73 +8,60 @@ public sealed class TenantMembership : AggregateRoot<Guid>
     private TenantMembership()
         : base(default) { }
 
-    private TenantMembership(Guid id, string tenantId, Guid userId, string[] roles)
+    private TenantMembership(Guid id, string tenantId, Guid userId, string displayName, bool isActive, string[] roles)
         : base(id)
     {
         TenantId = tenantId;
         UserId = userId;
-        Roles = roles.ToArray();
+        DisplayName = displayName;
+        IsActive = isActive;
+        Roles = [.. roles];
     }
 
     public string TenantId { get; private set; } = null!;
     public Guid UserId { get; private set; }
     public string[] Roles { get; private set; } = null!;
-
     public string? DisplayName { get; private set; }
-
-    public void SetDisplayName(string displayName)
-    {
-        Guard.Against.NullOrWhiteSpace(displayName);
-        Guard.Against.Invalid(displayName.Length > 401, "Display name must not exceed 401 characters.");
-        if (DisplayName == displayName)
-            return;
-        DisplayName = displayName;
-        Version++;
-    }
-
-    public bool IsActive { get; private set; } = true;
-    public int Version { get; private set; }
+    public bool IsActive { get; private set; }
 
     public void SetActive(bool active)
     {
         if (IsActive == active)
+        {
             return;
+        }
+
         IsActive = active;
-        Version++;
+    }
+
+    public void SetDisplayName(string value)
+    {
+        DisplayName = string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     public void SetRoles(string[] roles)
     {
-        Guard.Against.Invalid(!AreValidRoles(roles), "Select one or two distinct roles.");
         if (Roles.Order().SequenceEqual(roles.Order()))
+        {
             return;
-        Roles = roles.ToArray();
-        Version++;
+        }
+
+        Roles = [.. roles];
     }
 
-    public static bool AreValidRoles(string[]? roles) =>
-        roles is { Length: >= 1 and <= 2 }
-        && roles.All(role => role is "Administrator" or "Dispatcher" or "Driver")
-        && roles.Distinct().Count() == roles.Length;
-
-    public static TenantMembership Create(string tenantId, Guid userId, string role) =>
-        Create(tenantId, userId, [role]);
-
-    public static TenantMembership Create(string tenantId, Guid userId, string[] roles)
+    public static TenantMembership Create(string tenantId, Guid userId, string displayName, string[] roles)
     {
         Guard.Against.NullOrWhiteSpace(tenantId, nameof(tenantId));
         Guard.Against.Default(userId, nameof(userId));
+        Guard.Against.Invalid(!TenantIdentifier.IsValid(tenantId), "Invalid tenant ID.");
 
-        Guard.Against.Invalid(!AreValidRoles(roles), "Select one or two distinct roles.");
-
-        Guard.Against.Invalid(
-            !TenantIdentifier.IsValid(tenantId),
-            "Tenant ID must use the xxxx-xxxx-xxxx lowercase unambiguous format."
-        );
-
-        var membership = new TenantMembership(Guid.CreateVersion7(), tenantId, userId, roles);
-        membership.AddDomainEvent(
-            new TenantMembershipCreatedDomainEvent(membership.Id, membership.TenantId, membership.UserId)
+        var membership = new TenantMembership(
+            Guid.CreateVersion7(),
+            tenantId,
+            userId,
+            displayName,
+            isActive: true,
+            roles
         );
 
         return membership;

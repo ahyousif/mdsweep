@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Mdsweep.Application.Users;
 using Mdsweep.Application.Users.List;
-using Mdsweep.Application.Users.Pending;
 using Mdsweep.Infrastructure.Persistence;
 using NodaTime;
 using NodaTime.Serialization.SystemTextJson;
@@ -16,6 +15,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         JsonSerializerDefaults.Web
     ).ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
     private const string TenantId = "mdsw-eep2-3456";
+    private readonly Dictionary<Guid, string> invitationTokens = [];
     private TestKeycloakUserAdministration Identity =>
         Application.Services.GetRequiredService<TestKeycloakUserAdministration>();
 
@@ -57,12 +57,10 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         var invitation = await Invite(manager);
         await using (var scope = Application.Services.CreateAsyncScope())
             Assert.Equal(1, await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Users.CountAsync());
-        using var recipient = await Client("invited-subject");
-        var pending = await recipient.GetFromJsonAsync<PendingInvitationModel[]>("/api/invitation", Json);
-        Assert.Equal(invitation.Id, Assert.Single(pending!).Id);
+        using var recipient = await Client("invited-subject", tenantId: null);
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
-        (await recipient.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).EnsureSuccessStatusCode();
-        (await recipient.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).EnsureSuccessStatusCode();
+        (await Accept(recipient, invitation)).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(recipient, invitation)).StatusCode);
         await using var scope2 = Application.Services.CreateAsyncScope();
         var db = scope2.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var user = await db.Users.SingleAsync(x => x.KeycloakUserId == "invited-subject");
@@ -70,8 +68,32 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         Assert.Equal(TenantId, (await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).TenantId);
         Assert.Equal(new[] { "Driver" }, (await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).Roles);
         Assert.Equal("Accepted", (await db.Invitations.SingleAsync()).Status);
+        Assert.NotEqual(invitationTokens[invitation.Id], (await db.Invitations.SingleAsync()).TokenHash);
+        Assert.Equal(64, (await db.Invitations.SingleAsync()).TokenHash.Length);
         Assert.Equal(2, await db.Users.CountAsync());
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Invalid_token_is_rejected_without_discovering_invitations()
+    {
+        using var recipient = await Client("invited-subject", tenantId: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await recipient.GetAsync("/api/invitation")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (
+                await recipient.PostAsJsonAsync(
+                    "/api/invitations/accept",
+                    new { token = "not-a-valid-invitation-token" }
+                )
+            ).StatusCode
+        );
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Single(await db.Users.ToListAsync());
+        Assert.Empty(await db.Invitations.ToListAsync());
     }
 
     [Fact]
@@ -95,11 +117,21 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
         Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
         Identity.FailEmail = false;
+        var oldToken = invitationTokens[invitation.Id];
         var sent = await (
             await manager.PostAsync($"/api/users/invitations/{invitation.Id}/resend", null)
         ).Content.ReadFromJsonAsync<InvitationModel>(Json);
         Assert.NotNull(sent!.SentAt);
         Assert.Null(sent.DeliveryError);
+        var newToken = Assert.IsType<string>(Identity.LastInvitationToken);
+        Assert.NotEqual(oldToken, newToken);
+        invitationTokens[invitation.Id] = newToken;
+        using var recipient = await Client("invited-subject", tenantId: null);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            (await recipient.PostAsJsonAsync("/api/invitations/accept", new { token = oldToken })).StatusCode
+        );
+        (await Accept(recipient, invitation)).EnsureSuccessStatusCode();
     }
 
     [Theory]
@@ -132,10 +164,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         if (scenario == "not-member")
             Identity.IsMember = false;
         using var recipient = await Client("invited-subject");
-        Assert.Equal(
-            HttpStatusCode.BadRequest,
-            (await recipient.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(recipient, invitation)).StatusCode);
         await using var scope2 = Application.Services.CreateAsyncScope();
         Assert.Equal(1, await scope2.ServiceProvider.GetRequiredService<ApplicationDbContext>().Users.CountAsync());
     }
@@ -222,10 +251,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
         // A local identity cannot accept an invitation for a different identity.
         Identity.Email = "dispatcher@example.test";
-        Assert.Equal(
-            HttpStatusCode.BadRequest,
-            (await local.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(local, invitation)).StatusCode);
         using var forgedTenant = await Client("dispatcher-test", "abcd-efgh-jkmn");
         Assert.Equal(HttpStatusCode.Forbidden, (await forgedTenant.GetAsync("/api/users")).StatusCode);
     }
@@ -250,7 +276,10 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         using var anonymous = Application.CreateClient();
         anonymous.DefaultRequestHeaders.Add("X-Test-Anonymous", "true");
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/users")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/invitation")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await anonymous.PostAsJsonAsync("/api/invitations/accept", new { token = "invalid" })).StatusCode
+        );
         using var manager = await Client();
         manager.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
         var response = await manager.PostAsJsonAsync(
@@ -278,12 +307,8 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         var invitation = await Invite(manager, roles);
         Assert.Equal(roles, invitation.Roles);
         using var recipient = await Client("invited-subject");
-        Assert.Equal(
-            roles,
-            Assert.Single((await recipient.GetFromJsonAsync<PendingInvitationModel[]>("/api/invitation", Json))!).Roles
-        );
-        (await recipient.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).EnsureSuccessStatusCode();
-        (await recipient.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).EnsureSuccessStatusCode();
+        (await Accept(recipient, invitation)).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(recipient, invitation)).StatusCode);
         var session = await recipient.GetFromJsonAsync<JsonElement>("/api/auth/session");
         var tenant = Assert.Single(session.GetProperty("availableTenants").EnumerateArray());
         Assert.Equal(roles.Order(), tenant.GetProperty("roles").EnumerateArray().Select(x => x.GetString()).Order());
@@ -423,7 +448,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
     }
 
-    private async Task<HttpClient> Client(string? subject = null, string tenantId = TenantId)
+    private async Task<HttpClient> Client(string? subject = null, string? tenantId = TenantId)
     {
         if (subject is null)
         {
@@ -438,22 +463,19 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         }
         var client = Application.CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Subject", subject);
-        client.DefaultRequestHeaders.Add("X-Test-Tenant", tenantId);
+        if (tenantId is not null)
+            client.DefaultRequestHeaders.Add("X-Test-Tenant", tenantId);
         await AddAntiforgeryToken(client);
         return client;
     }
 
-    private static Task<InvitationModel> Invite(
+    private Task<InvitationModel> Invite(
         HttpClient client,
         string role = "Driver",
         string email = "driver@example.test"
     ) => Invite(client, [role], email);
 
-    private static async Task<InvitationModel> Invite(
-        HttpClient client,
-        string[] roles,
-        string email = "driver@example.test"
-    )
+    private async Task<InvitationModel> Invite(HttpClient client, string[] roles, string email = "driver@example.test")
     {
         var response = await client.PostAsJsonAsync(
             "/api/users/invitations",
@@ -466,7 +488,9 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             }
         );
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<InvitationModel>(Json))!;
+        var invitation = (await response.Content.ReadFromJsonAsync<InvitationModel>(Json))!;
+        invitationTokens[invitation.Id] = Assert.IsType<string>(Identity.LastInvitationToken);
+        return invitation;
     }
 
     [Fact]
@@ -479,21 +503,13 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         using var other = await Client("other-admin", otherTenant);
         var first = await Invite(local, new[] { "Dispatcher", "Driver" });
         var second = await Invite(other, "Administrator");
-        using var recipient = await Client("invited-subject");
-        Assert.Equal(2, (await recipient.GetFromJsonAsync<PendingInvitationModel[]>("/api/invitation", Json))!.Length);
-        (await recipient.PostAsync($"/api/invitation/{first.Id}/accept", null)).EnsureSuccessStatusCode();
-        var pending = Assert.Single(
-            (await recipient.GetFromJsonAsync<PendingInvitationModel[]>("/api/invitation", Json))!
-        );
-        Assert.Equal(second.Id, pending.Id);
+        using var recipient = await Client("invited-subject", tenantId: null);
+        (await Accept(recipient, first)).EnsureSuccessStatusCode();
         // Existing local access does not bypass membership in the invited Organization.
         Identity.IsMember = false;
-        Assert.Equal(
-            HttpStatusCode.BadRequest,
-            (await recipient.PostAsync($"/api/invitation/{second.Id}/accept", null)).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(recipient, second)).StatusCode);
         Identity.IsMember = true;
-        (await recipient.PostAsync($"/api/invitation/{second.Id}/accept", null)).EnsureSuccessStatusCode();
+        (await Accept(recipient, second)).EnsureSuccessStatusCode();
         var target = (await local.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users.Single(x =>
             x.Email == "driver@example.test"
         );
@@ -549,7 +565,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         Assert.All(sessionMemberships, x => Assert.Equal(otherTenant, x.GetProperty("id").GetString()));
         Assert.Single(sessionMemberships);
         // A replay cannot reactivate the old membership or duplicate another one.
-        (await recipient.PostAsync($"/api/invitation/{first.Id}/accept", null)).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(recipient, first)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
         Assert.Equal(
             HttpStatusCode.BadRequest,
@@ -581,12 +597,9 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         using var manager = await Client();
         var invitation = await Invite(manager);
         using var wrongIdentity = await Client("different-subject");
-        Assert.Equal(
-            HttpStatusCode.BadRequest,
-            (await wrongIdentity.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).StatusCode
-        );
+        Assert.Equal(HttpStatusCode.BadRequest, (await Accept(wrongIdentity, invitation)).StatusCode);
         using var existing = await Client("existing-subject");
-        (await existing.PostAsync($"/api/invitation/{invitation.Id}/accept", null)).EnsureSuccessStatusCode();
+        (await Accept(existing, invitation)).EnsureSuccessStatusCode();
         var session = await existing.GetFromJsonAsync<JsonElement>("/api/auth/session");
         Assert.Equal(2, session.GetProperty("availableTenants").GetArrayLength());
         await using var scope = Application.Services.CreateAsyncScope();
@@ -652,4 +665,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
                 version = user.Version,
             }
         );
+
+    private Task<HttpResponseMessage> Accept(HttpClient client, InvitationModel invitation) =>
+        client.PostAsJsonAsync("/api/invitations/accept", new { token = invitationTokens[invitation.Id] });
 }

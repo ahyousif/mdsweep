@@ -28,13 +28,6 @@ export type UserManagement = {
   invitations: Invitation[];
   isAdministrator: boolean;
 };
-export type PendingInvitation = {
-  id: string;
-  tenantName: string;
-  roles: UserRole[];
-  expiresAt: string;
-};
-
 @Service()
 export class UsersApi {
   readonly #api = inject(ApiClient);
@@ -71,11 +64,10 @@ export class UsersApi {
       this.#api.http.post<void>(this.#api.url(`users/${id}/password-reset`), {}),
     );
   }
-  pendingInvitation(): Promise<PendingInvitation[]> {
-    return firstValueFrom(this.#api.http.get<PendingInvitation[]>(this.#api.url('invitation')));
-  }
-  async accept(id: string): Promise<void> {
+  async accept(token: string): Promise<void> {
     await firstValueFrom(this.#api.http.get(this.#api.url('auth/antiforgery')));
-    await firstValueFrom(this.#api.http.post<void>(this.#api.url(`invitation/${id}/accept`), {}));
+    await firstValueFrom(
+      this.#api.http.post<void>(this.#api.url('invitations/accept'), { token }),
+    );
   }
 }

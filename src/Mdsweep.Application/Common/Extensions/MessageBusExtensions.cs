@@ -4,6 +4,9 @@ namespace Mdsweep.Application.Common.Extensions;
 
 public static class MessageBusExtensions
 {
+    public static Task<Result> SendAsync(this IMessageBus bus, ICommand command, CancellationToken ct = default) =>
+        bus.InvokeAsync<Result>(command, ct);
+
     public static Task<Result<T>> SendAsync<T>(
         this IMessageBus bus,
         IRequest<T> request,

@@ -86,7 +86,7 @@
     <span hlmDropdownMenuLabel>{{ session().displayName }}</span>
     <span hlmDropdownMenuLabel>{{ session().tenantName || session().tenantId }}</span>
     <button hlmDropdownMenuItem type="button" (triggered)="manageAccess.emit()">
-      Tenants and Invitations
+      Tenant access
     </button>
     <span hlmDropdownMenuLabel>{{ session().roles.join(' · ') }}</span>
     <div hlmDropdownMenuSeparator></div>

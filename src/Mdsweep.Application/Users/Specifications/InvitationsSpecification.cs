@@ -10,15 +10,21 @@ public sealed class InvitationsSpecification : SpecificationBuilder<InvitationAg
         Spec.AddSorting(x => x.ExpiresAt, descending: true);
     }
 
-    public InvitationsSpecification WithTenantId(string tenantId)
+    public InvitationsSpecification WithEmail(string email)
     {
-        Spec.Add(query => query.Where(x => x.TenantId == tenantId));
+        Spec.Add(query => query.Where(x => x.Email.ToLower() == email));
         return this;
     }
 
-    public InvitationsSpecification WithPendingEmail(string email)
+    public InvitationsSpecification WithStatus(InvitationStatus status)
     {
-        Spec.Add(query => query.Where(x => x.Email.ToLower() == email && x.Status == "Pending"));
+        Spec.Add(query => query.Where(x => x.Status == status));
+        return this;
+    }
+
+    public InvitationsSpecification WithTenantId(string tenantId)
+    {
+        Spec.Add(query => query.Where(x => x.TenantId == tenantId));
         return this;
     }
 }

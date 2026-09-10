@@ -1,6 +1,6 @@
 ﻿using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Common.Extensions;
-using Mdsweep.Domain.Tenants;
+using Mdsweep.Domain.Users.Events;
 
 namespace Mdsweep.Domain.Users;
 
@@ -16,12 +16,10 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         string firstName,
         string lastName,
         string[] roles,
-        string status,
+        string tokenHash,
+        InvitationStatus status,
         Instant expiresAt,
-        Instant? sentAt,
-        string? deliveryError,
-        Guid? acceptedUserId,
-        int version
+        Instant? acceptedAt
     )
         : base(id)
     {
@@ -29,13 +27,11 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         Email = email;
         FirstName = firstName;
         LastName = lastName;
-        Roles = roles.ToArray();
+        Roles = roles;
+        TokenHash = tokenHash;
         Status = status;
         ExpiresAt = expiresAt;
-        SentAt = sentAt;
-        DeliveryError = deliveryError;
-        AcceptedUserId = acceptedUserId;
-        Version = version;
+        AcceptedAt = acceptedAt;
     }
 
     public string TenantId { get; private set; } = null!;
@@ -43,12 +39,10 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
     public string FirstName { get; private set; } = null!;
     public string LastName { get; private set; } = null!;
     public string[] Roles { get; private set; } = null!;
-    public string Status { get; private set; } = "Pending";
+    public string TokenHash { get; private set; } = null!;
+    public InvitationStatus Status { get; private set; }
     public Instant ExpiresAt { get; private set; }
-    public Instant? SentAt { get; private set; }
-    public string? DeliveryError { get; private set; }
-    public Guid? AcceptedUserId { get; private set; }
-    public int Version { get; private set; }
+    public Instant? AcceptedAt { get; private set; }
 
     public static InvitationAggregate Create(
         string tenantId,
@@ -56,55 +50,62 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         string firstName,
         string lastName,
         string[] roles,
-        Instant now
+        string token,
+        string tokenHash,
+        Instant expiresAt
     )
     {
-        Guard.Against.Invalid(!TenantMembership.AreValidRoles(roles), "Select one or two distinct roles.");
-        return new InvitationAggregate(
+        var invitation = new InvitationAggregate(
             Guid.CreateVersion7(),
-            Guard.Against.NullOrWhiteSpace(tenantId),
+            tenantId,
             Guard.Against.NullOrWhiteSpace(email),
             Guard.Against.NullOrWhiteSpace(firstName),
             Guard.Against.NullOrWhiteSpace(lastName),
             roles,
-            status: "Pending",
-            expiresAt: now + Duration.FromDays(7),
-            sentAt: null,
-            deliveryError: null,
-            acceptedUserId: null,
-            version: 0
+            Guard.Against.NullOrWhiteSpace(tokenHash),
+            status: InvitationStatus.Pending,
+            expiresAt: expiresAt,
+            acceptedAt: null
+        );
+
+        invitation.AddDomainEvent(
+            new InvitationCreatedDomainEvent(
+                invitation.Id,
+                invitation.Email,
+                invitation.FirstName,
+                token,
+                invitation.ExpiresAt
+            )
+        );
+
+        return invitation;
+    }
+
+    public void Accept(Instant acceptedAt, string keycloakUserId)
+    {
+        Guard.Against.Invalid(IsExpired(acceptedAt));
+        Guard.Against.Invalid(Status is not InvitationStatus.Pending);
+        Guard.Against.NullOrWhiteSpace(keycloakUserId);
+
+        Status = InvitationStatus.Accepted;
+        AcceptedAt = acceptedAt;
+
+        AddDomainEvent(
+            new InvitationAcceptedDomainEvent(Id, TenantId, keycloakUserId, Email, FirstName, LastName, Roles)
         );
     }
 
-    public void RecordDelivery(Instant now, string? error)
+    public void Cancel()
     {
-        if (Status != "Pending")
-            throw new InvalidOperationException("This invitation is no longer pending.");
-        DeliveryError = error;
-        if (error is null)
+        if (Status is not InvitationStatus.Pending)
         {
-            SentAt = now;
-            ExpiresAt = now + Duration.FromDays(7);
-        }
-        Version++;
-    }
-
-    public void Revoke()
-    {
-        if (Status == "Revoked")
             return;
-        if (Status != "Pending")
-            throw new InvalidOperationException("An accepted invitation cannot be revoked.");
-        Status = "Revoked";
-        Version++;
+        }
+
+        Status = InvitationStatus.Cancelled;
+
+        AddDomainEvent(new InvitationCancelledDomainEvent(Id));
     }
 
-    public void Accept(Guid userId, Instant now)
-    {
-        if (Status != "Pending" || ExpiresAt <= now)
-            throw new InvalidOperationException("This invitation has expired or is no longer available.");
-        Status = "Accepted";
-        AcceptedUserId = userId;
-        Version++;
-    }
+    public bool IsExpired(Instant now) => now >= ExpiresAt && AcceptedAt is null;
 }

@@ -1,23 +1,18 @@
 using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Extensions;
 using Mdsweep.Application.Common.Extensions;
-using Mdsweep.Application.Users;
-using Mdsweep.Application.Users.Update;
 
 namespace Mdsweep.Api.Features.Users.Update;
 
 public sealed class UpdateUserEndpoint
 {
-    [Tags("Users")]
+    [Tags(UserConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.UsersManage)]
-    [WolverinePut("/users/{id:guid}")]
-    public static async Task<IResult> Put(Guid id, UpdateUserRequest request, IMessageBus bus, CancellationToken ct)
+    [WolverinePut(UserConstants.IdRoute)]
+    public static async Task<IResult> Put(UpdateUserRequest req, IMessageBus bus, CancellationToken ct)
     {
-        return (
-            await bus.SendAsync(
-                new UpdateUserCommand(id, request.DisplayName, request.Roles, request.IsActive, request.Version),
-                ct
-            )
-        ).ToEndpointResult(_ => Results.NoContent());
+        var result = await bus.SendAsync(req.ToCommand(), ct);
+
+        return result.ToEndpointResult(_ => Result.NoContent());
     }
 }

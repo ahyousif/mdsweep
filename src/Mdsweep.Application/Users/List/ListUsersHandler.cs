@@ -1,49 +1,39 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Specifications;
 using Mdsweep.Application.Users.Specifications;
+using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Application.Users.List;
 
-public sealed class ListUsersHandler(IRepository repository, IUserContext context, IClock clock)
+public sealed class ListUsersHandler(IRepository repository)
 {
-    public async Task<Result<UserManagementModel>> Handle(ListUsersQuery query, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<UserListItem>>> Handle(ListUsersQuery _, CancellationToken ct)
     {
-        if (context.TenantId is null)
-            return Result.Forbidden();
-        var memberships = await repository.ListAsync(
-            new MembershipsSpecification().WithTenantId(context.TenantId).Build(),
-            ct
-        );
+        var memberships = await repository.ListAsync(new MembershipsSpecification().AsNoTracking().Build(), ct);
+
         var users = await repository.ListAsync(
-            new UsersSpecification().WithIds(memberships.Select(x => x.UserId)).Build(),
+            new UsersSpecification().WithIds(memberships.Select(x => x.UserId)).AsNoTracking().Build(),
             ct
         );
+
         var invitations = await repository.ListAsync(
-            new InvitationsSpecification().WithTenantId(context.TenantId).Build(),
+            new InvitationsSpecification().WithStatus(InvitationStatus.Pending).AsNoTracking().Build(),
             ct
         );
-        var models = users
-            .Join(
-                memberships,
-                x => x.Id,
-                x => x.UserId,
-                (user, membership) =>
-                    new UserModel(
-                        user.Id,
-                        user.FirstName,
-                        user.LastName,
-                        user.Email,
-                        membership.DisplayName ?? $"{user.FirstName} {user.LastName}",
-                        membership.Roles,
-                        membership.IsActive,
-                        membership.Version
-                    )
-            )
-            .ToArray();
-        return new UserManagementModel(
-            models,
-            invitations.Select(x => InvitationModel.From(x, clock.GetCurrentInstant())).ToArray(),
-            true
+
+        var userItems = users.Join(
+            memberships,
+            user => user.Id,
+            membership => membership.UserId,
+            UserListItem.FromUser
         );
+
+        var items = userItems
+            .Concat(invitations.Select(UserListItem.FromInvitation))
+            .OrderBy(x => x.FirstName)
+            .ThenBy(x => x.LastName)
+            .ToList();
+
+        return Result.Success<IReadOnlyList<UserListItem>>(items);
     }
 }

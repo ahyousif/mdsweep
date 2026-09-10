@@ -11,9 +11,9 @@ public sealed class UsersSpecification : SpecificationBuilder<UserAggregate, Gui
         Spec.AddSorting(x => x.FirstName);
     }
 
-    public UsersSpecification WithSubject(string subject)
+    public UsersSpecification WithKeycloakUserId(string id)
     {
-        Spec.Add(query => query.Where(x => x.KeycloakUserId == subject));
+        Spec.Add(query => query.Where(x => x.KeycloakUserId == id));
         return this;
     }
 

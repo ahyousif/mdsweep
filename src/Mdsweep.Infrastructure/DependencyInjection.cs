@@ -1,8 +1,8 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Authorization;
+using Mdsweep.Application.Common.Security;
 using Mdsweep.Application.Trips.Import.Manifest;
 using Mdsweep.Application.Trips.Scheduling;
-using Mdsweep.Application.Users;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Manifests;
 using Mdsweep.Infrastructure.Persistence;
@@ -39,6 +39,7 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services.AddSingleton<IClock>(SystemClock.Instance);
+        services.AddSingleton<ITokenService, SecureTokenService>();
         services.AddScoped<IRepository>(serviceProvider => serviceProvider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ITenantAccess, TenantAccess>();
         services.AddScoped<IMtmManifestReader, MtmManifestReader>();
@@ -48,6 +49,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(GoogleRoutesOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.ApiKey), "Google Routes API key is required.")
             .ValidateOnStart();
+
         services.AddHttpClient(
             GoogleRouteEstimateProvider.HttpClientName,
             client =>
@@ -56,12 +58,8 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(10);
             }
         );
-        services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
 
-        // Sending an email is not idempotent. Delivery retries are explicit User actions.
-#pragma warning disable EXTEXP0001 // Opt this client out of the host's automatic retry pipeline.
-        services.AddHttpClient<IIdentityAdministration, KeycloakUserAdministration>().RemoveAllResilienceHandlers();
-#pragma warning restore EXTEXP0001
+        services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
 
         return services;
     }
