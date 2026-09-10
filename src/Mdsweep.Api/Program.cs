@@ -2,6 +2,8 @@ using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Api.Features.Users;
+using Mdsweep.Api.Features.Users.Accept;
+using Mdsweep.Api.Features.Users.Pending;
 using Mdsweep.Infrastructure;
 using Mdsweep.Infrastructure.Persistence;
 using Wolverine.Http.FluentValidation;
@@ -53,6 +55,7 @@ app.MapWolverineEndpoints(options =>
     options.TenantId.AssertExists();
 });
 app.MapIdentity();
+app.MapPendingInvitations();
 app.MapInvitationAcceptance();
 
 app.MapDefaultEndpoints();
