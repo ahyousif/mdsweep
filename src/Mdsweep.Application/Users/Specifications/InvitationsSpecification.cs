@@ -1,16 +1,24 @@
+using Mdsweep.Application.Common.Specifications;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Application.Users.Specifications;
 
-public sealed class InvitationsSpecification : Specification<InvitationAggregate, InvitationAggregate>
+public sealed class InvitationsSpecification : SpecificationBuilder<InvitationAggregate, Guid, InvitationsSpecification>
 {
-    public InvitationsSpecification(string? tenantId = null, string? email = null)
+    public InvitationsSpecification()
     {
-        if (tenantId is not null)
-            Query.Where(x => x.TenantId == tenantId);
-        if (email is not null)
-            Query.Where(x => x.Email.ToLower() == email && x.Status == "Pending");
-        Query.OrderByDescending(x => x.ExpiresAt);
-        Query.Select(x => x);
+        Spec.AddSorting(x => x.ExpiresAt, descending: true);
+    }
+
+    public InvitationsSpecification WithTenantId(string tenantId)
+    {
+        Spec.Add(query => query.Where(x => x.TenantId == tenantId));
+        return this;
+    }
+
+    public InvitationsSpecification WithPendingEmail(string email)
+    {
+        Spec.Add(query => query.Where(x => x.Email.ToLower() == email && x.Status == "Pending"));
+        return this;
     }
 }

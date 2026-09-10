@@ -19,7 +19,10 @@ public sealed class AcceptInvitationHandler(
         var invitation = await repository.GetByIdAsync<InvitationAggregate, Guid>(command.Id, ct);
         if (invitation is null)
             return Result.NotFound();
-        var existing = await repository.SingleOrDefaultAsync(new UsersSpecification(subject: actor.Subject), ct);
+        var existing = await repository.SingleOrDefaultAsync(
+            new UsersSpecification().WithSubject(actor.Subject).Build(),
+            ct
+        );
         if (invitation.Status == "Accepted" && existing is not null && invitation.AcceptedUserId == existing.Id)
             return true; // Retrying acceptance never restores deactivated access.
         if (invitation.Status != "Pending" || invitation.ExpiresAt <= clock.GetCurrentInstant())
@@ -51,7 +54,7 @@ public sealed class AcceptInvitationHandler(
             return Result.Invalid(new ValidationError("identity", exception.Message));
         }
         var emailOwner = await repository.SingleOrDefaultAsync(
-            new UsersSpecification(email: invitation.Email.ToLowerInvariant()),
+            new UsersSpecification().WithEmail(invitation.Email.ToLowerInvariant()).Build(),
             ct
         );
         if (emailOwner is not null && emailOwner.Id != existing?.Id)
@@ -63,7 +66,10 @@ public sealed class AcceptInvitationHandler(
             );
         if (
             existing is not null
-            && await repository.SingleOrDefaultAsync(new MembershipsSpecification(invitation.TenantId, existing.Id), ct)
+            && await repository.SingleOrDefaultAsync(
+                new MembershipsSpecification().WithTenantId(invitation.TenantId).WithUserId(existing.Id).Build(),
+                ct
+            )
                 is not null
         )
             return Result.Invalid(

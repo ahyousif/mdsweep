@@ -1,4 +1,5 @@
 using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Application.Common.Specifications;
 using Mdsweep.Application.Users.Specifications;
 
 namespace Mdsweep.Application.Users.List;
@@ -9,12 +10,18 @@ public sealed class ListUsersHandler(IRepository repository, IUserContext contex
     {
         if (context.TenantId is null)
             return Result.Forbidden();
-        var memberships = await repository.ListAsync(new MembershipsSpecification(context.TenantId), ct);
-        var users = await repository.ListAsync(
-            new UsersSpecification(userIds: memberships.Select(x => x.UserId).ToArray()),
+        var memberships = await repository.ListAsync(
+            new MembershipsSpecification().WithTenantId(context.TenantId).Build(),
             ct
         );
-        var invitations = await repository.ListAsync(new InvitationsSpecification(context.TenantId), ct);
+        var users = await repository.ListAsync(
+            new UsersSpecification().WithIds(memberships.Select(x => x.UserId)).Build(),
+            ct
+        );
+        var invitations = await repository.ListAsync(
+            new InvitationsSpecification().WithTenantId(context.TenantId).Build(),
+            ct
+        );
         var models = users
             .Join(
                 memberships,

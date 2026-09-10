@@ -1,15 +1,19 @@
+using Mdsweep.Application.Common.Specifications;
 using Mdsweep.Domain.Tenants;
 
 namespace Mdsweep.Application.Users.Specifications;
 
-public sealed class MembershipsSpecification : Specification<TenantMembership, TenantMembership>
+public sealed class MembershipsSpecification : SpecificationBuilder<TenantMembership, Guid, MembershipsSpecification>
 {
-    public MembershipsSpecification(string? tenantId = null, Guid? userId = null)
+    public MembershipsSpecification WithTenantId(string tenantId)
     {
-        if (tenantId is not null)
-            Query.Where(x => x.TenantId == tenantId);
-        if (userId.HasValue)
-            Query.Where(x => x.UserId == userId.Value);
-        Query.Select(x => x);
+        Spec.Add(query => query.Where(x => x.TenantId == tenantId));
+        return this;
+    }
+
+    public MembershipsSpecification WithUserId(Guid userId)
+    {
+        Spec.Add(query => query.Where(x => x.UserId == userId));
+        return this;
     }
 }

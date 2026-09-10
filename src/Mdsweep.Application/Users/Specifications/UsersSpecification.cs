@@ -1,18 +1,25 @@
+using Mdsweep.Application.Common.Specifications;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Application.Users.Specifications;
 
-public sealed class UsersSpecification : Specification<UserAggregate, UserAggregate>
+public sealed class UsersSpecification : SpecificationBuilder<UserAggregate, Guid, UsersSpecification>
 {
-    public UsersSpecification(string? subject = null, string? email = null, Guid[]? userIds = null)
+    public UsersSpecification()
     {
-        if (userIds is not null)
-            Query.Where(x => userIds.Contains(x.Id));
-        if (subject is not null)
-            Query.Where(x => x.KeycloakUserId == subject);
-        if (email is not null)
-            Query.Where(x => x.Email.ToLower() == email);
-        Query.OrderBy(x => x.LastName).ThenBy(x => x.FirstName);
-        Query.Select(x => x);
+        Spec.AddSorting(x => x.LastName);
+        Spec.AddSorting(x => x.FirstName);
+    }
+
+    public UsersSpecification WithSubject(string subject)
+    {
+        Spec.Add(query => query.Where(x => x.KeycloakUserId == subject));
+        return this;
+    }
+
+    public UsersSpecification WithEmail(string email)
+    {
+        Spec.Add(query => query.Where(x => x.Email.ToLower() == email));
+        return this;
     }
 }

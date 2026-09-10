@@ -14,10 +14,13 @@ public sealed class InviteUserHandler(IRepository repository, IUserContext conte
         if (!TenantMembership.AreValidRoles(command.Roles))
             return Result.Invalid(new ValidationError("roles", "Select one or two distinct roles."));
         var email = command.Email.ToLowerInvariant();
-        var existing = await repository.SingleOrDefaultAsync(new UsersSpecification(email: email), ct);
+        var existing = await repository.SingleOrDefaultAsync(new UsersSpecification().WithEmail(email).Build(), ct);
         if (
             existing is not null
-            && await repository.SingleOrDefaultAsync(new MembershipsSpecification(context.TenantId, existing.Id), ct)
+            && await repository.SingleOrDefaultAsync(
+                new MembershipsSpecification().WithTenantId(context.TenantId).WithUserId(existing.Id).Build(),
+                ct
+            )
                 is not null
         )
             return Result.Invalid(
@@ -27,7 +30,11 @@ public sealed class InviteUserHandler(IRepository repository, IUserContext conte
                 )
             );
         if (
-            await repository.SingleOrDefaultAsync(new InvitationsSpecification(context.TenantId, email), ct) is not null
+            await repository.SingleOrDefaultAsync(
+                new InvitationsSpecification().WithTenantId(context.TenantId).WithPendingEmail(email).Build(),
+                ct
+            )
+            is not null
         )
             return Result.Invalid(
                 new ValidationError("email", "An invitation already exists for this email. Resend or revoke it first.")

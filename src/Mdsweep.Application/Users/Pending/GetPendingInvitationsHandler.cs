@@ -29,13 +29,16 @@ public sealed class GetPendingInvitationsHandler(
                 new ValidationError("email", "Verify your email through the invitation before accepting.")
             );
         var invitations = await repository.ListAsync(
-            new InvitationsSpecification(email: verified.Email.ToLowerInvariant()),
+            new InvitationsSpecification().WithPendingEmail(verified.Email.ToLowerInvariant()).Build(),
             ct
         );
-        var existing = await repository.SingleOrDefaultAsync(new UsersSpecification(subject: actor.Subject), ct);
+        var existing = await repository.SingleOrDefaultAsync(
+            new UsersSpecification().WithSubject(actor.Subject).Build(),
+            ct
+        );
         var memberships = existing is null
             ? []
-            : await repository.ListAsync(new MembershipsSpecification(userId: existing.Id), ct);
+            : await repository.ListAsync(new MembershipsSpecification().WithUserId(existing.Id).Build(), ct);
         var pending = new List<PendingInvitationModel>();
         foreach (
             var invitation in invitations.Where(x =>

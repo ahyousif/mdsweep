@@ -18,7 +18,7 @@ public sealed class ResetUserPasswordHandler(
         if (user is null)
             return Result.NotFound();
         var membership = await repository.SingleOrDefaultAsync(
-            new MembershipsSpecification(context.TenantId, user.Id),
+            new MembershipsSpecification().WithTenantId(context.TenantId).WithUserId(user.Id).Build(),
             ct
         );
         if (membership is null)
