@@ -45,14 +45,7 @@ public static class UserEndpoints
     {
         return (
             await bus.SendAsync(
-                new UpdateUserCommand(
-                    id,
-                    request.FirstName,
-                    request.LastName,
-                    request.Roles,
-                    request.IsActive,
-                    request.Version
-                ),
+                new UpdateUserCommand(id, request.DisplayName, request.Roles, request.IsActive, request.Version),
                 ct
             )
         ).ToEndpointResult(_ => Results.NoContent());

@@ -58,7 +58,6 @@ public static class DependencyInjection
         );
         services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
 
-        services.AddScoped<UserManagementAccess>();
         // Sending an email is not idempotent. Delivery retries are explicit User actions.
 #pragma warning disable EXTEXP0001 // Opt this client out of the host's automatic retry pipeline.
         services.AddHttpClient<IIdentityAdministration, KeycloakUserAdministration>().RemoveAllResilienceHandlers();

@@ -54,6 +54,7 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   let invitation: Record<string, unknown> | null = null;
   let user = {
     id: 'driver',
+    displayName: 'Taylor Example',
     firstName: 'Taylor',
     lastName: 'Example',
     email: 'taylor@example.test',
@@ -137,7 +138,8 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   await expect(page.getByRole('cell', { name: 'Revoked', exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Users', exact: true }).click();
   await page.getByRole('button', { name: 'Edit Taylor Example', exact: true }).click();
-  await page.getByLabel('First name', { exact: true }).fill('Taylor Updated');
+  await expect(page.getByLabel('First name', { exact: true })).toHaveCount(0);
+  await page.getByLabel('Display name', { exact: true }).fill('Taylor Updated Example');
   await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: 'Dispatcher', exact: true })).toBeChecked();
   await page.getByRole('checkbox', { name: 'Active access', exact: true }).click();
@@ -147,12 +149,14 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Inactive', exact: true })).toBeVisible();
   expect(user.roles).toEqual(['Driver', 'Dispatcher']);
+  expect(user.firstName).toBe('Taylor');
+  expect(user.email).toBe('taylor@example.test');
   await page.getByRole('button', { name: 'View history for Taylor Updated Example' }).click();
   await expect(page.getByText('Deactivated', { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('users.png'), fullPage: true });
 });
 
-for (const role of ['Dispatcher', 'Administrator']) {
+for (const role of ['Administrator']) {
   test(`${role} can clear and reselect invitation roles`, async ({ page }) => {
     await session(page, role);
     await page.route('**/api/users', (route) =>
@@ -406,6 +410,7 @@ test('multiple Tenant access can be selected and switched without mixing Users',
     if (path.endsWith('/tenant-context')) activeTenant = route.request().postDataJSON().tenantId;
     return route.fulfill({ json: { token: 'synthetic-token' } });
   });
+  await page.route('**/api/trips**', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/invitation', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/users', (route) =>
     route.fulfill({
@@ -413,7 +418,8 @@ test('multiple Tenant access can be selected and switched without mixing Users',
         users: [
           {
             id: 'tenant-user',
-            firstName: activeTenant === tenants[0].tenantId ? 'Alpha' : 'Beta',
+            displayName: activeTenant === tenants[0].tenantId ? 'Alpha Driver' : 'Beta Driver',
+            firstName: 'Synthetic',
             lastName: 'Driver',
             email: 'synthetic@example.test',
             roles: ['Driver'],
@@ -442,11 +448,11 @@ test('multiple Tenant access can be selected and switched without mixing Users',
   await page.getByRole('button', { name: 'Open Beta Synthetic Tenant' }).click();
   await expect(page.getByRole('button', { name: 'Open user menu' })).toBeVisible();
   await page.goto('/users');
-  await expect(page.getByRole('cell', { name: 'Beta Driver', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/trips$/);
+  await expect(page.getByRole('link', { name: 'Users & Invitations' })).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Alpha Driver', exact: true })).toHaveCount(0);
   expect(activeTenant).toBe(tenants[1].tenantId);
-  await page.getByRole('button', { name: 'Invite User', exact: true }).click();
-  await expect(page.getByRole('checkbox')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Invite User', exact: true })).toHaveCount(0);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
@@ -552,7 +558,8 @@ test('switching Tenant reloads another open tab sharing the BFF cookie', async (
         users: [
           {
             id: 'tenant-user',
-            firstName: activeTenant === tenants[0].tenantId ? 'Alpha' : 'Beta',
+            displayName: activeTenant === tenants[0].tenantId ? 'Alpha User' : 'Beta User',
+            firstName: 'Synthetic',
             lastName: 'User',
             email: 'synthetic@example.test',
             roles: ['Driver'],

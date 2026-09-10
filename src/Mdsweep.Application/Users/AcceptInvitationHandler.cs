@@ -6,7 +6,7 @@ namespace Mdsweep.Application.Users;
 
 public sealed class GetPendingInvitationsHandler(
     IRepository repository,
-    IAccessActor actor,
+    IUserContext actor,
     IIdentityAdministration identity,
     IClock clock
 )
@@ -54,7 +54,7 @@ public sealed class GetPendingInvitationsHandler(
 
 public sealed class AcceptInvitationHandler(
     IRepository repository,
-    IAccessActor actor,
+    IUserContext actor,
     IIdentityAdministration identity,
     IClock clock
 )
@@ -123,6 +123,7 @@ public sealed class AcceptInvitationHandler(
             existing
             ?? UserAggregate.Create(invitation.FirstName, invitation.LastName, actor.Subject, invitation.Email);
         var membership = TenantMembership.Create(invitation.TenantId, user.Id, invitation.Roles);
+        membership.SetDisplayName($"{invitation.FirstName} {invitation.LastName}");
         membership.Record(
             actor.Subject,
             "Invitation accepted",

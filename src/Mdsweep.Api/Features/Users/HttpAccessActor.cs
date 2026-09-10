@@ -4,7 +4,7 @@ using Mdsweep.Application.Users;
 
 namespace Mdsweep.Api.Features.Users;
 
-public sealed class HttpAccessActor(IHttpContextAccessor context) : IAccessActor
+public sealed class HttpAccessActor(IHttpContextAccessor context) : IUserContext
 {
     public string Subject => context.HttpContext?.User.FindFirstValue("sub") ?? string.Empty;
     public string? TenantId => context.HttpContext?.User.FindFirstValue(CustomClaimTypes.ActiveTenantId);

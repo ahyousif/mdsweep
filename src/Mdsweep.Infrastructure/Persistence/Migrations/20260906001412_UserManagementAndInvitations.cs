@@ -31,6 +31,13 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 computedColumnSql: "lower(email)",
                 stored: true);
 
+            migrationBuilder.AddColumn<string>(
+                name: "display_name",
+                table: "tenant_memberships",
+                type: "character varying(401)",
+                maxLength: 401,
+                nullable: true);
+
             migrationBuilder.AddColumn<bool>(
                 name: "is_active",
                 table: "tenant_memberships",
@@ -163,6 +170,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
             migrationBuilder.DropIndex(name: "IX_tenant_memberships_tenant_id_user_id", table: "tenant_memberships");
             migrationBuilder.DropColumn(name: "normalized_email", table: "users");
             migrationBuilder.DropColumn(name: "email", table: "users");
+            migrationBuilder.DropColumn(name: "display_name", table: "tenant_memberships");
             migrationBuilder.DropColumn(name: "is_active", table: "tenant_memberships");
             migrationBuilder.DropColumn(name: "version", table: "tenant_memberships");
             migrationBuilder.CreateIndex(

@@ -4,6 +4,7 @@ import { ApiClient } from '@app/core/api/api-client';
 
 export type UserRole = 'Administrator' | 'Dispatcher' | 'Driver';
 export type UserDetails = {
+  displayName: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -15,7 +16,7 @@ export type ManagedUser = Omit<UserDetails, 'email'> & {
   email: string | null;
   version: number;
 };
-export type Invitation = Omit<UserDetails, 'isActive'> & {
+export type Invitation = Omit<UserDetails, 'isActive' | 'displayName'> & {
   id: string;
   status: 'Pending' | 'Expired' | 'Accepted' | 'Revoked';
   expiresAt: string;
@@ -56,7 +57,9 @@ export class UsersApi {
   update(user: ManagedUser, details: UserDetails): Promise<void> {
     return firstValueFrom(
       this.#api.http.put<void>(this.#api.url(`users/${user.id}`), {
-        ...details,
+        displayName: details.displayName,
+        roles: details.roles,
+        isActive: details.isActive,
         version: user.version,
       }),
     );

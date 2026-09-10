@@ -12,7 +12,7 @@ public static class ApiExtensions
     public static WebApplicationBuilder AddApi(this WebApplicationBuilder builder)
     {
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddScoped<IAccessActor, HttpAccessActor>();
+        builder.Services.AddScoped<IUserContext, HttpAccessActor>();
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -94,7 +94,7 @@ public static class ApiExtensions
                 policy =>
                     policy
                         .RequireAuthenticatedUser()
-                        .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
+                        .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator))
             );
             options.AddPolicy(
                 AuthorizationPolicies.TripsViewAll,

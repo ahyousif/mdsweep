@@ -24,6 +24,15 @@ public sealed class TenantMembership : AggregateRoot<Guid>
     public Guid UserId { get; private set; }
     public string[] Roles { get; private set; } = null!;
 
+    public string? DisplayName { get; private set; }
+
+    public void SetDisplayName(string displayName)
+    {
+        Guard.Against.NullOrWhiteSpace(displayName);
+        Guard.Against.Invalid(displayName.Length > 401, "Display name must not exceed 401 characters.");
+        DisplayName = displayName;
+    }
+
     public bool IsActive { get; private set; } = true;
     public int Version { get; private set; }
     public IReadOnlyCollection<AccessHistoryEntry> History => history.AsReadOnly();

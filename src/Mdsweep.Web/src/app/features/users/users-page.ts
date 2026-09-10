@@ -144,11 +144,11 @@ export default class UsersPage {
     this.selectedHistory.set({
       id: item.id,
       invitation,
-      name: `${item.firstName} ${item.lastName}`,
+      name: 'displayName' in item ? item.displayName : `${item.firstName} ${item.lastName}`,
     });
   }
   private matches(value: ManagedUser | Invitation): boolean {
-    return `${value.firstName} ${value.lastName} ${value.email ?? ''} ${value.roles.join(' ')}`
+    return `${'displayName' in value ? value.displayName : ''} ${value.firstName} ${value.lastName} ${value.email ?? ''} ${value.roles.join(' ')}`
       .toLowerCase()
       .includes(this.search().toLowerCase());
   }

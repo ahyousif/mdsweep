@@ -1,35 +1,55 @@
 <form [formGroup]="form" (ngSubmit)="submit()">
   <div hlmFieldGroup>
-    <div class="grid gap-4 sm:grid-cols-2">
+    @if (inviting()) {
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div hlmField>
+          <label hlmFieldLabel [for]="prefix() + '-first'">First name</label>
+          <input
+            hlmInput
+            [id]="prefix() + '-first'"
+            formControlName="firstName"
+            autocomplete="given-name"
+            maxlength="200"
+            required
+          />
+          @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
+            <hlm-field-error>Enter a first name.</hlm-field-error>
+          }
+        </div>
+        <div hlmField>
+          <label hlmFieldLabel [for]="prefix() + '-last'">Last name</label>
+          <input
+            hlmInput
+            [id]="prefix() + '-last'"
+            formControlName="lastName"
+            autocomplete="family-name"
+            maxlength="200"
+            required
+          />
+          @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
+            <hlm-field-error>Enter a last name.</hlm-field-error>
+          }
+        </div>
+      </div>
+    } @else {
       <div hlmField>
-        <label hlmFieldLabel [for]="prefix() + '-first'">First name</label>
+        <label hlmFieldLabel [for]="prefix() + '-display-name'">Display name</label>
         <input
           hlmInput
-          [id]="prefix() + '-first'"
-          formControlName="firstName"
-          autocomplete="given-name"
-          maxlength="200"
+          [id]="prefix() + '-display-name'"
+          formControlName="displayName"
+          maxlength="401"
           required
         />
-        @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
-          <hlm-field-error>Enter a first name.</hlm-field-error>
+        <p hlmFieldDescription>The name used in this Tenant.</p>
+        @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+          <hlm-field-error>Enter a display name of up to 401 characters.</hlm-field-error>
         }
       </div>
-      <div hlmField>
-        <label hlmFieldLabel [for]="prefix() + '-last'">Last name</label>
-        <input
-          hlmInput
-          [id]="prefix() + '-last'"
-          formControlName="lastName"
-          autocomplete="family-name"
-          maxlength="200"
-          required
-        />
-        @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
-          <hlm-field-error>Enter a last name.</hlm-field-error>
-        }
-      </div>
-    </div>
+      <p hlmFieldDescription>
+        Profile: {{ value()?.firstName }} {{ value()?.lastName }} · {{ value()?.email }}
+      </p>
+    }
     @if (inviting()) {
       <div hlmField>
         <label hlmFieldLabel [for]="prefix() + '-email'">Email</label>
@@ -61,7 +81,7 @@
         <legend hlmFieldLegend>Roles</legend>
         <p hlmFieldDescription [id]="prefix() + '-roles-help'">Choose one or two roles.</p>
         <div hlmFieldGroup data-slot="checkbox-group">
-          @for (role of availableRoles(); track role) {
+          @for (role of availableRoles; track role) {
             <div hlmField orientation="horizontal">
               <hlm-checkbox
                 [inputId]="prefix() + '-role-' + role"

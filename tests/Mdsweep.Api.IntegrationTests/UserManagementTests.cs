@@ -146,8 +146,8 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     public async Task Dispatcher_cannot_manage_privileged_Users_or_grant_privileged_roles()
     {
         var privileged = await AddUser("Administrator", "admin-subject", "admin@example.test");
-        using var manager = await Client();
-        foreach (var role in new[] { "Administrator", "Dispatcher" })
+        using var manager = await Client("dispatcher-test");
+        foreach (var role in new[] { "Administrator", "Dispatcher", "Driver" })
         {
             var response = await manager.PostAsJsonAsync(
                 "/api/users/invitations",
@@ -170,12 +170,9 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             HttpStatusCode.Forbidden,
             (await manager.GetAsync($"/api/users/{privileged.Id}/history")).StatusCode
         );
-        Assert.DoesNotContain(
-            (await manager.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users,
-            x => x.Id == privileged.Id
-        );
+        Assert.Equal(HttpStatusCode.Forbidden, (await manager.GetAsync("/api/users")).StatusCode);
         var driver = await AddUser("Driver", "driver-subject", "driver2@example.test");
-        Assert.Equal(HttpStatusCode.Forbidden, (await Update(manager, driver, "Dispatcher")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Update(manager, driver, "Driver")).StatusCode);
         using var administrator = await Client("admin-subject");
         var privilegedInvitation = await Invite(administrator, "Dispatcher", "new@example.test");
         Assert.Equal(
@@ -195,8 +192,8 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         var driver = await AddUser("Driver", "driver-subject", "driver2@example.test");
         using var manager = await Client("admin-subject");
         using var target = await Client("driver-subject");
-        (await Update(manager, driver, "Dispatcher", firstName: "Updated")).EnsureSuccessStatusCode();
-        Assert.Equal(HttpStatusCode.OK, (await target.GetAsync("/api/users")).StatusCode);
+        (await Update(manager, driver, "Dispatcher", displayName: "Updated Driver")).EnsureSuccessStatusCode();
+        Assert.Equal(HttpStatusCode.Forbidden, (await target.GetAsync("/api/users")).StatusCode);
         var updated = (await manager.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users.Single(x =>
             x.Id == driver.Id
         );
@@ -213,7 +210,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
         (await Update(manager, deactivated, "Driver", true)).EnsureSuccessStatusCode();
         var history = await manager.GetFromJsonAsync<HistoryModel[]>($"/api/users/{driver.Id}/history", Json);
-        Assert.Contains(history!, x => x.Action == "Name updated");
+        Assert.Contains(history!, x => x.Action == "Display name updated");
         Assert.Contains(history!, x => x.Action == "Deactivated");
         Assert.Contains(history!, x => x.Action == "Reactivated");
         Assert.Equal(HttpStatusCode.BadRequest, (await Update(manager, admin, "Driver")).StatusCode);
@@ -266,7 +263,8 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         anonymous.DefaultRequestHeaders.Add("X-Test-Anonymous", "true");
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/users")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/invitation")).StatusCode);
-        using var manager = Application.CreateClient();
+        using var manager = await Client();
+        manager.DefaultRequestHeaders.Remove("X-XSRF-TOKEN");
         var response = await manager.PostAsJsonAsync(
             "/api/users/invitations",
             new
@@ -306,7 +304,10 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             HttpStatusCode.NoContent,
             (await recipient.PostAsJsonAsync("/api/auth/tenant-context", new { tenantId = TenantId })).StatusCode
         );
-        Assert.Equal(HttpStatusCode.OK, (await recipient.GetAsync("/api/users")).StatusCode);
+        Assert.Equal(
+            roles.Contains("Administrator") ? HttpStatusCode.OK : HttpStatusCode.Forbidden,
+            (await recipient.GetAsync("/api/users")).StatusCode
+        );
         Assert.Equal(
             HttpStatusCode.Forbidden,
             (
@@ -328,12 +329,10 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         await AddUser("Administrator", "admin-subject", "admin@example.test");
         var roles = new[] { "Driver", privilegedRole };
         var target = await AddUser(roles, "target-subject", "target@example.test");
-        using var manager = await Client();
+        using var manager = await Client("dispatcher-test");
         using var admin = await Client("admin-subject");
         var invitation = await Invite(admin, roles);
-        var list = (await manager.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!;
-        Assert.DoesNotContain(list.Users, x => x.Id == target.Id);
-        Assert.DoesNotContain(list.Invitations, x => x.Id == invitation.Id);
+        Assert.Equal(HttpStatusCode.Forbidden, (await manager.GetAsync("/api/users")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Update(manager, target, "Driver")).StatusCode);
         Assert.Equal(
             HttpStatusCode.Forbidden,
@@ -378,12 +377,12 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         var driver = await AddUser("Driver", "driver-subject", "driver2@example.test");
         using var manager = await Client("admin-subject");
         using var recipient = await Client("driver-subject");
-        (await Update(manager, driver, new[] { "Driver", "Dispatcher" })).EnsureSuccessStatusCode();
+        (await Update(manager, driver, new[] { "Driver", "Administrator" })).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.OK, (await recipient.GetAsync("/api/users")).StatusCode);
         var updated = (await manager.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users.Single(x =>
             x.Id == driver.Id
         );
-        (await Update(manager, updated, new[] { "Dispatcher", "Driver" })).EnsureSuccessStatusCode();
+        (await Update(manager, updated, new[] { "Administrator", "Driver" })).EnsureSuccessStatusCode();
         var reordered = (await manager.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users.Single(x =>
             x.Id == driver.Id
         );
@@ -391,7 +390,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         var history = (await manager.GetFromJsonAsync<HistoryModel[]>($"/api/users/{driver.Id}/history", Json))!;
         Assert.Single(history);
         Assert.Equal("Roles changed", history[0].Action);
-        Assert.Contains("Driver, Dispatcher", history[0].Details);
+        Assert.Contains("Driver, Administrator", history[0].Details);
         Assert.Equal(HttpStatusCode.Conflict, (await Update(manager, driver, "Driver")).StatusCode);
         (await Update(manager, updated, "Driver")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
@@ -426,6 +425,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             lastName = "User",
             roles,
             isActive = true,
+            displayName = admin.DisplayName,
             version = admin.Version,
         };
         Assert.Equal(
@@ -445,8 +445,19 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
     }
 
-    private async Task<HttpClient> Client(string subject = "dispatcher-test", string tenantId = TenantId)
+    private async Task<HttpClient> Client(string? subject = null, string tenantId = TenantId)
     {
+        if (subject is null)
+        {
+            subject = "dispatcher-test";
+            await using var scope = Application.Services.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var user = await db.Users.SingleAsync(x => x.KeycloakUserId == subject);
+            (await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id && x.TenantId == tenantId)).SetRoles([
+                "Administrator",
+            ]);
+            await db.SaveChangesAsync();
+        }
         var client = Application.CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Subject", subject);
         client.DefaultRequestHeaders.Add("X-Test-Tenant", tenantId);
@@ -512,8 +523,35 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             x.Id == target.Id
         );
         Assert.Equal(new[] { "Administrator" }, otherTarget.Roles);
+        (
+            await local.PutAsJsonAsync(
+                $"/api/users/{target.Id}",
+                new
+                {
+                    displayName = "Local Driver",
+                    firstName = "Overposted",
+                    lastName = "Profile",
+                    email = "changed@example.test",
+                    roles = target.Roles,
+                    isActive = true,
+                    version = target.Version,
+                }
+            )
+        ).EnsureSuccessStatusCode();
+        target = (await local.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users.Single(x =>
+            x.Id == target.Id
+        );
+        Assert.Equal("Local Driver", target.DisplayName);
+        Assert.Equal("Synthetic", target.FirstName);
+        Assert.Equal("Invitee", target.LastName);
+        Assert.Equal("driver@example.test", target.Email);
+        var unchanged = (await other.GetFromJsonAsync<UserManagementModel>("/api/users", Json))!.Users.Single(x =>
+            x.Id == target.Id
+        );
+        Assert.Equal(otherTarget.DisplayName, unchanged.DisplayName);
+        Assert.Equal(otherTarget.Version, unchanged.Version);
         using var otherSession = await Client("invited-subject", otherTenant);
-        Assert.Equal(HttpStatusCode.OK, (await recipient.GetAsync("/api/users")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await otherSession.GetAsync("/api/users")).StatusCode);
         (await Update(local, target, "Driver", false)).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
@@ -606,7 +644,16 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         db.Users.Add(user);
         db.TenantMemberships.Add(TenantMembership.Create(tenantId, user.Id, roles));
         await db.SaveChangesAsync();
-        return new UserModel(user.Id, user.FirstName, user.LastName, email, roles, true, 0);
+        return new UserModel(
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            email,
+            $"{user.FirstName} {user.LastName}",
+            roles,
+            true,
+            0
+        );
     }
 
     private static Task<HttpResponseMessage> Update(
@@ -614,22 +661,21 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         UserModel user,
         string role,
         bool active = true,
-        string firstName = "Synthetic"
-    ) => Update(client, user, [role], active, firstName);
+        string? displayName = null
+    ) => Update(client, user, [role], active, displayName);
 
     private static Task<HttpResponseMessage> Update(
         HttpClient client,
         UserModel user,
         string[] roles,
         bool active = true,
-        string firstName = "Synthetic"
+        string? displayName = null
     ) =>
         client.PutAsJsonAsync(
             $"/api/users/{user.Id}",
             new
             {
-                firstName,
-                lastName = "User",
+                displayName = displayName ?? user.DisplayName,
                 roles,
                 isActive = active,
                 version = user.Version,

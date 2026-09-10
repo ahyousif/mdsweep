@@ -98,6 +98,11 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(401)
+                        .HasColumnType("character varying(401)")
+                        .HasColumnName("display_name");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");

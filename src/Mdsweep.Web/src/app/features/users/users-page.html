@@ -40,7 +40,6 @@
           <app-user-form
             prefix="invite-user"
             [inviting]="true"
-            [administrator]="data.isAdministrator"
             [busy]="mutation.isPending()"
             (saved)="save($event)"
             (cancelled)="inviting.set(false)"
@@ -70,11 +69,6 @@
     <button hlmBtn variant="outline" type="button" (click)="listing.refetch()">Retry</button>
   }
   @if (listing.data(); as data) {
-    @if (!data.isAdministrator) {
-      <p hlmMuted>
-        Dispatchers can manage Users whose only role is Driver. An Administrator manages all roles.
-      </p>
-    }
     <div hlmField class="max-w-md">
       <label hlmFieldLabel for="user-search">Search Users and Invitations</label>
       <input
@@ -102,7 +96,6 @@
             <div hlmCardContent>
               <app-user-form
                 [value]="editingValue()"
-                [administrator]="data.isAdministrator"
                 [busy]="mutation.isPending()"
                 (saved)="save($event)"
                 (cancelled)="editing.set(null)"
@@ -127,7 +120,7 @@
                 <tbody hlmTBody>
                   @for (user of users(); track user.id) {
                     <tr hlmTr>
-                      <td hlmTd>{{ user.firstName }} {{ user.lastName }}</td>
+                      <td hlmTd>{{ user.displayName }}</td>
                       <td hlmTd>{{ user.email || 'Not recorded' }}</td>
                       <td hlmTd>
                         <div class="flex flex-wrap gap-1">
@@ -150,7 +143,7 @@
                             type="button"
                             [disabled]="mutation.isPending()"
                             (click)="edit(user)"
-                            [attr.aria-label]="'Edit ' + user.firstName + ' ' + user.lastName"
+                            [attr.aria-label]="'Edit ' + user.displayName"
                           >
                             Edit
                           </button>
@@ -161,9 +154,7 @@
                             type="button"
                             [disabled]="mutation.isPending() || !user.isActive"
                             (click)="run({ kind: 'reset', id: user.id })"
-                            [attr.aria-label]="
-                              'Send password reset to ' + user.firstName + ' ' + user.lastName
-                            "
+                            [attr.aria-label]="'Send password reset to ' + user.displayName"
                           >
                             Reset password
                           </button>
@@ -173,9 +164,7 @@
                             size="sm"
                             type="button"
                             (click)="showHistory(user, false)"
-                            [attr.aria-label]="
-                              'View history for ' + user.firstName + ' ' + user.lastName
-                            "
+                            [attr.aria-label]="'View history for ' + user.displayName"
                           >
                             History
                           </button>

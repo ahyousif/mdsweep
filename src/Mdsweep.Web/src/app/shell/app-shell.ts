@@ -1,4 +1,4 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { AuthSessionService, type TenantSession } from '@app/core/auth/auth-session.service';
@@ -30,10 +30,12 @@ export class AppShell {
   readonly signOutPending = signal(false);
   readonly signOutError = signal('');
 
-  readonly navigation = [
+  readonly navigation = computed(() => [
     { label: 'Trips', route: '/trips', icon: 'lucideRoute' },
-    { label: 'Users & Invitations', route: '/users', icon: 'lucideUsers' },
-  ];
+    ...(this.session().roles.includes('Administrator')
+      ? [{ label: 'Users & Invitations', route: '/users', icon: 'lucideUsers' }]
+      : []),
+  ]);
 
   setTheme(theme: ThemePreference): void {
     this.theme.setTheme(theme);

@@ -17,7 +17,7 @@
 
     <div hlmSidebarContent>
       <ul hlmSidebarMenu class="px-2">
-        @for (item of navigation; track item.route) {
+        @for (item of navigation(); track item.route) {
           <li hlmSidebarMenuItem>
             <a
               hlmSidebarMenuButton

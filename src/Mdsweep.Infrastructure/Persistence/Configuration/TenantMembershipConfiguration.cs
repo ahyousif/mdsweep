@@ -21,6 +21,7 @@ public sealed class TenantMembershipConfiguration : IEntityTypeConfiguration<Ten
         builder.Property(membership => membership.UserId).HasColumnName("user_id");
         builder.Property(membership => membership.Roles).HasColumnName("roles").HasColumnType("text[]");
         builder.HasIndex(membership => new { membership.TenantId, membership.UserId }).IsUnique();
+        builder.Property(membership => membership.DisplayName).HasColumnName("display_name").HasMaxLength(401);
         builder.Property(membership => membership.IsActive).HasColumnName("is_active");
         builder.Property(membership => membership.Version).HasColumnName("version").IsConcurrencyToken();
         builder

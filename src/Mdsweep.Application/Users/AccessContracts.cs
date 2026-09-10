@@ -1,10 +1,11 @@
 using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Application.Users;
 
 // Access also runs before Tenant selection. Identity claims are supplied by the BFF,
 // never by request bodies; application authorization remains database-backed.
-public interface IAccessActor
+public interface IUserContext
 {
     string Subject { get; }
     string? TenantId { get; }
@@ -27,6 +28,7 @@ public sealed record UserModel(
     string FirstName,
     string LastName,
     string? Email,
+    string DisplayName,
     string[] Roles,
     bool IsActive,
     int Version
@@ -43,7 +45,22 @@ public sealed record InvitationModel(
     Instant? SentAt,
     string? DeliveryError,
     int Version
-);
+)
+{
+    public static InvitationModel From(InvitationAggregate invitation, Instant now) =>
+        new(
+            invitation.Id,
+            invitation.FirstName,
+            invitation.LastName,
+            invitation.Email,
+            invitation.Roles,
+            invitation.Status == "Pending" && invitation.ExpiresAt <= now ? "Expired" : invitation.Status,
+            invitation.ExpiresAt,
+            invitation.SentAt,
+            invitation.DeliveryError,
+            invitation.Version
+        );
+}
 
 public sealed record HistoryModel(
     string ActorSubject,
@@ -68,14 +85,8 @@ public sealed record SendInvitationCommand(Guid Id) : ICommand<InvitationModel>;
 
 public sealed record RevokeInvitationCommand(Guid Id) : ICommand<bool>;
 
-public sealed record UpdateUserCommand(
-    Guid Id,
-    string FirstName,
-    string LastName,
-    string[] Roles,
-    bool IsActive,
-    int Version
-) : ICommand<bool>;
+public sealed record UpdateUserCommand(Guid Id, string DisplayName, string[] Roles, bool IsActive, int Version)
+    : ICommand<bool>;
 
 public sealed record ResetUserPasswordCommand(Guid Id) : ICommand<bool>;
 

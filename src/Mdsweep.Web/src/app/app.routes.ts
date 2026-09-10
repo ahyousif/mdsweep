@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
+import { usersGuard } from './features/users/users.guard';
 
 export const routes: Routes = [
-  { path: 'users', loadComponent: () => import('./features/users/users-page') },
+  {
+    path: 'users',
+    canActivate: [usersGuard],
+    loadComponent: () => import('./features/users/users-page'),
+  },
   {
     path: 'trips',
     loadChildren: () => import('./features/trips/trips.routes'),
