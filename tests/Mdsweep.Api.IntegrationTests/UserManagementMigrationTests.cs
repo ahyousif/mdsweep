@@ -72,7 +72,7 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Baseline_upgrade_preserves_User_and_memberships_in_multiple_Tenants()
+    public async Task Access_baseline_upgrade_preserves_User_email_and_memberships_in_multiple_Tenants()
     {
         // Start with a fresh database: main intentionally cannot downgrade removed preview data.
         var connection = new NpgsqlConnectionStringBuilder(DatabaseConnectionString) { Database = "baseline_upgrade" };
@@ -83,14 +83,14 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
         var userId = Guid.NewGuid();
         var membershipIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
         var migrator = db.GetService<IMigrator>();
-        await migrator.MigrateAsync("20260831065755_InitialSchema");
+        await migrator.MigrateAsync("20260906001412_UserManagementAndInvitations");
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO tenants (id, name, keycloak_organization_id) VALUES
                 ('mdsw-eep2-3456', 'Synthetic Tenant', 'synthetic-tenant'),
                 ('abcd-efgh-jkmn', 'Another Synthetic Tenant', 'another-organization');
-            INSERT INTO users (id, first_name, last_name, keycloak_user_id)
-                VALUES ({userId}, 'Synthetic', 'User', 'synthetic-user');
+            INSERT INTO users (id, first_name, last_name, keycloak_user_id, email)
+                VALUES ({userId}, 'Synthetic', 'User', 'synthetic-user', 'synthetic@example.test');
             INSERT INTO tenant_memberships (id, tenant_id, user_id, role) VALUES
                 ({membershipIds[0]}, 'mdsw-eep2-3456', {userId}, 'Dispatcher'),
                 ({membershipIds[1]}, 'abcd-efgh-jkmn', {userId}, 'Driver');
@@ -100,6 +100,7 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
         db.ChangeTracker.Clear();
         var user = await db.Users.SingleAsync();
         Assert.Equal(userId, user.Id);
+        Assert.Equal("synthetic@example.test", user.Email);
         var memberships = await db.TenantMemberships.ToListAsync();
         Assert.Equal(membershipIds.Order(), memberships.Select(x => x.Id).Order());
         Assert.All(memberships, x => Assert.True(x.IsActive));

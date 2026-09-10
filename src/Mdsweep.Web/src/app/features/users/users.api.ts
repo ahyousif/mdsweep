@@ -11,9 +11,8 @@ export type UserDetails = {
   roles: UserRole[];
   isActive: boolean;
 };
-export type ManagedUser = Omit<UserDetails, 'email'> & {
+export type ManagedUser = UserDetails & {
   id: string;
-  email: string | null;
   version: number;
 };
 export type Invitation = Omit<UserDetails, 'isActive' | 'displayName'> & {

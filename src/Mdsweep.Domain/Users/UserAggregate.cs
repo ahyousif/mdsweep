@@ -19,16 +19,16 @@ public sealed class UserAggregate : AggregateRoot<Guid>
     public string FirstName { get; private set; } = null!;
     public string LastName { get; private set; } = null!;
     public string KeycloakUserId { get; private set; } = null!;
-    public string? Email { get; private set; }
+    public string Email { get; private set; } = null!;
 
-    public static UserAggregate Create(string firstName, string lastName, string keycloakUserId, string? email = null)
+    public static UserAggregate Create(string firstName, string lastName, string keycloakUserId, string email)
     {
         Guard.Against.Null(firstName, nameof(firstName));
         Guard.Against.Null(lastName, nameof(lastName));
         Guard.Against.Null(keycloakUserId, nameof(keycloakUserId));
 
         var user = new UserAggregate(Guid.CreateVersion7(), firstName, lastName, keycloakUserId);
-        user.Email = email;
+        user.Email = Guard.Against.NullOrWhiteSpace(email, nameof(email));
 
         user.AddDomainEvent(new UserCreatedDomainEvent(user.Id));
 

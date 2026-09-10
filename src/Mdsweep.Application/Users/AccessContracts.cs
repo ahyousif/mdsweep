@@ -27,7 +27,7 @@ public sealed record UserModel(
     Guid Id,
     string FirstName,
     string LastName,
-    string? Email,
+    string Email,
     string DisplayName,
     string[] Roles,
     bool IsActive,

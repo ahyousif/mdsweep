@@ -318,6 +318,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
                         .HasColumnName("email");

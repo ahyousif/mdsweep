@@ -12,7 +12,7 @@ public sealed class UsersSpecification : Specification<UserAggregate, UserAggreg
         if (subject is not null)
             Query.Where(x => x.KeycloakUserId == subject);
         if (email is not null)
-            Query.Where(x => x.Email != null && x.Email.ToLower() == email);
+            Query.Where(x => x.Email.ToLower() == email);
         Query.OrderBy(x => x.LastName).ThenBy(x => x.FirstName);
         Query.Select(x => x);
     }

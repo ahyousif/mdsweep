@@ -30,3 +30,5 @@ The Users page, shared invite/edit form, history, and invitation acceptance scre
 - `npm run test:e2e` in `src/Mdsweep.Web` runs Playwright browser workflows with synthetic API responses. Install Chromium with `npx playwright install chromium`; alternatively set `PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome. These browser checks complement the real API/PostgreSQL tests; live mailbox delivery is deferred with SMTP setup.
 
 Tenant Membership display names are independent of the global User profile and other Tenants. Memberships without an override display the global name. The existing, unapplied UserManagementAndInvitations migration includes the display-name column; no additional migration is needed.
+
+Every User requires an email address. User creation rejects missing or blank email, and the database requires a non-null email. The access migration is a fresh-database baseline; it does not invent email addresses for older records.

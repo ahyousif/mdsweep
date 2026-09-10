@@ -21,7 +21,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 table: "users",
                 type: "character varying(254)",
                 maxLength: 254,
-                nullable: true);
+                nullable: false);
 
             migrationBuilder.AddColumn<string>(
                 name: "normalized_email",
