@@ -1,27 +1,22 @@
 namespace Mdsweep.Domain.Trips;
 
 public sealed record BrokerTripData(
-    DateOnly ServiceDate,
+    LocalDate ServiceDate,
     LocalTime? AppointmentTime,
+    LocalTime? BrokerPickupTime,
+    TripDirection Direction,
+    bool IsWillCall,
     string PickupAddress,
     string PickupCity,
+    string? PickupState,
+    string? PickupZip,
     string DropoffAddress,
     string DropoffCity,
-    string? BrokerStatus,
-    bool IsWillCall,
-    PassengerMobilityRequirement MobilityRequirement,
-    string? RawImportedPassengerType,
-    decimal? TripCost,
-    decimal? TripMileage
-)
-{
-    public RequiredVehicleCapability RequiredVehicleCapability => MobilityRequirement switch
-    {
-        PassengerMobilityRequirement.ManualWheelchair or
-        PassengerMobilityRequirement.ManualWheelchairCannotTransfer or
-        PassengerMobilityRequirement.ElectricWheelchair =>
-            global::Mdsweep.Domain.Trips.RequiredVehicleCapability.WheelchairAccessible,
-        PassengerMobilityRequirement.Unknown => global::Mdsweep.Domain.Trips.RequiredVehicleCapability.Unknown,
-        _ => global::Mdsweep.Domain.Trips.RequiredVehicleCapability.StandardTransport,
-    };
-}
+    string? DropoffState,
+    string? DropoffZip,
+    string? Status,
+    string? PassengerType,
+    string? SpecialNeeds,
+    decimal? Cost,
+    decimal? Mileage
+);

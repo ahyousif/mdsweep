@@ -15,8 +15,5 @@ public sealed class ListTripsRequestValidator : AbstractValidator<ListTripsReque
             .When(x => x.StartDate.HasValue && x.EndDate.HasValue)
             .OverridePropertyName("endDate");
 
-        RuleFor(x => x.SortBy).IsInEnum().OverridePropertyName("sortBy");
-
-        RuleFor(x => x.SortDirection).IsInEnum().OverridePropertyName("sortDirection");
     }
 }

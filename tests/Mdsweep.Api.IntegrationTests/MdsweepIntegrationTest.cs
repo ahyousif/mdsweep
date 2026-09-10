@@ -25,6 +25,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
             builder.UseSetting("Authentication:ClientSecret", "test-secret");
             builder.UseSetting("KeycloakAdministration:ClientId", "mdsweep-administration-test");
             builder.UseSetting("KeycloakAdministration:ClientSecret", "test-administration-secret");
+            builder.UseSetting("GoogleRoutes:ApiKey", "synthetic-google-routes-api-key");
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IKeycloakUserAdministration>();

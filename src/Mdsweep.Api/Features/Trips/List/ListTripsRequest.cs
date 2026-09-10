@@ -1,21 +1,14 @@
-using Mdsweep.Application.Common.Models;
-using Mdsweep.Application.Trips;
 using Mdsweep.Application.Trips.List;
 
 namespace Mdsweep.Api.Features.Trips.List;
 
 public sealed class ListTripsRequest
 {
-    // Backwards-compatible single-day query parameter for existing callers.
-    public DateOnly? ServiceDate { get; set; }
-
     public DateOnly? StartDate { get; set; }
 
     public DateOnly? EndDate { get; set; }
 
     public string? Search { get; set; }
-
-    public bool? NeedsAttention { get; set; }
 
     public string? BrokerStatus { get; set; }
 
@@ -25,33 +18,14 @@ public sealed class ListTripsRequest
 
     public int PageSize { get; set; } = 50;
 
-    public TripSortBy SortBy { get; set; } = TripSortBy.ScheduledPickupTime;
-
-    public SortDirection SortDirection { get; set; } = SortDirection.Ascending;
-
-    public ListTripsQuery ToQuery()
-    {
-        // TODO: add json options to support deserializing LocalDate from yyyy-MM-dd format, and then change the API to use LocalDate instead of DateOnly for StartDate, EndDate, and ServiceDate.
-        var startDate =
-            StartDate.HasValue ? LocalDate.FromDateOnly(StartDate.Value)
-            : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value)
-            : (LocalDate?)null;
-        var endDate =
-            EndDate.HasValue ? LocalDate.FromDateOnly(EndDate.Value)
-            : ServiceDate.HasValue ? LocalDate.FromDateOnly(ServiceDate.Value)
-            : (LocalDate?)null;
-
-        return new ListTripsQuery(
-            startDate,
-            endDate,
+    public ListTripsQuery ToQuery() =>
+        new(
+            StartDate.HasValue ? LocalDate.FromDateOnly(StartDate.Value) : null,
+            EndDate.HasValue ? LocalDate.FromDateOnly(EndDate.Value) : null,
             Search,
-            NeedsAttention,
             BrokerStatus,
             IsWillCall,
             Page,
-            PageSize,
-            SortBy,
-            SortDirection
+            PageSize
         );
-    }
 }

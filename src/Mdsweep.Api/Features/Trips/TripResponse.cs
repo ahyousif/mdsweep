@@ -1,3 +1,4 @@
+using Mdsweep.Api.Common.Contracts;
 using Mdsweep.Application.Trips;
 using Mdsweep.Domain.Trips;
 
@@ -8,20 +9,24 @@ public sealed record TripResponse(
     string BrokerTripNumber,
     string PassengerFirstName,
     string PassengerLastName,
-    string? BrokerMemberId,
+    string? MemberId,
     LocalDate ServiceDate,
-    LocalTime? AppointmentTime,
+    TripDirection Direction,
     string? BrokerStatus,
     bool IsWillCall,
-    PassengerMobilityRequirement MobilityRequirement,
+    string? PassengerType,
+    string? SpecialNeeds,
     decimal? TripCost,
     decimal? TripMileage,
+    LocalTime? AppointmentTime,
+    LocalTime? ReturnPickupTime,
     LocalTime? ScheduledPickupTime,
+    LocalTime? CalculatedPickupTime,
+    LocalTime? ManualPickupTime,
     int? EstimatedTravelMinutes,
-    string PickupAddress,
-    string PickupCity,
-    string DropoffAddress,
-    string DropoffCity
+    int? EstimatedDistanceMeters,
+    AddressResponse Pickup,
+    AddressResponse Dropoff
 )
 {
     public static TripResponse FromModel(TripModel model) =>
@@ -32,17 +37,21 @@ public sealed record TripResponse(
             model.PassengerLastName,
             model.BrokerMemberId,
             model.ServiceDate,
-            model.AppointmentTime,
+            model.Direction,
             model.BrokerStatus,
             model.IsWillCall,
-            model.MobilityRequirement,
+            model.PassengerType,
+            model.SpecialNeeds,
             model.TripCost,
             model.TripMileage,
+            model.AppointmentTime,
+            model.BrokerPickupTime,
             model.ScheduledPickupTime,
+            model.CalculatedPickupTime,
+            model.ManualPickupTime,
             model.EstimatedTravelMinutes,
-            model.PickupAddress,
-            model.PickupCity,
-            model.DropoffAddress,
-            model.DropoffCity
+            model.EstimatedDistanceMeters,
+            new AddressResponse(model.PickupAddress, model.PickupCity, model.PickupState, model.PickupZip),
+            new AddressResponse(model.DropoffAddress, model.DropoffCity, model.DropoffState, model.DropoffZip)
         );
 }

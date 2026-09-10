@@ -8,6 +8,7 @@ namespace Mdsweep.Application.Common.Abstractions;
 /// </summary>
 public interface IRepository
 {
+    // Single
     Task<TAggregate?> GetByIdAsync<TAggregate, TId>(TId id, CancellationToken ct)
         where TAggregate : AggregateRoot<TId>
         where TId : notnull;
@@ -21,15 +22,21 @@ public interface IRepository
     )
         where TAggregate : class, IAggregateRoot;
 
+    // List
+    Task<List<TAggregate>> ListAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
+        where TAggregate : class, IAggregateRoot;
+
     Task<List<TResult>> ListAsync<TAggregate, TResult>(
         ISpecification<TAggregate, TResult> specification,
         CancellationToken ct
     )
         where TAggregate : class, IAggregateRoot;
 
+    // Count
     Task<int> CountAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
         where TAggregate : class, IAggregateRoot;
 
+    // Write
     Task AddAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
         where TAggregate : class, IAggregateRoot;
 

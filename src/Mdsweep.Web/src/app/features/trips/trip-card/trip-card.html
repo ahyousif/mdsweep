@@ -1,0 +1,81 @@
+<article
+  hlmCard
+  class="relative flex cursor-pointer flex-col gap-3 rounded-lg px-4 py-3 shadow-none transition-colors md:flex-row md:items-center md:gap-4"
+  [class.border-primary]="selected()"
+  [class.bg-primary/5]="selected()"
+  [attr.aria-pressed]="selected()"
+  role="button"
+  tabindex="0"
+  (click)="select()"
+  (keydown.enter)="select()"
+  (keydown.space)="$event.preventDefault(); select()"
+>
+  @if (selected()) {
+    <span class="bg-primary absolute inset-y-0 left-0 w-1 rounded-l-lg" aria-hidden="true"></span>
+  }
+
+  <!-- Pickup -->
+  <div class="md:w-28 md:shrink-0">
+    <p class="text-xl font-semibold leading-tight">
+      {{ pickupTime() }}
+    </p>
+
+    <p class="text-muted-foreground mt-1 text-sm">Pickup</p>
+  </div>
+
+  <!-- Passenger -->
+  <div class="min-w-0 md:w-48 md:shrink-0">
+    <p class="truncate font-semibold">
+      {{ passengerName() }}
+    </p>
+
+    <p class="text-muted-foreground mt-1 truncate text-sm">
+      {{ trip().brokerTripNumber }}
+    </p>
+  </div>
+
+  <!-- Route -->
+  <div class="min-w-0 md:flex-1">
+    <div class="flex items-center gap-2">
+      <ng-icon
+        name="lucideMapPin"
+        class="text-muted-foreground size-4 shrink-0"
+        aria-hidden="true"
+      />
+
+      <p class="truncate text-sm">
+        {{ trip().pickup.address }}
+      </p>
+    </div>
+
+    <div class="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
+      <span class="w-4 shrink-0 text-center" aria-hidden="true">↓</span>
+
+      <p class="truncate">→ {{ trip().dropoff.address }}</p>
+    </div>
+
+    <div
+      class="text-muted-foreground mt-2 flex items-center gap-2 text-sm"
+      [class.text-primary]="selected()"
+    >
+      <ng-icon name="lucideCalendarClock" class="size-4 shrink-0" aria-hidden="true" />
+
+      <span>{{ timingLabel() }}</span>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="flex shrink-0 items-center gap-3 md:min-w-36 md:justify-end">
+    @if (brokerStatusLabel(); as status) {
+      <span hlmBadge variant="destructive">
+        {{ status }}
+      </span>
+    }
+
+    <ng-icon
+      name="lucideChevronRight"
+      class="text-muted-foreground ml-auto size-5 shrink-0"
+      aria-hidden="true"
+    />
+  </div>
+</article>

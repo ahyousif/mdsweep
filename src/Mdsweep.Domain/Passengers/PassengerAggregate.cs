@@ -32,14 +32,19 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
         Guard.Against.NullOrWhiteSpace(firstName, nameof(firstName));
         Guard.Against.NullOrWhiteSpace(lastName, nameof(lastName));
 
-        var passenger = new PassengerAggregate(Guid.CreateVersion7(), brokerMemberId?.ToUpperInvariant(), firstName, lastName);
+        var passenger = new PassengerAggregate(
+            Guid.CreateVersion7(),
+            brokerMemberId?.ToUpperInvariant(),
+            firstName,
+            lastName
+        );
 
         passenger.AddDomainEvent(new PassengerCreatedDomainEvent(passenger.Id));
 
         return passenger;
     }
 
-    public void ReconcileBrokerIdentity(string firstName, string lastName)
+    public void UpdateDetails(string firstName, string lastName)
     {
         Guard.Against.NullOrWhiteSpace(firstName, nameof(firstName));
         Guard.Against.NullOrWhiteSpace(lastName, nameof(lastName));

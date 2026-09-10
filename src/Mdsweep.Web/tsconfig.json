@@ -84,6 +84,9 @@
       ],
       "@spartan-ng/helm/textarea": [
         "./src/app/ui/textarea/src/index.ts"
+      ],
+      "@spartan-ng/helm/dialog": [
+        "./src/app/ui/dialog/src/index.ts"
       ]
     }
   },

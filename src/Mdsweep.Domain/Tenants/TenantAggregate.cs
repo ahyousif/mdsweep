@@ -6,6 +6,9 @@ namespace Mdsweep.Domain.Tenants;
 
 public sealed class TenantAggregate : AggregateRoot<string>
 {
+    public const int DefaultPickupBufferMinutes = 15;
+    public const int MaximumPickupBufferMinutes = 120;
+
     private TenantAggregate()
         : base(string.Empty) { }
 
@@ -18,6 +21,7 @@ public sealed class TenantAggregate : AggregateRoot<string>
 
     public string Name { get; private set; } = null!;
     public string KeycloakOrganizationId { get; private set; } = null!;
+    public int PickupBufferMinutes { get; private set; } = DefaultPickupBufferMinutes;
 
     public static TenantAggregate Create(string tenantId, string name, string keycloakOrganizationId)
     {
@@ -34,5 +38,12 @@ public sealed class TenantAggregate : AggregateRoot<string>
         tenant.AddDomainEvent(new TenantCreatedDomainEvent(tenant.Id));
 
         return tenant;
+    }
+
+    public void SetPickupBufferMinutes(int pickupBufferMinutes)
+    {
+        Guard.Against.NullOrOutOfRange(pickupBufferMinutes, nameof(pickupBufferMinutes), 0, MaximumPickupBufferMinutes);
+
+        PickupBufferMinutes = pickupBufferMinutes;
     }
 }

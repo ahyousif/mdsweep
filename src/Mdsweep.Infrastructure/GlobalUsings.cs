@@ -1,3 +1,5 @@
+global using System.Globalization;
+global using System.Net.Http.Json;
 global using System.Text;
 global using System.Text.Json;
 global using Ardalis.GuardClauses;
@@ -16,7 +18,10 @@ global using Microsoft.EntityFrameworkCore.Migrations;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
 global using NodaTime;
+global using NodaTime.Text;
 global using Wolverine;
 global using Wolverine.EntityFrameworkCore;
 global using Wolverine.EntityFrameworkCore.Internals;

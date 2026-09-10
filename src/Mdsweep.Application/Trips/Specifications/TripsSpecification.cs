@@ -6,87 +6,78 @@ namespace Mdsweep.Application.Trips.Specifications;
 
 public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Guid, TripsSpecification>
 {
-    public TripsSpecification WithTripDateRange(LocalDate? startDate, LocalDate? endDate)
+    public TripsSpecification WithDateRange(LocalDate? startDate, LocalDate? endDate)
     {
-        if (!startDate.HasValue && !endDate.HasValue)
-        {
-            return this;
-        }
-
         if (startDate.HasValue)
         {
-            var start = startDate.Value.ToDateOnly();
-            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate >= start));
+            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate >= startDate.Value));
         }
 
         if (endDate.HasValue)
         {
-            var end = endDate.Value.ToDateOnly();
-            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate <= end));
+            Spec.Add(query => query.Where(trip => trip.BrokerData.ServiceDate <= endDate.Value));
         }
 
         return this;
     }
 
-    public TripsSpecification WithSearch(string? search)
+#pragma warning disable CA1862 // EF Core does not translate StringComparison overloads.
+    public TripsSpecification WithSearch(string? query)
     {
-        if (string.IsNullOrWhiteSpace(search))
-            return this;
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var value = query.Trim().ToUpperInvariant();
 
-        var value = search.Trim().ToUpperInvariant();
-        Spec.Add(query =>
-            query.Where(trip =>
-                trip.BrokerTripNumber.Contains(value)
-                || trip.Passenger.FirstName.ToUpper().Contains(value)
-                || trip.Passenger.LastName.ToUpper().Contains(value)
-            )
-        );
+            Spec.Add(q =>
+                q.Where(trip =>
+                    trip.BrokerTripNumber.ToUpper().Contains(value)
+                    || trip.Passenger.FirstName.ToUpper().Contains(value)
+                    || trip.Passenger.LastName.ToUpper().Contains(value)
+                    || (
+                        trip.Passenger.BrokerMemberId != null && trip.Passenger.BrokerMemberId.ToUpper().Contains(value)
+                    )
+                    || trip.BrokerData.PickupAddress.ToUpper().Contains(value)
+                    || trip.BrokerData.PickupCity.ToUpper().Contains(value)
+                    || trip.BrokerData.DropoffAddress.ToUpper().Contains(value)
+                    || trip.BrokerData.DropoffCity.ToUpper().Contains(value)
+                )
+            );
+        }
         return this;
     }
-
-    public TripsSpecification WithNeedsAttention(bool? needsAttention)
-    {
-        if (!needsAttention.HasValue)
-            return this;
-
-        Spec.Add(query =>
-            query.Where(trip =>
-                (
-                    (trip.ScheduledPickupTime == null && !trip.BrokerData.IsWillCall)
-                    || (trip.BrokerData.BrokerStatus != null && trip.BrokerData.BrokerStatus != "VALID")
-                    || trip.BrokerData.MobilityRequirement == PassengerMobilityRequirement.Unknown
-                ) == needsAttention.Value
-            )
-        );
-        return this;
-    }
+#pragma warning restore CA1862
 
     public TripsSpecification WithBrokerStatus(string? brokerStatus)
     {
-        if (brokerStatus is null)
+        if (!string.IsNullOrWhiteSpace(brokerStatus))
         {
-            return this;
+            Spec.Add(query => query.Where(trip => trip.BrokerData.Status == brokerStatus));
         }
-
-        Spec.Add(query => query.Where(trip => trip.BrokerData.BrokerStatus == brokerStatus));
 
         return this;
     }
 
-    public TripsSpecification WithWillCall(bool? isWillCall)
+    public TripsSpecification WithTripNumbers(IReadOnlyCollection<string> tripNumbers)
     {
-        if (!isWillCall.HasValue)
+        if (tripNumbers.Count > 0)
         {
-            return this;
+            Spec.Add(query => query.Where(trip => tripNumbers.Contains(trip.BrokerTripNumber)));
         }
-
-        var value = isWillCall.Value;
-
-        Spec.Add(query => query.Where(trip => trip.BrokerData.IsWillCall == value));
 
         return this;
     }
 
+    public TripsSpecification WithWillCall(bool? willCall)
+    {
+        if (willCall.HasValue)
+        {
+            Spec.Add(query => query.Where(trip => trip.BrokerData.IsWillCall == willCall));
+        }
+
+        return this;
+    }
+
+    // sorting
     public TripsSpecification OrderBy(TripSortBy sortBy, SortDirection direction, bool groupByDate = false)
     {
         var descending = direction switch
@@ -104,30 +95,37 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
         switch (sortBy)
         {
             case TripSortBy.AppointmentTime:
+                Spec.AddSorting(trip => trip.BrokerData.AppointmentTime == null);
+
                 Spec.AddSorting(trip => trip.BrokerData.AppointmentTime, descending);
 
-                Spec.AddSorting(trip => trip.BrokerData.ServiceDate, descending);
                 break;
 
             case TripSortBy.ServiceDate:
                 Spec.AddSorting(trip => trip.BrokerData.ServiceDate, descending);
-                Spec.AddSorting(trip => trip.ScheduledPickupTime ?? trip.BrokerData.AppointmentTime, descending);
-                Spec.AddSorting(trip => trip.BrokerData.AppointmentTime, descending);
+
                 break;
 
             case TripSortBy.BrokerTripNumber:
                 Spec.AddSorting(trip => trip.BrokerTripNumber, descending);
+
                 break;
 
             case TripSortBy.ScheduledPickupTime:
-                Spec.AddSorting(trip => trip.ScheduledPickupTime ?? trip.BrokerData.AppointmentTime, descending);
-                Spec.AddSorting(trip => trip.BrokerData.AppointmentTime, descending);
-                Spec.AddSorting(trip => trip.BrokerData.ServiceDate, descending);
+                Spec.AddSorting(trip =>
+                    trip.ManualPickupTime == null
+                    && trip.CalculatedPickupTime == null
+                    && trip.BrokerData.BrokerPickupTime == null
+                );
+
+                Spec.AddSorting(
+                    trip => trip.ManualPickupTime ?? trip.CalculatedPickupTime ?? trip.BrokerData.BrokerPickupTime,
+                    descending
+                );
+
                 break;
 
             case TripSortBy.PassengerName:
-                Spec.AddSorting(trip => trip.Passenger.LastName, descending);
-                Spec.AddSorting(trip => trip.Passenger.FirstName, descending);
                 break;
 
             default:

@@ -3,7 +3,6 @@ using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Trips;
-using Mdsweep.Domain.TripImports;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Infrastructure.Persistence;
@@ -14,11 +13,11 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 {
     public DbSet<TripAggregate> Trips => Set<TripAggregate>();
     public DbSet<PassengerAggregate> Passengers => Set<PassengerAggregate>();
-    public DbSet<TripImportReceipt> TripImportReceipts => Set<TripImportReceipt>();
     public DbSet<TenantAggregate> Tenants => Set<TenantAggregate>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
     public DbSet<UserAggregate> Users => Set<UserAggregate>();
 
+    // Single
     public Task<TAggregate?> GetByIdAsync<TAggregate, TId>(TId id, CancellationToken ct)
         where TAggregate : AggregateRoot<TId>
         where TId : notnull => Set<TAggregate>().FindAsync([id], ct).AsTask();
@@ -45,6 +44,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             .SingleOrDefaultAsync(ct);
     }
 
+    // List
+
     public Task<List<TResult>> ListAsync<TAggregate, TResult>(
         ISpecification<TAggregate, TResult> specification,
         CancellationToken ct
@@ -52,12 +53,18 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         where TAggregate : class, IAggregateRoot =>
         SpecificationEvaluator.Default.GetQuery(Set<TAggregate>().AsQueryable(), specification).ToListAsync(ct);
 
+    public Task<List<TAggregate>> ListAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
+        where TAggregate : class, IAggregateRoot =>
+        SpecificationEvaluator.Default.GetQuery(Set<TAggregate>().AsQueryable(), specification).ToListAsync(ct);
+
+    // Count
     public Task<int> CountAsync<TAggregate>(ISpecification<TAggregate> specification, CancellationToken ct)
         where TAggregate : class, IAggregateRoot =>
         SpecificationEvaluator
             .Default.GetQuery(Set<TAggregate>().AsQueryable(), specification, evaluateCriteriaOnly: true)
             .CountAsync(ct);
 
+    // Write
     async Task IRepository.AddAsync<TAggregate>(TAggregate aggregate, CancellationToken ct)
     {
         await Set<TAggregate>().AddAsync(aggregate, ct);

@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Domain.Common.Extensions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
 
@@ -22,9 +23,14 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
     public BrokerTripData BrokerData { get; private set; } = null!;
-    public LocalTime? ScheduledPickupTime { get; private set; }
+    public LocalTime? CalculatedPickupTime { get; private set; }
+    public LocalTime? ManualPickupTime { get; private set; }
     public int? EstimatedTravelMinutes { get; private set; }
-    public string? SchedulingInputFingerprint { get; private set; }
+    public int? EstimatedDistanceMeters { get; private set; }
+
+    public LocalTime? ScheduledPickupTime => ManualPickupTime ?? CalculatedPickupTime ?? BrokerData.BrokerPickupTime;
+
+    public bool RequiresRouteEstimate => BrokerData.AppointmentTime is not null;
 
     public static TripAggregate Create(Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
     {
@@ -32,41 +38,55 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         Guard.Against.NullOrWhiteSpace(brokerTripNumber, nameof(brokerTripNumber));
         Guard.Against.Null(brokerData, nameof(brokerData));
 
-        var trip = new TripAggregate(Guid.CreateVersion7(), passengerId, brokerTripNumber.ToUpperInvariant(), brokerData);
+        var trip = new TripAggregate(
+            Guid.CreateVersion7(),
+            passengerId,
+            brokerTripNumber.ToUpperInvariant(),
+            brokerData
+        );
 
         trip.AddDomainEvent(new TripCreatedDomainEvent(trip.Id, trip.PassengerId, trip.BrokerTripNumber));
 
         return trip;
     }
 
-    public void ReconcileBrokerData(BrokerTripData brokerData)
+    public void OverridePickupTime(LocalTime pickupTime)
     {
-        Guard.Against.Null(brokerData, nameof(brokerData));
+        ManualPickupTime = pickupTime;
+    }
 
-        if (BrokerData == brokerData)
-        {
-            return;
-        }
+    public void RemovePickupOverride()
+    {
+        ManualPickupTime = null;
+    }
+
+    public void UpdateBrokerData(BrokerTripData brokerData)
+    {
+        Guard.Against.Null(brokerData);
 
         BrokerData = brokerData;
-
-        AddDomainEvent(new TripBrokerDataReconciledDomainEvent(Id, BrokerTripNumber));
+        ClearRouteEstimate();
     }
 
-    public void SetScheduledPickupTime(LocalTime scheduledPickupTime)
+    public void ApplyRouteEstimate(Duration duration, int distanceMeters, int pickupBufferMinutes)
     {
-        ScheduledPickupTime = scheduledPickupTime;
+        Guard.Against.Invalid(
+            BrokerData.AppointmentTime is null,
+            "A trip requires an appointment time before a route estimate can be applied."
+        );
+
+        var travelMinutes = (int)Math.Ceiling(duration.TotalMinutes);
+
+        CalculatedPickupTime = BrokerData.AppointmentTime!.Value.PlusMinutes(-(travelMinutes + pickupBufferMinutes));
+
+        EstimatedTravelMinutes = travelMinutes;
+        EstimatedDistanceMeters = distanceMeters;
     }
 
-    public void ApplyScheduledPickupTime(
-        LocalTime? scheduledPickupTime,
-        int? estimatedTravelMinutes,
-        string schedulingInputFingerprint
-    )
+    public void ClearRouteEstimate()
     {
-        ScheduledPickupTime = scheduledPickupTime;
-        EstimatedTravelMinutes = estimatedTravelMinutes;
-        SchedulingInputFingerprint = schedulingInputFingerprint;
-
+        CalculatedPickupTime = null;
+        EstimatedTravelMinutes = null;
+        EstimatedDistanceMeters = null;
     }
 }

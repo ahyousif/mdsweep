@@ -2,16 +2,13 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddAzureContainerAppEnvironment("azure");
 
-var postgres = builder.AddAzurePostgresFlexibleServer("postgres");
+var postgres = builder
+    .AddAzurePostgresFlexibleServer("postgres")
+    .WithPasswordAuthentication();
 
 if (builder.ExecutionContext.IsRunMode)
 {
-    postgres.WithPasswordAuthentication().RunAsContainer();
-}
-else
-{
-    var keyVault = builder.AddAzureKeyVault("mdsweep-kv");
-    postgres.WithPasswordAuthentication(keyVault);
+    postgres.RunAsContainer();
 }
 
 var database = postgres.AddDatabase("mdsweep");
@@ -70,6 +67,8 @@ var administrationClientSecret = builder.ExecutionContext.IsRunMode
     ? builder.AddParameter("administration-client-secret", "Development-only-administration-secret", secret: true)
     : builder.AddParameter("administration-client-secret", secret: true);
 
+var googleRoutesApiKey = builder.AddParameter("google-routes-api-key", secret: true);
+
 var keycloakAuthority = builder.ExecutionContext.IsRunMode
     ? ReferenceExpression.Create(
         $"{keycloak.GetEndpoint("http", KnownNetworkIdentifiers.LocalhostNetwork)}/realms/mdsweep"
@@ -88,6 +87,7 @@ var api = builder
     .WithEnvironment("Authentication__ClientSecret", oidcClientSecret)
     .WithEnvironment("KeycloakAdministration__ClientId", "mdsweep-administration")
     .WithEnvironment("KeycloakAdministration__ClientSecret", administrationClientSecret)
+    .WithEnvironment("GoogleRoutes__ApiKey", googleRoutesApiKey)
     .WaitFor(database)
     .WaitFor(keycloak);
 

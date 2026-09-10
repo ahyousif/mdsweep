@@ -1,0 +1,89 @@
+<div class="space-y-4 pb-6">
+  <div class="flex items-center justify-between gap-4">
+    <h1 class="text-3xl font-semibold tracking-tight">Trips</h1>
+
+    <button
+      hlmBtn
+      type="button"
+      class="inline-flex items-center gap-2"
+      (click)="importTripsClicked.emit()"
+    >
+      <ng-icon name="lucideUpload" class="size-4" aria-hidden="true" />
+
+      Import trips
+    </button>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <hlm-date-picker
+      [date]="serviceDate()"
+      [formatDate]="formatServiceDate"
+      captionLayout="dropdown"
+      [autoCloseOnSelect]="true"
+      (dateChange)="onServiceDateChange($event)"
+    >
+      <hlm-date-picker-trigger buttonId="service-date"> Select trip date </hlm-date-picker-trigger>
+    </hlm-date-picker>
+
+    <button
+      hlmBtn
+      variant="outline"
+      size="icon"
+      type="button"
+      aria-label="Previous day"
+      (click)="previousDayClicked.emit()"
+    >
+      <ng-icon name="lucideChevronLeft" class="size-4" aria-hidden="true" />
+    </button>
+
+    <button
+      hlmBtn
+      variant="outline"
+      size="icon"
+      type="button"
+      aria-label="Next day"
+      (click)="nextDayClicked.emit()"
+    >
+      <ng-icon name="lucideChevronRight" class="size-4" aria-hidden="true" />
+    </button>
+
+    <button
+      hlmBtn
+      [variant]="isToday() ? 'secondary' : 'outline'"
+      type="button"
+      (click)="todayClicked.emit()"
+    >
+      Today
+    </button>
+
+    <button
+      hlmBtn
+      [variant]="isTomorrow() ? 'secondary' : 'outline'"
+      type="button"
+      (click)="tomorrowClicked.emit()"
+    >
+      Tomorrow
+    </button>
+
+    <button hlmBtn variant="outline" type="button" (click)="thisWeekClicked.emit()">
+      This week
+    </button>
+  </div>
+
+  <div class="relative max-w-xl">
+    <ng-icon
+      name="lucideSearch"
+      class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+      aria-hidden="true"
+    />
+
+    <input
+      hlmInput
+      type="search"
+      class="w-full pl-9"
+      [value]="search()"
+      (input)="onSearchInput($event)"
+      placeholder="Search by passenger, address, trip number, or driver..."
+    />
+  </div>
+</div>

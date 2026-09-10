@@ -6,30 +6,74 @@ namespace Mdsweep.Api.IntegrationTests;
 public sealed class ScheduledPickupCalculationPolicyTests
 {
     [Fact]
-    public void Pickup_is_rounded_earlier_and_can_be_edited()
+    public void Manual_pickup_override_takes_precedence_over_the_calculated_pickup_time()
     {
-        var trip = TripAggregate.Create(
-            Guid.CreateVersion7(),
-            "TRIP-SCHEDULED",
-            new BrokerTripData(
-                new DateOnly(2026, 9, 15), new LocalTime(10, 0), "100 Sample St", "Phoenix", "200 Synthetic Way", "Mesa",
-                "VALID", false, PassengerMobilityRequirement.Ambulatory, null, null, null));
-        var suggestion = ScheduledPickupCalculationPolicy.Calculate(new LocalTime(10, 0), TimeSpan.FromMinutes(37), 15);
+        var trip = CreateTrip();
+        var calculatedPickupTime = new LocalTime(9, 5);
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55);
+        trip.OverridePickupTime(new LocalTime(8, 55));
 
-        Assert.Equal(new LocalTime(9, 5), suggestion);
-        trip.ApplyScheduledPickupTime(suggestion, 37, "synthetic-fingerprint");
-        Assert.Equal(suggestion, trip.ScheduledPickupTime);
-
-        trip.SetScheduledPickupTime(new LocalTime(8, 55));
         Assert.Equal(new LocalTime(8, 55), trip.ScheduledPickupTime);
+        Assert.Equal(calculatedPickupTime, trip.CalculatedPickupTime);
     }
 
     [Fact]
-    public void Previous_day_pickup_is_left_unset()
+    public void Removing_a_manual_pickup_override_restores_the_calculated_pickup_time()
     {
-        var pickup = ScheduledPickupCalculationPolicy.Calculate(
-            new LocalTime(1, 0), TimeSpan.FromMinutes(75), 15);
+        var trip = CreateTrip();
+        var calculatedPickupTime = new LocalTime(9, 5);
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55);
+        trip.OverridePickupTime(new LocalTime(8, 55));
 
-        Assert.Null(pickup);
+        trip.RemovePickupOverride();
+
+        Assert.Equal(calculatedPickupTime, trip.ScheduledPickupTime);
     }
+
+    [Fact]
+    public void Updating_broker_data_clears_the_route_estimate_before_using_a_broker_pickup_time()
+    {
+        var trip = CreateTrip();
+        trip.ApplyRouteEstimate(Duration.Zero, 0, 55);
+
+        trip.UpdateBrokerData(
+            trip.BrokerData with
+            {
+                AppointmentTime = null,
+                BrokerPickupTime = new LocalTime(14, 30),
+                Direction = TripDirection.From,
+            }
+        );
+
+        Assert.Null(trip.CalculatedPickupTime);
+        Assert.Null(trip.EstimatedTravelMinutes);
+        Assert.Null(trip.EstimatedDistanceMeters);
+        Assert.Equal(new LocalTime(14, 30), trip.ScheduledPickupTime);
+    }
+
+    private static TripAggregate CreateTrip() =>
+        TripAggregate.Create(
+            Guid.CreateVersion7(),
+            "TRIP-SCHEDULED",
+            new BrokerTripData(
+                new LocalDate(2026, 9, 15),
+                new LocalTime(10, 0),
+                null,
+                TripDirection.To,
+                false,
+                "100 Sample St",
+                "Phoenix",
+                null,
+                null,
+                "200 Synthetic Way",
+                "Mesa",
+                null,
+                null,
+                "VALID",
+                null,
+                null,
+                null,
+                null
+            )
+        );
 }

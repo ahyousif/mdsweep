@@ -5,7 +5,5 @@ public sealed record ListTripsResult(
     long TotalCount,
     int Page,
     int PageSize,
-    long TotalPages,
-    long ScopeCount,
-    long AttentionCount
+    long TotalPages
 );

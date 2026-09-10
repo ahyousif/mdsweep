@@ -8,61 +8,85 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
     public void Configure(EntityTypeBuilder<TripAggregate> builder)
     {
         builder.ToTable("trips");
+
         builder.HasKey(trip => trip.Id);
-        builder.Property(trip => trip.Id).HasColumnName("id");
-        builder.Property(trip => trip.TenantId).HasColumnName("tenant_id").HasMaxLength(14).IsRequired();
-        builder.Property(trip => trip.PassengerId).HasColumnName("passenger_id");
-        builder
-            .Property(trip => trip.BrokerTripNumber)
-            .HasColumnName("broker_trip_number")
-            .HasMaxLength(100)
-            .IsRequired();
+
+        builder.Property(trip => trip.TenantId).HasMaxLength(14).IsRequired();
+        builder.Property(trip => trip.BrokerTripNumber).HasMaxLength(100).IsRequired();
+
         builder.HasIndex(trip => new { trip.TenantId, trip.BrokerTripNumber }).IsUnique();
+
+        builder.Property(trip => trip.CalculatedPickupTime).HasColumnType("time");
+        builder.Property(trip => trip.ManualPickupTime).HasColumnType("time");
+        builder.Property(trip => trip.EstimatedTravelMinutes);
+        builder.Property(trip => trip.EstimatedDistanceMeters);
+
+        builder
+            .HasOne<PassengerAggregate>()
+            .WithMany()
+            .HasForeignKey(trip => trip.PassengerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder
             .HasOne(trip => trip.Passenger)
             .WithMany()
             .HasForeignKey(trip => trip.PassengerId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.Property(trip => trip.ScheduledPickupTime).HasColumnName("scheduled_pickup_time").HasColumnType("time");
-        builder.Property(trip => trip.EstimatedTravelMinutes).HasColumnName("estimated_travel_minutes");
-        builder
-            .Property(trip => trip.SchedulingInputFingerprint)
-            .HasColumnName("scheduling_input_fingerprint")
-            .HasMaxLength(64);
+
+        // I kept explicit names inside OwnsOne intentionally because otherwise EF will
+        // tend to incorporate the owned navigation name into those columns. We want a clean flat trips table.
         builder.OwnsOne(
             trip => trip.BrokerData,
-            facts =>
+            brokerData =>
             {
-                facts.Property(value => value.ServiceDate).HasColumnName("service_date").IsRequired();
-                facts.Property(value => value.AppointmentTime).HasColumnName("appointment_time").HasColumnType("time");
-                facts
+                brokerData.Property(value => value.ServiceDate).HasColumnName("service_date").IsRequired();
+                brokerData
+                    .Property(value => value.AppointmentTime)
+                    .HasColumnName("appointment_time")
+                    .HasColumnType("time");
+                brokerData
+                    .Property(value => value.BrokerPickupTime)
+                    .HasColumnName("broker_pickup_time")
+                    .HasColumnType("time");
+                brokerData.Property(value => value.Direction).HasColumnName("direction");
+                brokerData.Property(value => value.IsWillCall).HasColumnName("is_will_call");
+                brokerData
                     .Property(value => value.PickupAddress)
                     .HasColumnName("pickup_address")
                     .HasMaxLength(500)
                     .IsRequired();
-                facts.Property(value => value.PickupCity).HasColumnName("pickup_city").HasMaxLength(200).IsRequired();
-                facts
+
+                brokerData
+                    .Property(value => value.PickupCity)
+                    .HasColumnName("pickup_city")
+                    .HasMaxLength(200)
+                    .IsRequired();
+
+                brokerData.Property(value => value.PickupState).HasColumnName("pickup_state").HasMaxLength(100);
+                brokerData.Property(value => value.PickupZip).HasColumnName("pickup_zip").HasMaxLength(20);
+
+                brokerData
                     .Property(value => value.DropoffAddress)
                     .HasColumnName("dropoff_address")
                     .HasMaxLength(500)
                     .IsRequired();
-                facts.Property(value => value.DropoffCity).HasColumnName("dropoff_city").HasMaxLength(200).IsRequired();
-                facts.Property(value => value.BrokerStatus).HasColumnName("broker_status").HasMaxLength(100);
-                facts.Property(value => value.IsWillCall).HasColumnName("is_will_call");
-                facts
-                    .Property(value => value.MobilityRequirement)
-                    .HasColumnName("mobility_requirement")
-                    .HasConversion<string>()
-                    .HasMaxLength(60)
+
+                brokerData
+                    .Property(value => value.DropoffCity)
+                    .HasColumnName("dropoff_city")
+                    .HasMaxLength(200)
                     .IsRequired();
-                facts
-                    .Property(value => value.RawImportedPassengerType)
-                    .HasColumnName("raw_imported_passenger_type")
-                    .HasMaxLength(200);
-                facts.Property(value => value.TripCost).HasColumnName("trip_cost").HasPrecision(10, 2);
-                facts.Property(value => value.TripMileage).HasColumnName("trip_mileage").HasPrecision(10, 2);
-                facts.Ignore(value => value.RequiredVehicleCapability);
+
+                brokerData.Property(value => value.DropoffState).HasColumnName("dropoff_state").HasMaxLength(100);
+                brokerData.Property(value => value.DropoffZip).HasColumnName("dropoff_zip").HasMaxLength(20);
+                brokerData.Property(value => value.Status).HasColumnName("broker_status").HasMaxLength(100);
+                brokerData.Property(value => value.PassengerType).HasColumnName("passenger_type").HasMaxLength(200);
+                brokerData.Property(value => value.SpecialNeeds).HasColumnName("special_needs").HasMaxLength(500);
+                brokerData.Property(value => value.Cost).HasColumnName("trip_cost").HasPrecision(10, 2);
+                brokerData.Property(value => value.Mileage).HasColumnName("trip_mileage").HasPrecision(10, 2);
             }
         );
+
+        builder.Ignore(trip => trip.ScheduledPickupTime);
     }
 }

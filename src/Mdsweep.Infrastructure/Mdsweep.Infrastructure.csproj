@@ -4,6 +4,7 @@
     <PackageReference Include="CsvHelper" />
     <PackageReference Include="Ardalis.Specification" />
     <PackageReference Include="Ardalis.Specification.EntityFrameworkCore" />
+    <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
