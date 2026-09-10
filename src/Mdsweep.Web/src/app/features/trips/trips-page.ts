@@ -72,19 +72,19 @@ export default class TripsPage {
   }
 
   previousDay(): void {
-    this.setDate(addDays(this.currentDate(), -1));
+    this.#setDate(addDays(this.currentDate(), -1));
   }
 
   nextDay(): void {
-    this.setDate(addDays(this.currentDate(), 1));
+    this.#setDate(addDays(this.currentDate(), 1));
   }
 
   setToday(): void {
-    this.setDate(new Date());
+    this.#setDate(new Date());
   }
 
   setTomorrow(): void {
-    this.setDate(addDays(new Date(), 1));
+    this.#setDate(addDays(new Date(), 1));
   }
 
   setThisWeek(): void {
@@ -95,14 +95,15 @@ export default class TripsPage {
     this.#dialog.open(TripImportDialog, {
       contentClass: 'w-[calc(100vw-2rem)] sm:w-[36rem] sm:max-w-[36rem]',
       showCloseButton: true,
+      disableClose: true,
     });
   }
 
   setServiceDate(date: Date): void {
-    this.setDate(date);
+    this.#setDate(date);
   }
 
-  private setDate(date: Date): void {
+  #setDate(date: Date): void {
     this.currentDate.set(date);
     this.selectedTripId.set(null);
   }

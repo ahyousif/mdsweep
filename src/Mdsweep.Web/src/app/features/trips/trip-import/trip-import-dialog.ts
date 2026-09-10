@@ -16,9 +16,12 @@ import {
   HlmDialogTitle,
 } from '@spartan-ng/helm/dialog';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
+import { injectMutation } from '@tanstack/angular-query-experimental';
+import { QueryClient } from '@tanstack/query-core';
 
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 
+import { tripQueryKeys } from '../trips.queries';
 import { TripImportApi, TripImportResult } from './trip-import.api';
 
 type ImportStep = 'upload' | 'complete';
@@ -50,14 +53,39 @@ type ImportStep = 'upload' | 'complete';
 export default class TripImportDialog {
   readonly #dialogRef = inject(BrnDialogRef);
   readonly #api = inject(TripImportApi);
+  readonly #queryClient = inject(QueryClient);
 
   readonly step = signal<ImportStep>('upload');
   readonly file = signal<File | null>(null);
   readonly result = signal<TripImportResult | null>(null);
-
-  readonly importing = signal(false);
   readonly dragging = signal(false);
-  readonly error = signal('');
+  readonly fileError = signal('');
+
+  readonly importMutation = injectMutation(() => ({
+    mutationFn: (file: File) => this.#api.import(file),
+
+    onSuccess: async (result) => {
+      this.result.set(result);
+
+      await this.#queryClient.invalidateQueries({
+        queryKey: tripQueryKeys.all,
+      });
+
+      this.step.set('complete');
+    },
+  }));
+
+  readonly importing = this.importMutation.isPending;
+
+  readonly importError = computed(() => {
+    const error = this.importMutation.error();
+
+    return error
+      ? httpErrorMessage(error, 'Trips could not be imported. Check the file and try again.')
+      : '';
+  });
+
+  readonly error = computed(() => this.fileError() || this.importError());
 
   readonly fileType = computed(() => {
     const file = this.file();
@@ -69,22 +97,12 @@ export default class TripImportDialog {
     return file.name.toLowerCase().endsWith('.csv') ? 'CSV file' : 'Excel file';
   });
 
-  readonly totalProcessed = computed(() => {
-    const result = this.result();
-
-    if (!result) {
-      return 0;
-    }
-
-    return result.readyCount + result.needsAttentionCount;
-  });
-
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
     if (file) {
-      this.selectFile(file);
+      this.#selectFile(file);
     }
 
     input.value = '';
@@ -114,7 +132,7 @@ export default class TripImportDialog {
     const file = event.dataTransfer?.files[0];
 
     if (file) {
-      this.selectFile(file);
+      this.#selectFile(file);
     }
   }
 
@@ -124,31 +142,18 @@ export default class TripImportDialog {
     }
 
     this.file.set(null);
-    this.error.set('');
+    this.fileError.set('');
+    this.importMutation.reset();
   }
 
-  async importTrips(): Promise<void> {
+  importTrips(): void {
     const file = this.file();
 
     if (!file || this.importing()) {
       return;
     }
 
-    this.importing.set(true);
-    this.error.set('');
-
-    try {
-      const result = await this.#api.import(file);
-
-      this.result.set(result);
-      this.step.set('complete');
-    } catch (error) {
-      this.error.set(
-        httpErrorMessage(error, 'Trips could not be imported. Check the file and try again.'),
-      );
-    } finally {
-      this.importing.set(false);
-    }
+    this.importMutation.mutate(file);
   }
 
   cancel(): void {
@@ -160,18 +165,18 @@ export default class TripImportDialog {
   }
 
   done(): void {
-    this.#dialogRef.close('imported');
+    this.#dialogRef.close();
   }
 
-  private selectFile(file: File): void {
+  #selectFile(file: File): void {
     if (!isSupportedFile(file)) {
-      this.error.set('Choose a CSV or Excel (.xlsx) file.');
-
+      this.fileError.set('Choose a CSV or Excel (.xlsx) file.');
       return;
     }
 
+    this.fileError.set('');
+    this.importMutation.reset();
     this.file.set(file);
-    this.error.set('');
   }
 }
 

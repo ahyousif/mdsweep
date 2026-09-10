@@ -5,6 +5,7 @@ import { TripsApi } from './trips.api';
 
 export const tripQueryKeys = {
   all: ['trips'] as const,
+
   list: (query: TripsQuery) => [...tripQueryKeys.all, 'list', query] as const,
 };
 
