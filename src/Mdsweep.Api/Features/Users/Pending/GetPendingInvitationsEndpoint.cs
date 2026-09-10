@@ -1,6 +1,7 @@
 using Mdsweep.Api.Common.Extensions;
 using Mdsweep.Application.Common.Extensions;
 using Mdsweep.Application.Users;
+using Mdsweep.Application.Users.Pending;
 
 namespace Mdsweep.Api.Features.Users.Pending;
 

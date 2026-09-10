@@ -2,6 +2,7 @@ using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Extensions;
 using Mdsweep.Application.Common.Extensions;
 using Mdsweep.Application.Users;
+using Mdsweep.Application.Users.Update;
 
 namespace Mdsweep.Api.Features.Users.Update;
 

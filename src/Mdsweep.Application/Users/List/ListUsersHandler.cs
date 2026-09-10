@@ -1,7 +1,7 @@
 using Mdsweep.Application.Common.Abstractions;
-using Mdsweep.Domain.Users;
+using Mdsweep.Application.Users.Specifications;
 
-namespace Mdsweep.Application.Users;
+namespace Mdsweep.Application.Users.List;
 
 public sealed class ListUsersHandler(IRepository repository, IUserContext context, IClock clock)
 {

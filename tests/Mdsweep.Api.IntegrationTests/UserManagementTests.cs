@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Mdsweep.Application.Users;
+using Mdsweep.Application.Users.List;
+using Mdsweep.Application.Users.Pending;
 using Mdsweep.Infrastructure.Persistence;
 using NodaTime;
 using NodaTime.Serialization.SystemTextJson;
