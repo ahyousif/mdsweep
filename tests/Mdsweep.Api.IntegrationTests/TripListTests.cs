@@ -95,22 +95,30 @@ public sealed class TripListTests : MdsweepIntegrationTest
     public async Task Dispatcher_exposes_trip_times_by_direction_and_will_call_status()
     {
         var date = new LocalDate(2026, 9, 15);
-        await AddTrip("TO", "TO-TRIP", date, "VALID", false);
-        await AddTrip("FROM", "FROM-TRIP", date, "VALID", false, direction: TripDirection.From);
-        await AddTrip("WILL-CALL", "WILL-CALL-TRIP", date, "VALID", true, direction: TripDirection.From);
+        const string tenantId = "mdsw-eep2-3456";
+
+        await AddTrip(tenantId, "TO-TRIP", date, "VALID", false);
+
+        await AddTrip(tenantId, "FROM-TRIP", date, "VALID", false, direction: TripDirection.From);
+
+        await AddTrip(tenantId, "WILL-CALL-TRIP", date, "VALID", true, direction: TripDirection.From);
+
         using var client = Application.CreateClient();
 
         var trips = await GetTrips(client, "/api/trips?startDate=2026-09-15&endDate=2026-09-15");
 
         var toTrip = trips.Items.Single(trip => trip.BrokerTripNumber == "TO-TRIP");
+
         Assert.Equal("10:00:00", toTrip.AppointmentTime);
         Assert.Null(toTrip.ReturnPickupTime);
 
         var fromTrip = trips.Items.Single(trip => trip.BrokerTripNumber == "FROM-TRIP");
+
         Assert.Null(fromTrip.AppointmentTime);
         Assert.Equal("10:00:00", fromTrip.ReturnPickupTime);
 
         var willCallTrip = trips.Items.Single(trip => trip.BrokerTripNumber == "WILL-CALL-TRIP");
+
         Assert.Null(willCallTrip.AppointmentTime);
         Assert.Null(willCallTrip.ReturnPickupTime);
     }
@@ -215,7 +223,13 @@ public sealed class TripListTests : MdsweepIntegrationTest
         await db.SaveChangesAsync();
     }
 
-    private sealed record PagedTripResponse(List<TripResponse> Items, long TotalCount, int Page, int PageSize, long TotalPages);
+    private sealed record PagedTripResponse(
+        List<TripResponse> Items,
+        long TotalCount,
+        int Page,
+        int PageSize,
+        long TotalPages
+    );
 
     private sealed record TripResponse(
         Guid Id,

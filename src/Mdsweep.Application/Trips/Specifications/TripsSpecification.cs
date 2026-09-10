@@ -95,19 +95,34 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
         switch (sortBy)
         {
             case TripSortBy.AppointmentTime:
-                Spec.AddSorting(trip => trip.BrokerData.ServiceDate, descending);
+                Spec.AddSorting(trip => trip.BrokerData.AppointmentTime == null);
+
+                Spec.AddSorting(trip => trip.BrokerData.AppointmentTime, descending);
+
                 break;
 
             case TripSortBy.ServiceDate:
                 Spec.AddSorting(trip => trip.BrokerData.ServiceDate, descending);
+
                 break;
 
             case TripSortBy.BrokerTripNumber:
                 Spec.AddSorting(trip => trip.BrokerTripNumber, descending);
+
                 break;
 
             case TripSortBy.ScheduledPickupTime:
-                Spec.AddSorting(trip => trip.BrokerData.ServiceDate, descending);
+                Spec.AddSorting(trip =>
+                    trip.ManualPickupTime == null
+                    && trip.CalculatedPickupTime == null
+                    && trip.BrokerData.BrokerPickupTime == null
+                );
+
+                Spec.AddSorting(
+                    trip => trip.ManualPickupTime ?? trip.CalculatedPickupTime ?? trip.BrokerData.BrokerPickupTime,
+                    descending
+                );
+
                 break;
 
             case TripSortBy.PassengerName:
