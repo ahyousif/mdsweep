@@ -9,8 +9,34 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
     private InvitationAggregate()
         : base(default) { }
 
-    private InvitationAggregate(Guid id)
-        : base(id) { }
+    private InvitationAggregate(
+        Guid id,
+        string tenantId,
+        string email,
+        string firstName,
+        string lastName,
+        string[] roles,
+        string status,
+        Instant expiresAt,
+        Instant? sentAt,
+        string? deliveryError,
+        Guid? acceptedUserId,
+        int version
+    )
+        : base(id)
+    {
+        TenantId = tenantId;
+        Email = email;
+        FirstName = firstName;
+        LastName = lastName;
+        Roles = roles.ToArray();
+        Status = status;
+        ExpiresAt = expiresAt;
+        SentAt = sentAt;
+        DeliveryError = deliveryError;
+        AcceptedUserId = acceptedUserId;
+        Version = version;
+    }
 
     public string TenantId { get; private set; } = null!;
     public string Email { get; private set; } = null!;
@@ -34,16 +60,20 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
     )
     {
         Guard.Against.Invalid(!TenantMembership.AreValidRoles(roles), "Select one or two distinct roles.");
-        var invitation = new InvitationAggregate(Guid.CreateVersion7())
-        {
-            TenantId = Guard.Against.NullOrWhiteSpace(tenantId),
-            Email = Guard.Against.NullOrWhiteSpace(email),
-            FirstName = Guard.Against.NullOrWhiteSpace(firstName),
-            LastName = Guard.Against.NullOrWhiteSpace(lastName),
-            Roles = roles.ToArray(),
-            ExpiresAt = now + Duration.FromDays(7),
-        };
-        return invitation;
+        return new InvitationAggregate(
+            Guid.CreateVersion7(),
+            Guard.Against.NullOrWhiteSpace(tenantId),
+            Guard.Against.NullOrWhiteSpace(email),
+            Guard.Against.NullOrWhiteSpace(firstName),
+            Guard.Against.NullOrWhiteSpace(lastName),
+            roles,
+            status: "Pending",
+            expiresAt: now + Duration.FromDays(7),
+            sentAt: null,
+            deliveryError: null,
+            acceptedUserId: null,
+            version: 0
+        );
     }
 
     public void RecordDelivery(Instant now, string? error)
