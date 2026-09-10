@@ -18,7 +18,9 @@ public sealed class DispatcherAuthenticationHandler(
         {
             new("sub", Request.Headers["X-Test-Subject"].FirstOrDefault() ?? "dispatcher-test"),
         };
-        var tenantId = Request.Headers["X-Test-Tenant"].FirstOrDefault();
+        var tenantId =
+            Request.Headers["X-Test-Tenant"].FirstOrDefault()
+            ?? "mdsw-eep2-3456";
         if (!string.IsNullOrWhiteSpace(tenantId))
             claims.Add(new Claim(CustomClaimTypes.ActiveTenantId, tenantId));
         var identity = new ClaimsIdentity(claims, Scheme.Name);

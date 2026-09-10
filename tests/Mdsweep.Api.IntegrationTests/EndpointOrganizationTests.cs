@@ -25,8 +25,9 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/api/auth/") == true)
             .ToDictionary(endpoint => endpoint.RoutePattern.RawText!);
 
-        Assert.Equal(5, identityEndpoints.Count);
+        Assert.Equal(6, identityEndpoints.Count);
         Assert.True(IsAnonymous(identityEndpoints["/api/auth/login"]));
+        Assert.True(IsAnonymous(identityEndpoints["/api/auth/register"]));
         AssertProtected(identityEndpoints["/api/auth/session"]);
         AssertProtected(identityEndpoints["/api/auth/tenant-context"]);
         AssertProtected(identityEndpoints["/api/auth/antiforgery"]);
@@ -35,6 +36,7 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
         var expectedRoutes = new[]
         {
             "GET /api/auth/login",
+            "GET /api/auth/register",
             "GET /api/auth/session",
             "POST /api/auth/tenant-context",
             "GET /api/auth/antiforgery",

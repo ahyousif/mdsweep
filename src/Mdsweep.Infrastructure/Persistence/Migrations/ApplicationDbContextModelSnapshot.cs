@@ -69,6 +69,10 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(14)")
                         .HasColumnName("id");
 
+                    b.Property<string>("DefaultSenderEmail")
+                        .HasColumnType("text")
+                        .HasColumnName("default_sender_email");
+
                     b.Property<string>("KeycloakOrganizationId")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -100,13 +104,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Mdsweep.Domain.Tenants.TenantMembership", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<string>("DisplayName")
-                        .HasMaxLength(401)
-                        .HasColumnType("character varying(401)")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("display_name");
 
                     b.Property<bool>("IsActive")
@@ -128,11 +131,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
                     b.HasKey("Id")
                         .HasName("pk_tenant_memberships");
 
@@ -143,10 +141,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_tenant_memberships_tenant_id_user_id");
 
-                    b.ToTable("tenant_memberships", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_tenant_memberships_roles", "cardinality(roles) BETWEEN 1 AND 2 AND roles <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(roles, NULL) IS NULL AND (cardinality(roles) = 1 OR roles[1] <> roles[2])");
-                        });
+                    b.ToTable("tenant_memberships", (string)null);
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
@@ -207,14 +202,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("AcceptedUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("accepted_user_id");
-
-                    b.Property<string>("DeliveryError")
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("delivery_error");
+                    b.Property<Instant?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -243,10 +233,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("roles");
 
-                    b.Property<Instant?>("SentAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("sent_at");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -264,11 +250,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("token_hash");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("pk_invitations");

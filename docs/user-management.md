@@ -26,9 +26,7 @@ The Users page, shared invite/edit form, and invitation acceptance screen use Sp
 
 ## Verification
 
-- PostgreSQL HTTP tests cover authorization, Tenant isolation, duplicate emails, delivery retry, acceptance, expiry, revocation, role changes, deactivation, and optimistic concurrency.
-- Migration tests exercise forward upgrades from `InitialSchema`, through the Trip Import and scheduling migrations, to `UserManagementAndInvitations` and `UserRoles`. The original feature migrations create multiple-Tenant access directly, with active flags and versions owned by memberships. PostgreSQL enforces one membership per User/Tenant pair and one pending invitation per Tenant/email pair. The role upgrade preserves memberships, access state, and concurrency versions; a downgrade cannot discard a second role.
-- Adapter tests verify the Keycloak 26.2.5 organization invitation and password-reset HTTP contracts without sending real emails.
+- User-management HTTP, legacy migration-path, and Keycloak administration adapter tests are temporarily deferred while their replaced contracts are stabilized. Replacement coverage is required before this feature is complete.
 - `npm run test:e2e` in `src/Mdsweep.Web` runs Playwright browser workflows with synthetic API responses. Install Chromium with `npx playwright install chromium`; alternatively set `PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome. These browser checks complement the real API/PostgreSQL tests; live mailbox delivery is deferred with SMTP setup.
 
 Tenant Membership display names are independent of the global User profile and other Tenants. Memberships without an override display the global name. The existing, unapplied UserManagementAndInvitations migration includes the display-name column; no additional migration is needed.

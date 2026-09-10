@@ -1,4 +1,5 @@
 using Mdsweep.Domain.Common.Abstractions;
+using Mdsweep.Domain.Common.Extensions;
 using Mdsweep.Domain.Passengers.Events;
 
 namespace Mdsweep.Domain.Passengers;
@@ -24,11 +25,14 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
 
     public static PassengerAggregate Create(string? brokerMemberId, string firstName, string lastName)
     {
-        Guard.Against.NullOrWhiteSpace(brokerMemberId, nameof(brokerMemberId));
+        Guard.Against.Invalid(
+            brokerMemberId is not null && string.IsNullOrWhiteSpace(brokerMemberId),
+            "Broker member ID cannot be blank when supplied."
+        );
 
         var passenger = new PassengerAggregate(
             Guid.CreateVersion7(),
-            brokerMemberId!.ToUpperInvariant(),
+            brokerMemberId?.ToUpperInvariant(),
             Guard.Against.NullOrWhiteSpace(firstName, nameof(firstName)),
             Guard.Against.NullOrWhiteSpace(lastName, nameof(lastName))
         );
