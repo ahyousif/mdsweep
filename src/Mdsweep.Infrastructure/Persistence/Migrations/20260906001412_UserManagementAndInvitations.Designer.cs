@@ -268,11 +268,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("NormalizedEmail")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("text")
-                        .HasComputedColumnSql("lower(\"Email\")", true);
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -299,7 +294,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.HasIndex("TenantId", "NormalizedEmail")
+                    b.HasIndex("TenantId", "Email")
                         .IsUnique()
                         .HasFilter("\"Status\" = 'Pending'");
 
@@ -337,18 +332,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("last_name");
 
-                    b.Property<string>("NormalizedEmail")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("text")
-                        .HasColumnName("normalized_email")
-                        .HasComputedColumnSql("lower(email)", true);
-
                     b.HasKey("Id");
 
-                    b.HasIndex("KeycloakUserId")
+                    b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("NormalizedEmail")
+                    b.HasIndex("KeycloakUserId")
                         .IsUnique();
 
                     b.ToTable("users", (string)null);

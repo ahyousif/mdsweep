@@ -14,10 +14,6 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<UserAggregate>
         builder.Property(user => user.KeycloakUserId).HasColumnName("keycloak_user_id").HasMaxLength(200);
         builder.HasIndex(user => user.KeycloakUserId).IsUnique();
         builder.Property(user => user.Email).HasColumnName("email").HasMaxLength(254).IsRequired();
-        builder
-            .Property<string>("NormalizedEmail")
-            .HasColumnName("normalized_email")
-            .HasComputedColumnSql("lower(email)", stored: true);
-        builder.HasIndex("NormalizedEmail").IsUnique();
+        builder.HasIndex(user => user.Email).IsUnique();
     }
 }

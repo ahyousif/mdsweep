@@ -24,14 +24,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 nullable: false);
 
             migrationBuilder.AddColumn<string>(
-                name: "normalized_email",
-                table: "users",
-                type: "text",
-                nullable: true,
-                computedColumnSql: "lower(email)",
-                stored: true);
-
-            migrationBuilder.AddColumn<string>(
                 name: "display_name",
                 table: "tenant_memberships",
                 type: "character varying(401)",
@@ -67,8 +59,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     SentAt = table.Column<Instant>(type: "timestamp with time zone", nullable: true),
                     DeliveryError = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
                     AcceptedUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Version = table.Column<int>(type: "integer", nullable: false),
-                    NormalizedEmail = table.Column<string>(type: "text", nullable: true, computedColumnSql: "lower(\"Email\")", stored: true)
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -126,9 +117,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_users_normalized_email",
+                name: "IX_users_email",
                 table: "users",
-                column: "normalized_email",
+                column: "email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -143,9 +134,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 column: "invitation_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_invitations_TenantId_NormalizedEmail",
+                name: "IX_invitations_TenantId_Email",
                 table: "invitations",
-                columns: new[] { "TenantId", "NormalizedEmail" },
+                columns: new[] { "TenantId", "Email" },
                 unique: true,
                 filter: "\"Status\" = 'Pending'");
 
@@ -166,9 +157,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
             migrationBuilder.DropTable(name: "invitation_history");
             migrationBuilder.DropTable(name: "user_access_history");
             migrationBuilder.DropTable(name: "invitations");
-            migrationBuilder.DropIndex(name: "IX_users_normalized_email", table: "users");
+            migrationBuilder.DropIndex(name: "IX_users_email", table: "users");
             migrationBuilder.DropIndex(name: "IX_tenant_memberships_tenant_id_user_id", table: "tenant_memberships");
-            migrationBuilder.DropColumn(name: "normalized_email", table: "users");
             migrationBuilder.DropColumn(name: "email", table: "users");
             migrationBuilder.DropColumn(name: "display_name", table: "tenant_memberships");
             migrationBuilder.DropColumn(name: "is_active", table: "tenant_memberships");

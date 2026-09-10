@@ -30,7 +30,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         };
         var responses = await Task.WhenAll(
             manager.PostAsJsonAsync("/api/users/invitations", request),
-            manager.PostAsJsonAsync("/api/users/invitations", request)
+            manager.PostAsJsonAsync("/api/users/invitations", request with { email = "DRIVER@EXAMPLE.TEST" })
         );
         Assert.Single(responses, x => x.StatusCode == HttpStatusCode.Created);
         Assert.All(
@@ -42,7 +42,10 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
                 )
         );
         await using var scope = Application.Services.CreateAsyncScope();
-        Assert.Single(await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Invitations.ToListAsync());
+        var invitation = Assert.Single(
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Invitations.ToListAsync()
+        );
+        Assert.Equal("driver@example.test", invitation.Email);
     }
 
     [Fact]

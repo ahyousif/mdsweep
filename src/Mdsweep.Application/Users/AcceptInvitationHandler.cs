@@ -121,7 +121,12 @@ public sealed class AcceptInvitationHandler(
             );
         var user =
             existing
-            ?? UserAggregate.Create(invitation.FirstName, invitation.LastName, actor.Subject, invitation.Email);
+            ?? UserAggregate.Create(
+                invitation.FirstName,
+                invitation.LastName,
+                actor.Subject,
+                invitation.Email.ToLowerInvariant()
+            );
         var membership = TenantMembership.Create(invitation.TenantId, user.Id, invitation.Roles);
         membership.SetDisplayName($"{invitation.FirstName} {invitation.LastName}");
         membership.Record(

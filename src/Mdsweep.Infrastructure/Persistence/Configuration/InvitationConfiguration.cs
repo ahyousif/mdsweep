@@ -19,8 +19,7 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.TenantId).HasMaxLength(14);
         builder.Property(x => x.Email).HasMaxLength(254);
-        builder.Property<string>("NormalizedEmail").HasComputedColumnSql("lower(\"Email\")", stored: true);
-        builder.HasIndex("TenantId", "NormalizedEmail").IsUnique().HasFilter("\"Status\" = 'Pending'");
+        builder.HasIndex(x => new { x.TenantId, x.Email }).IsUnique().HasFilter("\"Status\" = 'Pending'");
         builder.Property(x => x.FirstName).HasMaxLength(200);
         builder.Property(x => x.LastName).HasMaxLength(200);
         builder.Property(x => x.Roles).HasColumnType("text[]");

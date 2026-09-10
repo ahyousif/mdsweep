@@ -1,6 +1,5 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Domain.Tenants;
-using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Application.Users;
@@ -34,7 +33,7 @@ public sealed class InviteUserHandler(IRepository repository, IUserContext conte
             );
         var invitation = InvitationAggregate.Create(
             context.TenantId,
-            command.Email,
+            email,
             command.FirstName,
             command.LastName,
             command.Roles,
