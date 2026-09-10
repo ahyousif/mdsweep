@@ -3,6 +3,7 @@
     <app-trip-toolbar
       [serviceDate]="currentDate()"
       [search]="search()"
+      (serviceDateChange)="setServiceDate($event)"
       (previousDayClicked)="previousDay()"
       (nextDayClicked)="nextDay()"
       (todayClicked)="setToday()"

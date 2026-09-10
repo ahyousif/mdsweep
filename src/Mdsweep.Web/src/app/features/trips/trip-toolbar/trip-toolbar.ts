@@ -1,22 +1,28 @@
-import { Component, computed, input, output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, input, output } from '@angular/core';
+
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideCalendarDays,
   lucideChevronLeft,
   lucideChevronRight,
   lucideSearch,
   lucideUpload,
 } from '@ng-icons/lucide';
-import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { HlmInputImports } from '@spartan-ng/helm/input';
+import { HlmButton } from '@spartan-ng/helm/button';
+import { HlmDatePickerImports } from '@spartan-ng/helm/date-picker';
+import { HlmInput } from '@spartan-ng/helm/input';
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
 
 @Component({
   selector: 'app-trip-toolbar',
-  imports: [FormsModule, NgIcon, ...HlmButtonImports, ...HlmInputImports],
+  imports: [NgIcon, HlmButton, HlmInput, ...HlmDatePickerImports],
   providers: [
     provideIcons({
-      lucideCalendarDays,
       lucideChevronLeft,
       lucideChevronRight,
       lucideSearch,
@@ -29,6 +35,7 @@ export default class TripToolbar {
   readonly serviceDate = input.required<Date>();
   readonly search = input('');
 
+  readonly serviceDateChange = output<Date>();
   readonly previousDayClicked = output<void>();
   readonly nextDayClicked = output<void>();
   readonly todayClicked = output<void>();
@@ -37,40 +44,17 @@ export default class TripToolbar {
   readonly searchChange = output<string>();
   readonly importTripsClicked = output<void>();
 
-  readonly formattedDate = computed(() =>
-    new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(this.serviceDate()),
-  );
+  readonly formatServiceDate = (date: Date): string => dateFormatter.format(date);
 
-  onSearchInput(value: string): void {
-    this.searchChange.emit(value);
+  onServiceDateChange(date: Date | null): void {
+    if (date) {
+      this.serviceDateChange.emit(date);
+    }
   }
 
-  previousDay(): void {
-    this.previousDayClicked.emit();
-  }
+  onSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
 
-  nextDay(): void {
-    this.nextDayClicked.emit();
-  }
-
-  today(): void {
-    this.todayClicked.emit();
-  }
-
-  tomorrow(): void {
-    this.tomorrowClicked.emit();
-  }
-
-  thisWeek(): void {
-    this.thisWeekClicked.emit();
-  }
-
-  importTrips(): void {
-    this.importTripsClicked.emit();
+    this.searchChange.emit(input.value);
   }
 }

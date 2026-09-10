@@ -1,30 +1,212 @@
-<hlm-dialog-header>
-  <h2 hlmDialogTitle>Import trips</h2>
+@switch (step()) {
+  @case ('upload') {
+    <hlm-dialog-header>
+      <h2 hlmDialogTitle>Import trips</h2>
 
-  <p hlmDialogDescription>Upload a broker trip file to import trips into MDSweep.</p>
-</hlm-dialog-header>
+      <p hlmDialogDescription>Upload a broker trip file to import trips into MDSweep.</p>
+    </hlm-dialog-header>
 
-<div class="space-y-4">
-  <label
-    class="border-border hover:bg-muted/30 flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center transition-colors"
-  >
-    <input class="sr-only" type="file" accept=".csv,.xlsx" (change)="onFileSelected($event)" />
+    <div class="space-y-4">
+      @if (file(); as file) {
+        <div class="bg-muted/40 flex items-center gap-3 rounded-lg border p-4">
+          <div
+            class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-md"
+          >
+            <ng-icon name="lucideFileSpreadsheet" class="size-5" aria-hidden="true" />
+          </div>
 
-    <div class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-lg">
-      <ng-icon name="lucideUpload" class="size-6" aria-hidden="true" />
+          <div class="min-w-0 flex-1">
+            <p class="truncate font-medium">
+              {{ file.name }}
+            </p>
+
+            <p class="text-muted-foreground text-sm">
+              {{ fileType() }}
+            </p>
+          </div>
+
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            [disabled]="importing()"
+            (click)="changeFile()"
+          >
+            Change
+          </button>
+        </div>
+
+        <div class="bg-muted/30 rounded-lg border p-4">
+          <p class="font-medium">Ready to import</p>
+
+          <p class="text-muted-foreground mt-1 text-sm">
+            MDSweep will check the file as it imports. Rows with problems will be skipped and shown
+            when the import is complete.
+          </p>
+        </div>
+      } @else {
+        <label
+          class="border-border hover:bg-muted/30 flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center transition-colors"
+          [class.bg-muted]="dragging()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <input
+            class="sr-only"
+            type="file"
+            accept=".csv,.xlsx"
+            (change)="onFileSelected($event)"
+          />
+
+          <div
+            class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-lg"
+          >
+            <ng-icon name="lucideUpload" class="size-6" aria-hidden="true" />
+          </div>
+
+          <p class="mt-4 font-medium">Drop a CSV or Excel file here</p>
+
+          <p class="text-muted-foreground mt-1 text-sm">
+            or
+            <span class="text-primary font-medium"> browse files </span>
+          </p>
+        </label>
+
+        <p class="text-muted-foreground text-sm">Supports .csv and .xlsx</p>
+      }
+
+      @if (error()) {
+        <div
+          class="bg-destructive/10 text-destructive flex items-start gap-2 rounded-lg p-3 text-sm"
+          role="alert"
+        >
+          <ng-icon name="lucideCircleAlert" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+
+          <span>{{ error() }}</span>
+        </div>
+      }
     </div>
 
-    <p class="mt-4 font-medium">Drop a CSV or Excel file here</p>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" [disabled]="importing()" (click)="cancel()">
+        Cancel
+      </button>
 
-    <p class="text-muted-foreground mt-1 text-sm">
-      or
-      <span class="text-primary font-medium"> browse files </span>
-    </p>
-  </label>
+      @if (file()) {
+        <button hlmBtn type="button" [disabled]="importing()" (click)="importTrips()">
+          @if (importing()) {
+            <hlm-spinner class="size-4" />
+            Importing...
+          } @else {
+            Import trips
+          }
+        </button>
+      }
+    </hlm-dialog-footer>
+  }
 
-  <p class="text-muted-foreground text-sm">Supports .csv and .xlsx</p>
-</div>
+  @case ('complete') {
+    @if (result(); as result) {
+      <hlm-dialog-header>
+        <h2 hlmDialogTitle>Import complete</h2>
 
-<hlm-dialog-footer>
-  <button hlmBtn variant="outline" type="button" (click)="cancel()">Cancel</button>
-</hlm-dialog-footer>
+        <p hlmDialogDescription>Your trip file has been processed.</p>
+      </hlm-dialog-header>
+
+      <div class="space-y-4">
+        <div class="bg-muted/40 flex items-center gap-3 rounded-lg border p-3">
+          <div
+            class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-md"
+          >
+            <ng-icon name="lucideFileSpreadsheet" class="size-5" aria-hidden="true" />
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <p class="truncate font-medium">
+              {{ file()?.name }}
+            </p>
+
+            <p class="text-muted-foreground text-sm">
+              {{ totalProcessed() }}
+              {{ totalProcessed() === 1 ? 'row processed' : 'rows processed' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-primary/10 rounded-lg p-4">
+            <div class="flex items-center gap-2">
+              <ng-icon name="lucideCheck" class="text-primary size-5" aria-hidden="true" />
+
+              <span class="text-xl font-semibold">
+                {{ result.readyCount }}
+              </span>
+            </div>
+
+            <p class="text-muted-foreground mt-1 text-sm">Processed successfully</p>
+          </div>
+
+          <div class="bg-destructive/5 rounded-lg p-4">
+            <div class="flex items-center gap-2">
+              <ng-icon
+                name="lucideCircleAlert"
+                class="text-destructive size-5"
+                aria-hidden="true"
+              />
+
+              <span class="text-xl font-semibold">
+                {{ result.needsAttentionCount }}
+              </span>
+            </div>
+
+            <p class="text-muted-foreground mt-1 text-sm">Skipped</p>
+          </div>
+        </div>
+
+        @if (result.problems.length > 0) {
+          <div class="overflow-hidden rounded-lg border">
+            <div class="border-b px-4 py-3">
+              <h3 class="font-medium">Issues ({{ result.needsAttentionCount }})</h3>
+            </div>
+
+            <div class="max-h-52 overflow-y-auto">
+              @for (problem of result.problems; track $index) {
+                <div class="flex gap-3 border-b px-4 py-3 last:border-b-0">
+                  <ng-icon
+                    name="lucideCircleAlert"
+                    class="text-destructive mt-0.5 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium">
+                      @if (problem.rowNumber) {
+                        Row {{ problem.rowNumber }}
+                      } @else {
+                        File issue
+                      }
+
+                      @if (problem.tripNumber) {
+                        · {{ problem.tripNumber }}
+                      }
+                    </p>
+
+                    <p class="text-muted-foreground mt-1 text-sm">
+                      {{ problem.message }}
+                    </p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <hlm-dialog-footer>
+        <button hlmBtn type="button" (click)="done()">Done</button>
+      </hlm-dialog-footer>
+    }
+  }
+}

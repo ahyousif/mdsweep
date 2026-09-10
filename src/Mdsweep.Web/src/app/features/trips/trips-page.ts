@@ -98,6 +98,10 @@ export default class TripsPage {
     });
   }
 
+  setServiceDate(date: Date): void {
+    this.setDate(date);
+  }
+
   private setDate(date: Date): void {
     this.currentDate.set(date);
     this.selectedTripId.set(null);

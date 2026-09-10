@@ -1,52 +1,77 @@
 <div class="space-y-4 pb-6">
-  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-    <div>
-      <h1 class="text-3xl font-semibold tracking-tight">Trips</h1>
-    </div>
+  <div class="flex items-center justify-between gap-4">
+    <h1 class="text-3xl font-semibold tracking-tight">Trips</h1>
 
-    <button hlmBtn class="inline-flex items-center gap-2 self-start" (click)="importTrips()">
+    <button
+      hlmBtn
+      type="button"
+      class="inline-flex items-center gap-2"
+      (click)="importTripsClicked.emit()"
+    >
       <ng-icon name="lucideUpload" class="size-4" aria-hidden="true" />
-      <span>Import trips</span>
+
+      Import trips
     </button>
   </div>
 
-  <div class="flex flex-col gap-4">
-    <div class="flex flex-wrap items-center gap-2">
-      <button hlmBtn variant="outline" class="inline-flex items-center gap-2" type="button">
-        <ng-icon name="lucideCalendarDays" class="size-4" aria-hidden="true" />
-        <span>{{ formattedDate() }}</span>
-      </button>
+  <div class="flex flex-wrap items-center gap-2">
+    <hlm-date-picker
+      [date]="serviceDate()"
+      [formatDate]="formatServiceDate"
+      captionLayout="dropdown"
+      [autoCloseOnSelect]="true"
+      (dateChange)="onServiceDateChange($event)"
+    >
+      <hlm-date-picker-trigger buttonId="service-date"> Select trip date </hlm-date-picker-trigger>
+    </hlm-date-picker>
 
-      <button hlmBtn variant="outline" size="icon" type="button" (click)="previousDay()">
-        <ng-icon name="lucideChevronLeft" class="size-4" aria-hidden="true" />
-      </button>
+    <button
+      hlmBtn
+      variant="outline"
+      size="icon"
+      type="button"
+      aria-label="Previous day"
+      (click)="previousDayClicked.emit()"
+    >
+      <ng-icon name="lucideChevronLeft" class="size-4" aria-hidden="true" />
+    </button>
 
-      <button hlmBtn variant="outline" size="icon" type="button" (click)="nextDay()">
-        <ng-icon name="lucideChevronRight" class="size-4" aria-hidden="true" />
-      </button>
+    <button
+      hlmBtn
+      variant="outline"
+      size="icon"
+      type="button"
+      aria-label="Next day"
+      (click)="nextDayClicked.emit()"
+    >
+      <ng-icon name="lucideChevronRight" class="size-4" aria-hidden="true" />
+    </button>
 
-      <button hlmBtn variant="secondary" type="button" (click)="today()">Today</button>
+    <button hlmBtn variant="secondary" type="button" (click)="todayClicked.emit()">Today</button>
 
-      <button hlmBtn variant="outline" type="button" (click)="tomorrow()">Tomorrow</button>
+    <button hlmBtn variant="outline" type="button" (click)="tomorrowClicked.emit()">
+      Tomorrow
+    </button>
 
-      <button hlmBtn variant="outline" type="button" (click)="thisWeek()">This week</button>
-    </div>
+    <button hlmBtn variant="outline" type="button" (click)="thisWeekClicked.emit()">
+      This week
+    </button>
+  </div>
 
-    <div class="relative max-w-xl">
-      <ng-icon
-        name="lucideSearch"
-        class="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2"
-        aria-hidden="true"
-      />
+  <div class="relative max-w-xl">
+    <ng-icon
+      name="lucideSearch"
+      class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+      aria-hidden="true"
+    />
 
-      <input
-        hlmInput
-        class="pl-9"
-        type="text"
-        [ngModel]="search()"
-        (ngModelChange)="onSearchInput($event)"
-        placeholder="Search by passenger, address, trip number, or driver..."
-      />
-    </div>
+    <input
+      hlmInput
+      type="search"
+      class="w-full pl-9"
+      [value]="search()"
+      (input)="onSearchInput($event)"
+      placeholder="Search by passenger, address, trip number, or driver..."
+    />
   </div>
 </div>
