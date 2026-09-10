@@ -7,14 +7,7 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
 {
     public void Configure(EntityTypeBuilder<InvitationAggregate> builder)
     {
-        builder.ToTable(
-            "invitations",
-            table =>
-                table.HasCheckConstraint(
-                    "ck_invitations_roles",
-                    "cardinality(\"Roles\") BETWEEN 1 AND 2 AND \"Roles\" <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(\"Roles\", NULL) IS NULL AND (cardinality(\"Roles\") = 1 OR \"Roles\"[1] <> \"Roles\"[2])"
-                )
-        );
+        builder.ToTable("invitations");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.TenantId).HasMaxLength(14);

@@ -21,11 +21,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "ck_tenant_memberships_roles",
                 table: "tenant_memberships",
                 sql: "cardinality(roles) BETWEEN 1 AND 2 AND roles <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(roles, NULL) IS NULL AND (cardinality(roles) = 1 OR roles[1] <> roles[2])");
-
-            migrationBuilder.AddCheckConstraint(
-                name: "ck_invitations_roles",
-                table: "invitations",
-                sql: "cardinality(\"Roles\") BETWEEN 1 AND 2 AND \"Roles\" <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(\"Roles\", NULL) IS NULL AND (cardinality(\"Roles\") = 1 OR \"Roles\"[1] <> \"Roles\"[2])");
         }
 
         /// <inheritdoc />
@@ -42,10 +37,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
             migrationBuilder.DropCheckConstraint(
                 name: "ck_tenant_memberships_roles",
                 table: "tenant_memberships");
-
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_invitations_roles",
-                table: "invitations");
 
             migrationBuilder.Sql("""
                 ALTER TABLE tenant_memberships ALTER COLUMN roles TYPE character varying(40) USING roles[1];

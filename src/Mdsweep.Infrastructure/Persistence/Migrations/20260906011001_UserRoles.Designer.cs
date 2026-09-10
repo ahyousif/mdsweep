@@ -299,10 +299,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("\"Status\" = 'Pending'");
 
-                    b.ToTable("invitations", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_invitations_roles", "cardinality(\"Roles\") BETWEEN 1 AND 2 AND \"Roles\" <@ ARRAY['Administrator','Dispatcher','Driver']::text[] AND array_position(\"Roles\", NULL) IS NULL AND (cardinality(\"Roles\") = 1 OR \"Roles\"[1] <> \"Roles\"[2])");
-                        });
+                    b.ToTable("invitations", (string)null);
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Users.UserAggregate", b =>
