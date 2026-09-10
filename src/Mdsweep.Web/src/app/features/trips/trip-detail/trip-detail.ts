@@ -1,8 +1,21 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCalendarClock, lucideMapPin } from '@ng-icons/lucide';
+import {
+  lucideCalendarDays,
+  lucideCarFront,
+  lucideCircleHelp,
+  lucideClock3,
+  lucideEllipsis,
+  lucideMapPin,
+  lucidePen,
+  lucidePhone,
+  lucidePlay,
+  lucideUserRound,
+  lucideX,
+} from '@ng-icons/lucide';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
+import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCard } from '@spartan-ng/helm/card';
 
 import { Address, Trip } from '../trips-types';
@@ -15,32 +28,75 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 
 @Component({
   selector: 'app-trip-detail',
-  imports: [NgIcon, HlmCard, ...HlmBadgeImports],
+  imports: [NgIcon, HlmButton, HlmCard, ...HlmBadgeImports],
   providers: [
     provideIcons({
-      lucideCalendarClock,
+      lucideCalendarDays,
+      lucideCarFront,
+      lucideCircleHelp,
+      lucideClock3,
+      lucideEllipsis,
       lucideMapPin,
+      lucidePen,
+      lucidePhone,
+      lucidePlay,
+      lucideUserRound,
+      lucideX,
     }),
   ],
+  host: {
+    class: 'block h-full min-h-0',
+  },
   templateUrl: './trip-detail.html',
 })
 export default class TripDetail {
-  readonly trip = input<Trip | null>(null);
+  readonly trip = input.required<Trip>();
+  readonly closed = output<void>();
 
-  readonly passengerName = computed(() => {
+  readonly passengerName = computed(
+    () => `${this.trip().passengerFirstName} ${this.trip().passengerLastName}`,
+  );
+
+  readonly primaryTimeLabel = computed(() =>
+    this.trip().direction === 'To' ? 'Appointment' : 'Return pickup',
+  );
+
+  readonly primaryTime = computed(() => {
     const trip = this.trip();
 
-    if (!trip) {
-      return '';
+    if (trip.direction === 'To') {
+      return this.formatTime(trip.appointmentTime);
     }
 
-    return `${trip.passengerFirstName} ${trip.passengerLastName}`;
+    if (trip.isWillCall) {
+      return 'Will call';
+    }
+
+    return this.formatTime(trip.returnPickupTime);
+  });
+
+  readonly scheduledPickupSource = computed(() => {
+    const trip = this.trip();
+
+    if (trip.manualPickupTime) {
+      return 'Using manual time';
+    }
+
+    if (trip.calculatedPickupTime) {
+      return 'Using calculated time';
+    }
+
+    if (trip.returnPickupTime) {
+      return 'Using broker time';
+    }
+
+    return '';
   });
 
   readonly driveEstimate = computed(() => {
     const trip = this.trip();
 
-    if (!trip?.estimatedTravelMinutes) {
+    if (!trip.estimatedTravelMinutes) {
       return 'Not available';
     }
 
@@ -52,7 +108,7 @@ export default class TripDetail {
   });
 
   readonly brokerStatusLabel = computed(() => {
-    const status = this.trip()?.brokerStatus;
+    const status = this.trip().brokerStatus;
 
     if (!status) {
       return 'Not supplied';

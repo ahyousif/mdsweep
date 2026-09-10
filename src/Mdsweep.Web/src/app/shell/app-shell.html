@@ -67,14 +67,14 @@
     }
   </hlm-sidebar>
 
-  <main hlmSidebarInset class="min-w-0">
-    <header class="border-border flex h-14 items-center gap-3 border-b px-4 md:hidden">
+  <main hlmSidebarInset class="flex min-h-0 min-w-0 flex-col overflow-hidden">
+    <header class="border-border flex h-14 shrink-0 items-center gap-3 border-b px-4 md:hidden">
       <button hlmSidebarTrigger type="button"></button>
       <span class="text-base font-semibold">MDSweep</span>
     </header>
 
-    <div class="min-h-0 min-w-0 flex-1 overflow-auto">
-      <div class="min-h-full p-4 sm:p-6">
+    <div class="min-h-0 min-w-0 flex-1 overflow-hidden">
+      <div class="h-full min-h-0 p-4 sm:p-6">
         <router-outlet />
       </div>
     </div>

@@ -17,6 +17,9 @@ import { tripsQueryOptions } from './trips.queries';
   selector: 'app-trips-page',
   imports: [TripToolbar, TripList, TripDetail],
   templateUrl: './trips-page.html',
+  host: {
+    class: 'block h-full min-h-0',
+  },
 })
 export default class TripsPage {
   readonly #api = inject(TripsApi);
@@ -67,6 +70,10 @@ export default class TripsPage {
     this.selectedTripId.set(trip.id);
   }
 
+  closeTripDetail(): void {
+    this.selectedTripId.set(null);
+  }
+
   setSearch(value: string): void {
     this.search.set(value);
   }
@@ -91,16 +98,15 @@ export default class TripsPage {
     // Multi-day grouping comes later.
   }
 
+  setServiceDate(date: Date): void {
+    this.#setDate(date);
+  }
+
   openImportDialog(): void {
     this.#dialog.open(TripImportDialog, {
       contentClass: 'w-[calc(100vw-2rem)] sm:w-[36rem] sm:max-w-[36rem]',
       showCloseButton: true,
-      disableClose: true,
     });
-  }
-
-  setServiceDate(date: Date): void {
-    this.#setDate(date);
   }
 
   #setDate(date: Date): void {

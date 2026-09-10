@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -46,6 +46,15 @@ export default class TripToolbar {
 
   readonly formatServiceDate = (date: Date): string => dateFormatter.format(date);
 
+  readonly isToday = computed(() => isSameDay(this.serviceDate(), new Date()));
+
+  readonly isTomorrow = computed(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return isSameDay(this.serviceDate(), tomorrow);
+  });
+
   onServiceDateChange(date: Date | null): void {
     if (date) {
       this.serviceDateChange.emit(date);
@@ -57,4 +66,12 @@ export default class TripToolbar {
 
     this.searchChange.emit(input.value);
   }
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }

@@ -23,6 +23,9 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
       lucideMapPin,
     }),
   ],
+  host: {
+    class: 'block',
+  },
   templateUrl: './trip-card.html',
 })
 export default class TripCard {

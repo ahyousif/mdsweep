@@ -1,116 +1,219 @@
-@if (trip(); as trip) {
-  <div class="space-y-3">
-    <!-- Header -->
-    <header class="pb-2">
-      <h2 class="text-2xl font-semibold tracking-tight">
-        {{ passengerName() }}
-      </h2>
+<div class="flex h-full min-h-0 flex-col overflow-hidden">
+  <!-- Header -->
+  <header class="shrink-0 border-b px-6 pt-5">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h2 class="truncate text-2xl font-semibold tracking-tight">
+          {{ passengerName() }}
+        </h2>
 
-      <p class="text-muted-foreground mt-1 text-sm">
-        @if (trip.memberId) {
-          {{ trip.memberId }}
-        } @else {
-          {{ trip.brokerTripNumber }}
-        }
-      </p>
-    </header>
+        <p class="text-muted-foreground mt-0.5 text-sm">MTM {{ trip().brokerTripNumber }}</p>
+
+        <div class="mt-2 flex items-center gap-2 text-sm">
+          <ng-icon name="lucidePhone" class="text-muted-foreground size-4" aria-hidden="true" />
+
+          <span>(602) 555-0198</span>
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-2">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon"
+          type="button"
+          aria-label="Close trip details"
+          (click)="closed.emit()"
+        >
+          <ng-icon name="lucideX" class="size-5" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+
+    <nav class="mt-4 flex gap-6">
+      <button type="button" class="text-primary border-primary border-b-2 px-2 pb-2.5 font-medium">
+        Overview
+      </button>
+
+      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">Notes</button>
+
+      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">History</button>
+    </nav>
+  </header>
+
+  <!-- Scrollable body -->
+  <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
     <!-- Timing -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
-      <h3 class="font-semibold">Timing</h3>
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Timing</h3>
 
-      <div class="mt-4 grid gap-4 md:grid-cols-2">
-        <!-- Supporting timing information -->
-        <div class="space-y-4">
+        <button hlmBtn variant="outline" size="sm" type="button">
+          <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
+          Edit
+        </button>
+      </div>
+
+      <div class="mt-2 grid grid-cols-[1fr_auto] gap-3">
+        <div class="space-y-2">
           <div class="flex items-start gap-3">
             <ng-icon
-              name="lucideCalendarClock"
-              class="text-muted-foreground mt-0.5 size-5 shrink-0"
+              name="lucideCalendarDays"
+              class="text-muted-foreground mt-0.5 size-4 shrink-0"
               aria-hidden="true"
             />
 
             <div>
-              <p class="text-muted-foreground text-sm">Appointment</p>
+              <p class="text-muted-foreground text-sm">
+                {{ primaryTimeLabel() }}
+              </p>
 
-              <p class="text-lg font-semibold">
-                {{ formatTime(trip.appointmentTime) }}
+              <p class="font-semibold leading-tight">
+                {{ primaryTime() }}
               </p>
             </div>
           </div>
 
-          <div>
-            <p class="text-muted-foreground text-sm">Estimated drive</p>
+          <div class="flex items-start gap-3">
+            <ng-icon
+              name="lucideCarFront"
+              class="text-muted-foreground mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
 
-            <p class="text-lg font-semibold">
-              {{ driveEstimate() }}
-            </p>
+            <div>
+              <p class="text-muted-foreground text-sm">Estimated drive</p>
+
+              <p class="font-semibold leading-tight">
+                {{ driveEstimate() }}
+              </p>
+            </div>
           </div>
 
-          <div>
-            <p class="text-muted-foreground text-sm">Calculated pickup</p>
+          <div class="flex items-start gap-3">
+            <ng-icon
+              name="lucideClock3"
+              class="text-muted-foreground mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
 
-            <p class="text-lg font-semibold">
-              {{ formatTime(trip.calculatedPickupTime) }}
-            </p>
+            <div>
+              <div class="flex items-center gap-1">
+                <p class="text-muted-foreground text-sm">Calculated pickup</p>
+
+                <ng-icon
+                  name="lucideCircleHelp"
+                  class="text-muted-foreground size-3.5"
+                  aria-hidden="true"
+                />
+              </div>
+
+              <p class="font-semibold leading-tight">
+                {{ formatTime(trip().calculatedPickupTime) }}
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Operational pickup time -->
-        <div class="bg-muted/40 rounded-lg p-4">
+        <div class="bg-muted/30 rounded-lg p-4">
           <p class="text-muted-foreground text-sm">Scheduled pickup</p>
 
-          <p class="mt-1 text-xl font-semibold">
-            {{ formatTime(trip.scheduledPickupTime) }}
+          <p class="mt-0.5 font-semibold">
+            {{ formatTime(trip().scheduledPickupTime) }}
           </p>
 
-          @if (trip.manualPickupTime) {
-            <p class="text-muted-foreground mt-1 text-sm">Using manual time</p>
+          @if (scheduledPickupSource()) {
+            <p class="text-muted-foreground mt-1 text-sm">
+              {{ scheduledPickupSource() }}
+            </p>
           }
+
+          <button hlmBtn variant="outline" size="sm" type="button" class="mt-2">Change</button>
         </div>
       </div>
     </section>
 
     <!-- Route -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
-      <h3 class="font-semibold">Route</h3>
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Route</h3>
 
-      <div class="mt-4">
-        <!-- Pickup -->
+        <button hlmBtn variant="outline" size="sm" type="button">
+          <ng-icon name="lucideMapPin" class="size-4" aria-hidden="true" />
+          View on map
+        </button>
+      </div>
+
+      <div class="mt-2">
         <div class="flex gap-3">
           <div class="flex w-5 flex-col items-center">
-            <ng-icon name="lucideMapPin" class="text-primary size-5 shrink-0" aria-hidden="true" />
+            <ng-icon name="lucideMapPin" class="text-primary size-4 shrink-0" aria-hidden="true" />
 
             <div class="bg-border my-1 w-px flex-1"></div>
           </div>
 
-          <div class="pb-5">
+          <div class="pb-2">
             <p class="text-muted-foreground text-sm">Pickup address</p>
 
-            <p class="mt-1 font-medium">
-              {{ trip.pickup.address }}
+            <p class="mt-0.5 font-medium leading-tight">
+              {{ trip().pickup.address }}
             </p>
 
-            <p class="text-muted-foreground text-sm">
-              {{ formatAddress(trip.pickup) }}
+            <p class="text-muted-foreground mt-0.5 text-sm">
+              {{ formatAddress(trip().pickup) }}
             </p>
           </div>
         </div>
 
-        <!-- Dropoff -->
         <div class="flex gap-3">
           <div class="flex w-5 justify-center">
-            <ng-icon name="lucideMapPin" class="text-muted-foreground size-5" aria-hidden="true" />
+            <ng-icon name="lucideMapPin" class="text-destructive size-4" aria-hidden="true" />
           </div>
 
           <div>
             <p class="text-muted-foreground text-sm">Dropoff address</p>
 
-            <p class="mt-1 font-medium">
-              {{ trip.dropoff.address }}
+            <p class="mt-0.5 font-medium leading-tight">
+              {{ trip().dropoff.address }}
             </p>
 
-            <p class="text-muted-foreground text-sm">
-              {{ formatAddress(trip.dropoff) }}
+            <p class="text-muted-foreground mt-0.5 text-sm">
+              {{ formatAddress(trip().dropoff) }}
             </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Assignment -->
+    <section hlmCard class="rounded-lg p-4 shadow-none">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Assignment</h3>
+
+        <button hlmBtn variant="outline" size="sm" type="button">
+          <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
+          Edit
+        </button>
+      </div>
+
+      <div class="mt-2 grid grid-cols-2 gap-4">
+        <div class="flex items-center gap-3">
+          <ng-icon name="lucideUserRound" class="text-muted-foreground size-4" aria-hidden="true" />
+
+          <div>
+            <p class="text-muted-foreground text-sm">Driver</p>
+
+            <p class="font-medium">Driver 3</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <ng-icon name="lucideCarFront" class="text-muted-foreground size-4" aria-hidden="true" />
+
+          <div>
+            <p class="text-muted-foreground text-sm">Vehicle</p>
+
+            <p class="font-medium">Van 2</p>
           </div>
         </div>
       </div>
@@ -120,50 +223,72 @@
     <section hlmCard class="rounded-lg p-4 shadow-none">
       <h3 class="font-semibold">Trip details</h3>
 
-      <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
+      <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
         <div>
           <dt class="text-muted-foreground text-sm">Broker status</dt>
 
-          <dd class="mt-1">
-            @if (trip.brokerStatus?.toUpperCase() === 'VALID') {
-              <span hlmBadge variant="secondary"> Valid </span>
-            } @else {
-              {{ brokerStatusLabel() }}
-            }
-          </dd>
-        </div>
-
-        <div>
-          <dt class="text-muted-foreground text-sm">Direction</dt>
-
-          <dd class="mt-1">
-            {{ trip.direction }}
+          <dd class="text-primary mt-0.5 font-medium">
+            {{ brokerStatusLabel() }}
           </dd>
         </div>
 
         <div>
           <dt class="text-muted-foreground text-sm">Passenger type</dt>
 
-          <dd class="mt-1">
-            {{ trip.passengerType || 'Not supplied' }}
+          <dd class="mt-0.5">
+            {{ trip().passengerType || 'Not supplied' }}
           </dd>
+        </div>
+
+        <div>
+          <dt class="text-muted-foreground text-sm">Trip type</dt>
+
+          <dd class="mt-0.5">Regular</dd>
         </div>
 
         <div>
           <dt class="text-muted-foreground text-sm">Special needs</dt>
 
-          <dd class="mt-1">
-            {{ trip.specialNeeds || 'None' }}
+          <dd class="mt-0.5">
+            {{ trip().specialNeeds || '—' }}
           </dd>
         </div>
       </dl>
     </section>
+
+    <!-- Notes -->
+    <section hlmCard class="rounded-lg p-4 shadow-none">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Notes</h3>
+
+        <button hlmBtn variant="outline" size="sm" type="button">
+          <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
+
+          Edit
+        </button>
+      </div>
+
+      <p class="text-muted-foreground mt-1 text-sm">No notes</p>
+    </section>
   </div>
-} @else {
-  <div
-    hlmCard
-    class="text-muted-foreground flex min-h-48 items-center justify-center rounded-lg p-6 text-sm shadow-none"
-  >
-    Select a trip to view details.
-  </div>
-}
+
+  <!-- Always-visible actions -->
+  <footer class="bg-background shrink-0 border-t p-4">
+    <div class="flex gap-2">
+      <button hlmBtn type="button" class="flex-1">
+        <ng-icon name="lucidePlay" class="size-4" aria-hidden="true" />
+        Mark ready
+      </button>
+
+      <button hlmBtn variant="outline" type="button" class="flex-1">
+        <ng-icon name="lucideUserRound" class="size-4" aria-hidden="true" />
+        Assign driver
+      </button>
+
+      <button hlmBtn variant="outline" type="button">
+        <ng-icon name="lucideEllipsis" class="size-4" aria-hidden="true" />
+        More
+      </button>
+    </div>
+  </footer>
+</div>

@@ -47,9 +47,21 @@
       <ng-icon name="lucideChevronRight" class="size-4" aria-hidden="true" />
     </button>
 
-    <button hlmBtn variant="secondary" type="button" (click)="todayClicked.emit()">Today</button>
+    <button
+      hlmBtn
+      [variant]="isToday() ? 'secondary' : 'outline'"
+      type="button"
+      (click)="todayClicked.emit()"
+    >
+      Today
+    </button>
 
-    <button hlmBtn variant="outline" type="button" (click)="tomorrowClicked.emit()">
+    <button
+      hlmBtn
+      [variant]="isTomorrow() ? 'secondary' : 'outline'"
+      type="button"
+      (click)="tomorrowClicked.emit()"
+    >
       Tomorrow
     </button>
 
