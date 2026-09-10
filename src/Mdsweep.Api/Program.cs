@@ -1,7 +1,7 @@
 using Mdsweep.Api.Common.Authentication;
+using Mdsweep.Api.Common.Middleware;
 using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
-using Mdsweep.Api.Features.Users;
 using Mdsweep.Api.Features.Users.Accept;
 using Mdsweep.Api.Features.Users.Pending;
 using Mdsweep.Infrastructure;
