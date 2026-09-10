@@ -42,8 +42,7 @@ public sealed class TenantAggregate : AggregateRoot<string>
 
     public void SetPickupBufferMinutes(int pickupBufferMinutes)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(pickupBufferMinutes, 0);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(pickupBufferMinutes, MaximumPickupBufferMinutes);
+        Guard.Against.NullOrOutOfRange(pickupBufferMinutes, nameof(pickupBufferMinutes), 0, MaximumPickupBufferMinutes);
 
         PickupBufferMinutes = pickupBufferMinutes;
     }

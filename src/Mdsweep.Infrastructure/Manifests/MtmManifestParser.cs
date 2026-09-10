@@ -18,9 +18,7 @@ internal static class MtmManifestParser
         "Delivery Address",
         "Delivery City",
     ];
-
     private static readonly string[] _dateFormats = ["M/d/yyyy", "MM/dd/yyyy", "M/d/yy", "yyyy-MM-dd"];
-
     private static readonly string[] _timeFormats = ["HHmm", "Hmm", "H:mm", "HH:mm", "h:mm tt", "hh:mm tt"];
 
     public static MtmManifestReadResult Parse(IReadOnlyList<IReadOnlyList<string>> table)
@@ -59,37 +57,23 @@ internal static class MtmManifestParser
             var problemCountBeforeRow = problems.Count;
 
             var tripNumber = Identifier(Cell(row, headers, "Trip Number"));
-
             var memberId = Identifier(Cell(row, headers, "Medicaid Number"));
-
             var firstName = Cell(row, headers, "Member's First Name");
-
             var lastName = Cell(row, headers, "Member's Last Name");
-
             var pickupAddress = Cell(row, headers, "Pickup Address");
-
             var pickupCity = Cell(row, headers, "Pickup City");
-
             var dropoffAddress = Cell(row, headers, "Delivery Address");
-
             var dropoffCity = Cell(row, headers, "Delivery City");
-
             var pickupState = Cell(row, headers, "Pickup State");
-
             var pickupZip = Cell(row, headers, "Pickup Zip Code");
-
             var dropoffState = Cell(row, headers, "Delivery State");
-
             var dropoffZip = Cell(row, headers, "Delivery Zip Code");
-
             var brokerStatus = Cell(row, headers, "Trip Status");
-
             var passengerType = Cell(row, headers, "Passenger Type");
-
+            var rawTime = Cell(row, headers, "Time");
             var specialNeeds = Cell(row, headers, "Special Needs");
 
             var tripCost = ParseDecimal(Cell(row, headers, "Trip Cost"), rowNumber, tripNumber, "TripCost", problems);
-
             var tripMileage = ParseDecimal(
                 Cell(row, headers, "Trip Mileage"),
                 rowNumber,
@@ -99,29 +83,17 @@ internal static class MtmManifestParser
             );
 
             Require(problems, rowNumber, tripNumber, "TripNumber", tripNumber, "Trip number is required.");
-
             Require(problems, rowNumber, tripNumber, "MemberId", memberId, "Medicaid number is required.");
-
             Require(problems, rowNumber, tripNumber, "FirstName", firstName, "Member first name is required.");
-
             Require(problems, rowNumber, tripNumber, "LastName", lastName, "Member last name is required.");
-
             Require(problems, rowNumber, tripNumber, "PickupAddress", pickupAddress, "Pickup address is required.");
-
             Require(problems, rowNumber, tripNumber, "PickupCity", pickupCity, "Pickup city is required.");
-
             Require(problems, rowNumber, tripNumber, "DropoffAddress", dropoffAddress, "Delivery address is required.");
-
             Require(problems, rowNumber, tripNumber, "DropoffCity", dropoffCity, "Delivery city is required.");
 
             var serviceDate = ParseDate(Cell(row, headers, "Appointment Date"), rowNumber, tripNumber, problems);
-
             var direction = ParseDirection(Cell(row, headers, "Trip Type"), rowNumber, tripNumber, problems);
-
-            var rawTime = Cell(row, headers, "Time");
-
             var time = ParseTime(rawTime, rowNumber, tripNumber, problems);
-
             var isWillCall = ParseWillCall(Cell(row, headers, "Will Call Flag"), rowNumber, tripNumber, problems);
 
             if (string.IsNullOrWhiteSpace(rawTime))
