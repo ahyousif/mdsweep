@@ -1,0 +1,169 @@
+@if (trip(); as trip) {
+  <div class="space-y-3">
+    <!-- Header -->
+    <header class="pb-2">
+      <h2 class="text-2xl font-semibold tracking-tight">
+        {{ passengerName() }}
+      </h2>
+
+      <p class="text-muted-foreground mt-1 text-sm">
+        @if (trip.memberId) {
+          {{ trip.memberId }}
+        } @else {
+          {{ trip.brokerTripNumber }}
+        }
+      </p>
+    </header>
+    <!-- Timing -->
+    <section hlmCard class="rounded-lg p-4 shadow-none">
+      <h3 class="font-semibold">Timing</h3>
+
+      <div class="mt-4 grid gap-4 md:grid-cols-2">
+        <!-- Supporting timing information -->
+        <div class="space-y-4">
+          <div class="flex items-start gap-3">
+            <ng-icon
+              name="lucideCalendarClock"
+              class="text-muted-foreground mt-0.5 size-5 shrink-0"
+              aria-hidden="true"
+            />
+
+            <div>
+              <p class="text-muted-foreground text-sm">Appointment</p>
+
+              <p class="text-lg font-semibold">
+                {{ formatTime(trip.appointmentTime) }}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-muted-foreground text-sm">Estimated drive</p>
+
+            <p class="text-lg font-semibold">
+              {{ driveEstimate() }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-muted-foreground text-sm">Calculated pickup</p>
+
+            <p class="text-lg font-semibold">
+              {{ formatTime(trip.calculatedPickupTime) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Operational pickup time -->
+        <div class="bg-muted/40 rounded-lg p-4">
+          <p class="text-muted-foreground text-sm">Scheduled pickup</p>
+
+          <p class="mt-1 text-xl font-semibold">
+            {{ formatTime(trip.scheduledPickupTime) }}
+          </p>
+
+          @if (trip.manualPickupTime) {
+            <p class="text-muted-foreground mt-1 text-sm">Using manual time</p>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Route -->
+    <section hlmCard class="rounded-lg p-4 shadow-none">
+      <h3 class="font-semibold">Route</h3>
+
+      <div class="mt-4">
+        <!-- Pickup -->
+        <div class="flex gap-3">
+          <div class="flex w-5 flex-col items-center">
+            <ng-icon name="lucideMapPin" class="text-primary size-5 shrink-0" aria-hidden="true" />
+
+            <div class="bg-border my-1 w-px flex-1"></div>
+          </div>
+
+          <div class="pb-5">
+            <p class="text-muted-foreground text-sm">Pickup address</p>
+
+            <p class="mt-1 font-medium">
+              {{ trip.pickup.address }}
+            </p>
+
+            <p class="text-muted-foreground text-sm">
+              {{ formatAddress(trip.pickup) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Dropoff -->
+        <div class="flex gap-3">
+          <div class="flex w-5 justify-center">
+            <ng-icon name="lucideMapPin" class="text-muted-foreground size-5" aria-hidden="true" />
+          </div>
+
+          <div>
+            <p class="text-muted-foreground text-sm">Dropoff address</p>
+
+            <p class="mt-1 font-medium">
+              {{ trip.dropoff.address }}
+            </p>
+
+            <p class="text-muted-foreground text-sm">
+              {{ formatAddress(trip.dropoff) }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trip details -->
+    <section hlmCard class="rounded-lg p-4 shadow-none">
+      <h3 class="font-semibold">Trip details</h3>
+
+      <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
+        <div>
+          <dt class="text-muted-foreground text-sm">Broker status</dt>
+
+          <dd class="mt-1">
+            @if (trip.brokerStatus?.toUpperCase() === 'VALID') {
+              <span hlmBadge variant="secondary"> Valid </span>
+            } @else {
+              {{ brokerStatusLabel() }}
+            }
+          </dd>
+        </div>
+
+        <div>
+          <dt class="text-muted-foreground text-sm">Direction</dt>
+
+          <dd class="mt-1">
+            {{ trip.direction }}
+          </dd>
+        </div>
+
+        <div>
+          <dt class="text-muted-foreground text-sm">Passenger type</dt>
+
+          <dd class="mt-1">
+            {{ trip.passengerType || 'Not supplied' }}
+          </dd>
+        </div>
+
+        <div>
+          <dt class="text-muted-foreground text-sm">Special needs</dt>
+
+          <dd class="mt-1">
+            {{ trip.specialNeeds || 'None' }}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+} @else {
+  <div
+    hlmCard
+    class="text-muted-foreground flex min-h-48 items-center justify-center rounded-lg p-6 text-sm shadow-none"
+  >
+    Select a trip to view details.
+  </div>
+}

@@ -1,14 +1,16 @@
 import { keepPreviousData } from '@tanstack/angular-query-experimental';
-import { AllTripsApi, TripsQuery } from './all-trips.api';
+
+import { TripsQuery } from './trips-types';
+import { TripsApi } from './trips.api';
 
 export const tripQueryKeys = {
   all: ['trips'] as const,
-  workspace: (query: TripsQuery) => [...tripQueryKeys.all, 'workspace', query] as const,
+  list: (query: TripsQuery) => [...tripQueryKeys.all, 'list', query] as const,
 };
 
-export const allTripsQueryOptions = (api: AllTripsApi, query: TripsQuery) => ({
+export const tripsQueryOptions = (api: TripsApi, query: TripsQuery) => ({
   placeholderData: keepPreviousData,
-  queryKey: tripQueryKeys.workspace(query),
+  queryKey: tripQueryKeys.list(query),
   queryFn: () => api.getTrips(query),
   enabled: query.startDate.length > 0 && query.endDate.length > 0,
 });

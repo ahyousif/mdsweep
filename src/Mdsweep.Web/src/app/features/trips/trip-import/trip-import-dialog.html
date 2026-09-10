@@ -1,0 +1,30 @@
+<hlm-dialog-header>
+  <h2 hlmDialogTitle>Import trips</h2>
+
+  <p hlmDialogDescription>Upload a broker trip file to import trips into MDSweep.</p>
+</hlm-dialog-header>
+
+<div class="space-y-4">
+  <label
+    class="border-border hover:bg-muted/30 flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center transition-colors"
+  >
+    <input class="sr-only" type="file" accept=".csv,.xlsx" (change)="onFileSelected($event)" />
+
+    <div class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-lg">
+      <ng-icon name="lucideUpload" class="size-6" aria-hidden="true" />
+    </div>
+
+    <p class="mt-4 font-medium">Drop a CSV or Excel file here</p>
+
+    <p class="text-muted-foreground mt-1 text-sm">
+      or
+      <span class="text-primary font-medium"> browse files </span>
+    </p>
+  </label>
+
+  <p class="text-muted-foreground text-sm">Supports .csv and .xlsx</p>
+</div>
+
+<hlm-dialog-footer>
+  <button hlmBtn variant="outline" type="button" (click)="cancel()">Cancel</button>
+</hlm-dialog-footer>

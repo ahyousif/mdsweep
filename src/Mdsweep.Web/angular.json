@@ -14,6 +14,8 @@
           "skipTests": true
         },
         "@schematics/angular:component": {
+          "exportDefault": true,
+          "inlineStyle": true,
           "skipTests": true
         },
         "@schematics/angular:directive": {
@@ -43,9 +45,7 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -53,9 +53,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.css"
-            ]
+            "styles": ["src/styles.css"]
           },
           "configurations": {
             "production": {
@@ -83,10 +81,7 @@
               "aot": false,
               "optimization": false,
               "extractLicenses": false,
-              "polyfills": [
-                "zone.js",
-                "zone.js/testing"
-              ]
+              "polyfills": ["zone.js", "zone.js/testing"]
             }
           },
           "defaultConfiguration": "production"
@@ -112,9 +107,7 @@
             "tsConfig": "tsconfig.spec.json",
             "buildTarget": ":build:testing",
             "runner": "vitest",
-            "setupFiles": [
-              "src/test-setup.ts"
-            ]
+            "setupFiles": ["src/test-setup.ts"]
           }
         }
       }

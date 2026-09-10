@@ -1,27 +1,29 @@
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+
 import { ApiClient } from '@app/core/api/api-client';
 
-export type TripImportProblem = {
-  rowNumber: number | null;
-  tripNumber: string | null;
-  field: string | null;
-  message: string;
-};
+import { TripImportSummary } from './trip-import.types';
 
-export type TripImportResult = {
-  readyCount: number;
-  needsAttentionCount: number;
-  problems: TripImportProblem[];
-};
+@Injectable({
+  providedIn: 'root',
+})
+export default class TripImportApi {
+  readonly #api = inject(ApiClient);
 
-@Injectable({ providedIn: 'root' })
-export class TripImportApi {
-  private readonly api = inject(ApiClient);
+  preview(file: File): Promise<TripImportSummary> {
+    return this.upload('trips/import/preview', file);
+  }
 
-  import(file: File): Promise<TripImportResult> {
+  import(file: File): Promise<TripImportSummary> {
+    return this.upload('trips/import', file);
+  }
+
+  private upload(path: string, file: File): Promise<TripImportSummary> {
     const form = new FormData();
+
     form.append('file', file);
-    return firstValueFrom(this.api.http.post<TripImportResult>(this.api.url('trips/import'), form));
+
+    return firstValueFrom(this.#api.http.post<TripImportSummary>(this.#api.url(path), form));
   }
 }

@@ -1,0 +1,26 @@
+<div class="space-y-8">
+  @for (group of groups(); track group.label) {
+    <section>
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">
+          {{ group.label }}
+        </h2>
+
+        <span class="text-muted-foreground text-sm">
+          {{ group.trips.length }}
+          {{ group.trips.length === 1 ? 'trip' : 'trips' }}
+        </span>
+      </div>
+
+      <div class="space-y-1">
+        @for (trip of group.trips; track trip.id) {
+          <app-trip-card
+            [trip]="trip"
+            [selected]="trip.id === selectedTripId()"
+            (tripSelected)="selectTrip($event)"
+          />
+        }
+      </div>
+    </section>
+  }
+</div>
