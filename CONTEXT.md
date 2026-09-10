@@ -14,7 +14,7 @@ A person who can authenticate to MDSweep. A User may access multiple Tenants and
 _Avoid_: App User
 
 **Tenant Membership**:
-A User's authorized relationship to one Tenant, with one or two distinct roles chosen from Administrator, Dispatcher, and Driver. Active access and access history belong to that membership; changes do not alter the User's other memberships.
+A User's authorized relationship to one Tenant, with one or two distinct roles chosen from Administrator, Dispatcher, and Driver. Roles and active access belong to that membership; changes do not alter the User's other memberships.
 
 **Administrator**:
 A Tenant Membership role allowed to manage all Users and Invitations in that Tenant, as well as Dispatcher operations.
