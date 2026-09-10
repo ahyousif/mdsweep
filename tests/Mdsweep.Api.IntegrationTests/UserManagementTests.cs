@@ -49,7 +49,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Invitation_acceptance_creates_one_User_and_role_and_retains_history()
+    public async Task Invitation_acceptance_creates_one_User_and_role()
     {
         using var manager = await Client();
         var invitation = await Invite(manager);
@@ -67,7 +67,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         Assert.True((await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).IsActive);
         Assert.Equal(TenantId, (await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).TenantId);
         Assert.Equal(new[] { "Driver" }, (await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).Roles);
-        Assert.Single((await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).History);
         Assert.Equal("Accepted", (await db.Invitations.SingleAsync()).Status);
         Assert.Equal(2, await db.Users.CountAsync());
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
@@ -99,12 +98,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         ).Content.ReadFromJsonAsync<InvitationModel>(Json);
         Assert.NotNull(sent!.SentAt);
         Assert.Null(sent.DeliveryError);
-        var history = await manager.GetFromJsonAsync<HistoryModel[]>(
-            $"/api/users/invitations/{invitation.Id}/history",
-            Json
-        );
-        Assert.Contains(history!, x => x.Action == "Invitation email failed");
-        Assert.Contains(history!, x => x.Action == "Invitation email sent");
     }
 
     [Theory]
@@ -169,10 +162,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             HttpStatusCode.Forbidden,
             (await manager.PostAsync($"/api/users/{privileged.Id}/password-reset", null)).StatusCode
         );
-        Assert.Equal(
-            HttpStatusCode.Forbidden,
-            (await manager.GetAsync($"/api/users/{privileged.Id}/history")).StatusCode
-        );
         Assert.Equal(HttpStatusCode.Forbidden, (await manager.GetAsync("/api/users")).StatusCode);
         var driver = await AddUser("Driver", "driver-subject", "driver2@example.test");
         Assert.Equal(HttpStatusCode.Forbidden, (await Update(manager, driver, "Driver")).StatusCode);
@@ -212,10 +201,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             x.Id == driver.Id
         );
         (await Update(manager, deactivated, "Driver", true)).EnsureSuccessStatusCode();
-        var history = await manager.GetFromJsonAsync<HistoryModel[]>($"/api/users/{driver.Id}/history", Json);
-        Assert.Contains(history!, x => x.Action == "Display name updated");
-        Assert.Contains(history!, x => x.Action == "Deactivated");
-        Assert.Contains(history!, x => x.Action == "Reactivated");
         Assert.Equal(HttpStatusCode.BadRequest, (await Update(manager, admin, "Driver")).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await Update(manager, admin, "Administrator", false)).StatusCode);
     }
@@ -233,7 +218,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             HttpStatusCode.NotFound,
             (await local.PostAsync($"/api/users/invitations/{invitation.Id}/revoke", null)).StatusCode
         );
-        Assert.Equal(HttpStatusCode.NotFound, (await local.GetAsync($"/api/users/{outsider.Id}/history")).StatusCode);
         // A local identity cannot accept an invitation for a different identity.
         Identity.Email = "dispatcher@example.test";
         Assert.Equal(
@@ -245,7 +229,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Password_reset_reports_delivery_failures_and_retains_successful_requests()
+    public async Task Password_reset_reports_delivery_failures_and_allows_retry()
     {
         var driver = await AddUser("Driver", "driver-subject", "driver2@example.test");
         using var manager = await Client();
@@ -256,7 +240,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
         Identity.FailEmail = false;
         (await manager.PostAsync($"/api/users/{driver.Id}/password-reset", null)).EnsureSuccessStatusCode();
-        Assert.Single((await manager.GetFromJsonAsync<HistoryModel[]>($"/api/users/{driver.Id}/history", Json))!);
     }
 
     [Fact]
@@ -321,7 +304,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var user = await db.Users.SingleAsync(x => x.KeycloakUserId == "invited-subject");
         Assert.Equal(roles, (await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).Roles);
-        Assert.Single((await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id)).History);
     }
 
     [Theory]
@@ -340,11 +322,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         Assert.Equal(
             HttpStatusCode.Forbidden,
             (await manager.PostAsync($"/api/users/{target.Id}/password-reset", null)).StatusCode
-        );
-        Assert.Equal(HttpStatusCode.Forbidden, (await manager.GetAsync($"/api/users/{target.Id}/history")).StatusCode);
-        Assert.Equal(
-            HttpStatusCode.Forbidden,
-            (await manager.GetAsync($"/api/users/invitations/{invitation.Id}/history")).StatusCode
         );
         Assert.Equal(
             HttpStatusCode.Forbidden,
@@ -374,7 +351,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Role_changes_take_effect_immediately_preserve_history_and_ignore_order()
+    public async Task Role_changes_take_effect_immediately_and_ignore_order()
     {
         var admin = await AddUser(new[] { "Administrator", "Driver" }, "admin-subject", "admin@example.test");
         var driver = await AddUser("Driver", "driver-subject", "driver2@example.test");
@@ -390,10 +367,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             x.Id == driver.Id
         );
         Assert.Equal(updated.Version, reordered.Version);
-        var history = (await manager.GetFromJsonAsync<HistoryModel[]>($"/api/users/{driver.Id}/history", Json))!;
-        Assert.Single(history);
-        Assert.Equal("Roles changed", history[0].Action);
-        Assert.Contains("Driver, Administrator", history[0].Details);
         Assert.Equal(HttpStatusCode.Conflict, (await Update(manager, driver, "Driver")).StatusCode);
         (await Update(manager, updated, "Driver")).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);
@@ -495,7 +468,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Same_identity_can_accept_invitations_to_two_Tenants_with_independent_access_and_history()
+    public async Task Same_identity_can_accept_invitations_to_two_Tenants_with_independent_access()
     {
         const string otherTenant = "abcd-efgh-jkmn";
         await AddUser("Administrator", "local-admin", "local-admin@example.test");
@@ -573,13 +546,6 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             .ToArray();
         Assert.All(sessionMemberships, x => Assert.Equal(otherTenant, x.GetProperty("id").GetString()));
         Assert.Single(sessionMemberships);
-        var otherHistory = (await other.GetFromJsonAsync<HistoryModel[]>($"/api/users/{target.Id}/history", Json))!;
-        Assert.Single(otherHistory);
-        Assert.Equal("Invitation accepted", otherHistory[0].Action);
-        Assert.Contains(
-            (await local.GetFromJsonAsync<HistoryModel[]>($"/api/users/{target.Id}/history", Json))!,
-            x => x.Action == "Deactivated"
-        );
         // A replay cannot reactivate the old membership or duplicate another one.
         (await recipient.PostAsync($"/api/invitation/{first.Id}/accept", null)).EnsureSuccessStatusCode();
         Assert.Equal(HttpStatusCode.Forbidden, (await recipient.GetAsync("/api/users")).StatusCode);

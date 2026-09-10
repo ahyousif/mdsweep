@@ -1,14 +1,11 @@
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Common.Extensions;
 using Mdsweep.Domain.Tenants.Events;
-using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Domain.Tenants;
 
 public sealed class TenantMembership : AggregateRoot<Guid>
 {
-    private readonly List<AccessHistoryEntry> history = [];
-
     private TenantMembership()
         : base(default) { }
 
@@ -30,25 +27,30 @@ public sealed class TenantMembership : AggregateRoot<Guid>
     {
         Guard.Against.NullOrWhiteSpace(displayName);
         Guard.Against.Invalid(displayName.Length > 401, "Display name must not exceed 401 characters.");
+        if (DisplayName == displayName)
+            return;
         DisplayName = displayName;
+        Version++;
     }
 
     public bool IsActive { get; private set; } = true;
     public int Version { get; private set; }
-    public IReadOnlyCollection<AccessHistoryEntry> History => history.AsReadOnly();
 
-    public void SetActive(bool active) => IsActive = active;
-
-    public void Record(string actorSubject, string action, Instant at, string? details = null)
+    public void SetActive(bool active)
     {
-        history.Add(new AccessHistoryEntry(actorSubject, action, at, details));
+        if (IsActive == active)
+            return;
+        IsActive = active;
         Version++;
     }
 
     public void SetRoles(string[] roles)
     {
         Guard.Against.Invalid(!AreValidRoles(roles), "Select one or two distinct roles.");
+        if (Roles.Order().SequenceEqual(roles.Order()))
+            return;
         Roles = roles.ToArray();
+        Version++;
     }
 
     public static bool AreValidRoles(string[]? roles) =>

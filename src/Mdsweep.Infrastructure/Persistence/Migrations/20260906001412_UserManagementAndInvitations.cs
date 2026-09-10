@@ -72,50 +72,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "user_access_history",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ActorSubject = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Action = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    OccurredAt = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
-                    Details = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    membership_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_user_access_history", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_user_access_history_tenant_memberships_membership_id",
-                        column: x => x.membership_id,
-                        principalTable: "tenant_memberships",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "invitation_history",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ActorSubject = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Action = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    OccurredAt = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
-                    Details = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
-                    invitation_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_invitation_history", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_invitation_history_invitations_invitation_id",
-                        column: x => x.invitation_id,
-                        principalTable: "invitations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_users_email",
                 table: "users",
@@ -128,10 +84,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 columns: new[] { "tenant_id", "user_id" },
                 unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_invitation_history_invitation_id",
-                table: "invitation_history",
-                column: "invitation_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_invitations_TenantId_Email",
@@ -145,17 +97,11 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 table: "invitations",
                 column: "TenantId");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_user_access_history_membership_id",
-                table: "user_access_history",
-                column: "membership_id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "invitation_history");
-            migrationBuilder.DropTable(name: "user_access_history");
             migrationBuilder.DropTable(name: "invitations");
             migrationBuilder.DropIndex(name: "IX_users_email", table: "users");
             migrationBuilder.DropIndex(name: "IX_tenant_memberships_tenant_id_user_id", table: "tenant_memberships");

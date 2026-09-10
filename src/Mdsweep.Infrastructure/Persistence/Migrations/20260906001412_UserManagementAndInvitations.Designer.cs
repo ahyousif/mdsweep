@@ -356,43 +356,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.OwnsMany("Mdsweep.Domain.Users.AccessHistoryEntry", "History", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Action")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("ActorSubject")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)");
-
-                            b1.Property<string>("Details")
-                                .HasMaxLength(300)
-                                .HasColumnType("character varying(300)");
-
-                            b1.Property<Instant>("OccurredAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<Guid>("membership_id")
-                                .HasColumnType("uuid");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("membership_id");
-
-                            b1.ToTable("user_access_history", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("membership_id");
-                        });
-
-                    b.Navigation("History");
                 });
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
@@ -491,43 +454,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.OwnsMany("Mdsweep.Domain.Users.AccessHistoryEntry", "History", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("Action")
-                                .IsRequired()
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("ActorSubject")
-                                .IsRequired()
-                                .HasMaxLength(200)
-                                .HasColumnType("character varying(200)");
-
-                            b1.Property<string>("Details")
-                                .HasMaxLength(300)
-                                .HasColumnType("character varying(300)");
-
-                            b1.Property<Instant>("OccurredAt")
-                                .HasColumnType("timestamp with time zone");
-
-                            b1.Property<Guid>("invitation_id")
-                                .HasColumnType("uuid");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("invitation_id");
-
-                            b1.ToTable("invitation_history", (string)null);
-
-                            b1.WithOwner()
-                                .HasForeignKey("invitation_id");
-                        });
-
-                    b.Navigation("History");
                 });
 #pragma warning restore 612, 618
         }

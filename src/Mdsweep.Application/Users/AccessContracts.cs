@@ -62,21 +62,11 @@ public sealed record InvitationModel(
         );
 }
 
-public sealed record HistoryModel(
-    string ActorSubject,
-    string ActorName,
-    string Action,
-    Instant OccurredAt,
-    string? Details
-);
-
 public sealed record UserManagementModel(UserModel[] Users, InvitationModel[] Invitations, bool IsAdministrator);
 
 public sealed record PendingInvitationModel(Guid Id, string TenantName, string[] Roles, Instant ExpiresAt);
 
 public sealed record ListUsersQuery : IQuery<UserManagementModel>;
-
-public sealed record GetAccessHistoryQuery(Guid Id, bool Invitation) : IQuery<HistoryModel[]>;
 
 public sealed record InviteUserCommand(string Email, string FirstName, string LastName, string[] Roles)
     : ICommand<Guid>;

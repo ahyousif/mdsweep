@@ -8,7 +8,7 @@ namespace Mdsweep.Api.IntegrationTests;
 public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
 {
     [Fact]
-    public async Task Role_upgrade_preserves_single_roles_and_pending_invitation_history()
+    public async Task Role_upgrade_preserves_single_roles_and_pending_invitation()
     {
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -18,7 +18,6 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
             "Synthetic",
             "Invitee",
             ["Driver"],
-            "dispatcher-test",
             NodaTime.SystemClock.Instance.GetCurrentInstant()
         );
         db.Invitations.Add(invitation);
@@ -39,7 +38,6 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
         Assert.Equal(invitation.Id, upgraded.Id);
         Assert.Equal(new[] { "Driver" }, upgraded.Roles);
         Assert.Equal("Pending", upgraded.Status);
-        Assert.Single(upgraded.History);
         Assert.Equal(new[] { "Dispatcher" }, (await db.TenantMemberships.SingleAsync()).Roles);
     }
 
@@ -58,7 +56,6 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
                     "Synthetic",
                     "Invitee",
                     ["Driver", "Dispatcher"],
-                    "dispatcher-test",
                     NodaTime.SystemClock.Instance.GetCurrentInstant()
                 )
             );
@@ -115,18 +112,24 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
                 .SingleAsync()
         );
         Assert.Empty(await db.Invitations.ToListAsync());
+        Assert.Equal(
+            0,
+            await db
+                .Database.SqlQueryRaw<int>(
+                    "SELECT count(*)::int AS \"Value\" FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('user_access_history', 'invitation_history')"
+                )
+                .SingleAsync()
+        );
     }
 
     [Fact]
-    public async Task Role_upgrade_preserves_membership_access_version_and_history()
+    public async Task Role_upgrade_preserves_membership_access_version()
     {
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var membership = await db.TenantMemberships.SingleAsync();
         membership.SetActive(false);
-        membership.Record("dispatcher-test", "Deactivated", NodaTime.SystemClock.Instance.GetCurrentInstant());
         await db.SaveChangesAsync();
-        var historyId = Assert.Single(membership.History).Id;
         var migrator = db.GetService<IMigrator>();
         await migrator.MigrateAsync("20260906001412_UserManagementAndInvitations");
         Assert.False(
@@ -138,7 +141,6 @@ public sealed class UserManagementMigrationTests : MdsweepIntegrationTest
         Assert.Equal(membership.Id, restored.Id);
         Assert.False(restored.IsActive);
         Assert.Equal(1, restored.Version);
-        Assert.Equal(historyId, Assert.Single(restored.History).Id);
     }
 
     [Fact]

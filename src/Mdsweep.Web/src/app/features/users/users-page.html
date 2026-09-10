@@ -158,16 +158,6 @@
                           >
                             Reset password
                           </button>
-                          <button
-                            hlmBtn
-                            variant="ghost"
-                            size="sm"
-                            type="button"
-                            (click)="showHistory(user, false)"
-                            [attr.aria-label]="'View history for ' + user.displayName"
-                          >
-                            History
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -281,21 +271,6 @@
                               Revoke
                             </button>
                           }
-                          <button
-                            hlmBtn
-                            variant="ghost"
-                            size="sm"
-                            type="button"
-                            (click)="showHistory(invitation, true)"
-                            [attr.aria-label]="
-                              'View invitation history for ' +
-                              invitation.firstName +
-                              ' ' +
-                              invitation.lastName
-                            "
-                          >
-                            History
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -320,49 +295,5 @@
         </section>
       </div>
     </hlm-tabs>
-    @if (visibleHistory(); as selected) {
-      <section hlmCard aria-labelledby="history-heading">
-        <div hlmCardHeader>
-          <h2 hlmCardTitle id="history-heading">History — {{ selected.name }}</h2>
-        </div>
-        <div hlmCardContent class="grid gap-3">
-          @if (history.isPending()) {
-            <div class="flex items-center gap-2" role="status">
-              <hlm-spinner aria-hidden="true" /> Loading history…
-            </div>
-          } @else if (history.isError()) {
-            <div hlmAlert variant="destructive" role="alert">
-              <p hlmAlertDescription>{{ historyError() }}</p>
-            </div>
-            <button hlmBtn variant="outline" type="button" (click)="history.refetch()">
-              Retry history
-            </button>
-          } @else {
-            @for (entry of history.data(); track $index; let last = $last) {
-              <div class="grid gap-1">
-                <p hlmSmall>{{ entry.action }}</p>
-                <p>{{ entry.details }}</p>
-                <p hlmMuted>{{ entry.occurredAt | date: 'medium' }} · {{ entry.actorName }}</p>
-              </div>
-              @if (!last) {
-                <hlm-separator />
-              }
-            } @empty {
-              <hlm-empty
-                ><hlm-empty-header
-                  ><h3 hlmEmptyTitle>No recorded changes.</h3>
-                  <p hlmEmptyDescription>Access changes will appear here.</p></hlm-empty-header
-                ></hlm-empty
-              >
-            }
-          }
-        </div>
-        <div hlmCardFooter>
-          <button hlmBtn variant="outline" type="button" (click)="selectedHistory.set(null)">
-            Close history
-          </button>
-        </div>
-      </section>
-    }
   }
 </div>

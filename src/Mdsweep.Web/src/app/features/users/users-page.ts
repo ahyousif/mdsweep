@@ -4,9 +4,8 @@ import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmBadge } from '@spartan-ng/helm/badge';
 import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
-import { HlmSeparator } from '@spartan-ng/helm/separator';
 import { HlmSpinner } from '@spartan-ng/helm/spinner';
-import { HlmH3, HlmMuted, HlmSmall } from '@spartan-ng/helm/typography';
+import { HlmH3, HlmMuted } from '@spartan-ng/helm/typography';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
@@ -34,8 +33,6 @@ type Action =
     HlmBadge,
     HlmH3,
     HlmMuted,
-    HlmSmall,
-    HlmSeparator,
     HlmSpinner,
     HlmEmptyImports,
     HlmFieldImports,
@@ -57,11 +54,6 @@ export default class UsersPage {
   readonly editing = signal<ManagedUser | null>(null);
   readonly message = signal('');
   readonly error = signal('');
-  readonly selectedHistory = signal<{ id: string; invitation: boolean; name: string } | null>(null);
-  readonly visibleHistory = computed(() => {
-    const selected = this.selectedHistory();
-    return selected?.invitation === (this.activeTab() === 'invitations') ? selected : null;
-  });
   readonly editingValue = computed(() => {
     const user = this.editing();
     return user ? { ...user, email: user.email ?? '' } : null;
@@ -72,15 +64,6 @@ export default class UsersPage {
   readonly invitations = computed(() =>
     (this.listing.data()?.invitations ?? []).filter((x) => this.matches(x)),
   );
-  readonly history = injectQuery(() => ({
-    queryKey: userQueryKeys.history(
-      this.selectedHistory()?.id ?? '',
-      this.selectedHistory()?.invitation ?? false,
-    ),
-    queryFn: () =>
-      this.#api.history(this.selectedHistory()!.id, this.selectedHistory()!.invitation),
-    enabled: this.selectedHistory() !== null,
-  }));
   readonly mutation = injectMutation(() => ({
     mutationFn: (action: Action) => this.perform(action),
     onSuccess: async (invitation: Invitation | void, action: Action) => {
@@ -115,9 +98,6 @@ export default class UsersPage {
   loadError(): string {
     return httpErrorMessage(this.listing.error(), 'Users could not be loaded. Try again.');
   }
-  historyError(): string {
-    return httpErrorMessage(this.history.error(), 'History could not be loaded. Try again.');
-  }
   startInvite(): void {
     this.editing.set(null);
     this.inviting.set(true);
@@ -139,13 +119,6 @@ export default class UsersPage {
   save(details: UserDetails): void {
     const user = this.editing();
     this.run(user ? { kind: 'update', user, details } : { kind: 'invite', details });
-  }
-  showHistory(item: ManagedUser | Invitation, invitation: boolean): void {
-    this.selectedHistory.set({
-      id: item.id,
-      invitation,
-      name: 'displayName' in item ? item.displayName : `${item.firstName} ${item.lastName}`,
-    });
   }
   private matches(value: ManagedUser | Invitation): boolean {
     return `${'displayName' in value ? value.displayName : ''} ${value.firstName} ${value.lastName} ${value.email ?? ''} ${value.roles.join(' ')}`

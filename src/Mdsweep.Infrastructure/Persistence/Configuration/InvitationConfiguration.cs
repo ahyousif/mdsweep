@@ -21,18 +21,5 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
         builder.Property(x => x.Version).IsConcurrencyToken();
         builder.HasIndex(x => x.TenantId);
         builder.HasOne<TenantAggregate>().WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Restrict);
-        builder.OwnsMany(
-            x => x.History,
-            history =>
-            {
-                history.ToTable("invitation_history");
-                history.WithOwner().HasForeignKey("invitation_id");
-                history.HasKey(x => x.Id);
-                history.Property(x => x.Id).ValueGeneratedNever();
-                history.Property(x => x.ActorSubject).HasMaxLength(200);
-                history.Property(x => x.Action).HasMaxLength(100);
-                history.Property(x => x.Details).HasMaxLength(300);
-            }
-        );
     }
 }

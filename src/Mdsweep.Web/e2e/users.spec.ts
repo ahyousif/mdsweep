@@ -27,7 +27,7 @@ function bootstrap(memberships: Membership[], activeTenantId?: string) {
 }
 
 // Browser interactions use synthetic API responses. PostgreSQL HTTP tests verify
-// authorization, acceptance, persistence, and history through the real API.
+// authorization, acceptance, and persistence through the real API.
 async function session(page: Page, role = 'Administrator') {
   await page.route('**/api/auth/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -89,18 +89,6 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
       invitation = { ...invitation, status: 'Revoked' };
       return route.fulfill({ status: 204 });
     }
-    if (path.endsWith('/history'))
-      return route.fulfill({
-        json: [
-          {
-            actorSubject: 'synthetic-manager',
-            actorName: 'Synthetic Manager',
-            action: 'Deactivated',
-            occurredAt: '2030-09-05T12:00:00Z',
-            details: null,
-          },
-        ],
-      });
     if (request.method() === 'PUT') {
       user = { ...user, ...request.postDataJSON(), version: user.version + 1 };
       return route.fulfill({ status: 204 });
@@ -151,8 +139,7 @@ test('manage Users and recover from an invitation delivery failure', async ({ pa
   expect(user.roles).toEqual(['Driver', 'Dispatcher']);
   expect(user.firstName).toBe('Taylor');
   expect(user.email).toBe('taylor@example.test');
-  await page.getByRole('button', { name: 'View history for Taylor Updated Example' }).click();
-  await expect(page.getByText('Deactivated', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /history/i })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('users.png'), fullPage: true });
 });
 

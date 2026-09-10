@@ -23,13 +23,6 @@ export type Invitation = Omit<UserDetails, 'isActive' | 'displayName'> & {
   deliveryError: string | null;
   version: number;
 };
-export type AccessHistory = {
-  actorSubject: string;
-  actorName: string;
-  action: string;
-  occurredAt: string;
-  details: string | null;
-};
 export type UserManagement = {
   users: ManagedUser[];
   invitations: Invitation[];
@@ -76,13 +69,6 @@ export class UsersApi {
   resetPassword(id: string): Promise<void> {
     return firstValueFrom(
       this.#api.http.post<void>(this.#api.url(`users/${id}/password-reset`), {}),
-    );
-  }
-  history(id: string, invitation: boolean): Promise<AccessHistory[]> {
-    return firstValueFrom(
-      this.#api.http.get<AccessHistory[]>(
-        this.#api.url(`users/${invitation ? 'invitations/' : ''}${id}/history`),
-      ),
     );
   }
   pendingInvitation(): Promise<PendingInvitation[]> {

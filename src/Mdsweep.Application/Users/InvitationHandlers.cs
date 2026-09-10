@@ -37,7 +37,6 @@ public sealed class InviteUserHandler(IRepository repository, IUserContext conte
             command.FirstName,
             command.LastName,
             command.Roles,
-            context.Subject,
             clock.GetCurrentInstant()
         );
         await repository.AddAsync(invitation, ct);
@@ -79,12 +78,12 @@ public sealed class SendInvitationHandler(
         {
             error = exception.Message;
         }
-        invitation.RecordDelivery(context.Subject, clock.GetCurrentInstant(), error);
+        invitation.RecordDelivery(clock.GetCurrentInstant(), error);
         return InvitationModel.From(invitation, clock.GetCurrentInstant());
     }
 }
 
-public sealed class RevokeInvitationHandler(IRepository repository, IUserContext context, IClock clock)
+public sealed class RevokeInvitationHandler(IRepository repository, IUserContext context)
 {
     public async Task<Result<bool>> Handle(RevokeInvitationCommand command, CancellationToken ct)
     {
@@ -97,7 +96,7 @@ public sealed class RevokeInvitationHandler(IRepository repository, IUserContext
             return Result.Invalid(
                 new ValidationError("invitation", "This invitation was accepted. Deactivate the User to remove access.")
             );
-        invitation.Revoke(context.Subject, clock.GetCurrentInstant());
+        invitation.Revoke();
         return true;
     }
 }

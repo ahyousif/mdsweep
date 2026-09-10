@@ -129,13 +129,7 @@ public sealed class AcceptInvitationHandler(
             );
         var membership = TenantMembership.Create(invitation.TenantId, user.Id, invitation.Roles);
         membership.SetDisplayName($"{invitation.FirstName} {invitation.LastName}");
-        membership.Record(
-            actor.Subject,
-            "Invitation accepted",
-            clock.GetCurrentInstant(),
-            string.Join(", ", invitation.Roles)
-        );
-        invitation.Accept(user.Id, actor.Subject, clock.GetCurrentInstant());
+        invitation.Accept(user.Id, clock.GetCurrentInstant());
         if (existing is null)
             await repository.AddAsync(user, ct);
         await repository.AddAsync(membership, ct);

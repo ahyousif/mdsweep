@@ -56,14 +56,6 @@ public static class UserEndpoints
     {
         return (await bus.SendAsync(new ResetUserPasswordCommand(id), ct)).ToEndpointResult(_ => Results.NoContent());
     }
-
-    [WolverineGet("/users/{id:guid}/history")]
-    public static async Task<IResult> UserHistory(Guid id, IMessageBus bus, CancellationToken ct) =>
-        (await bus.SendAsync(new GetAccessHistoryQuery(id, false), ct)).ToEndpointResult(x => Results.Ok(x));
-
-    [WolverineGet("/users/invitations/{id:guid}/history")]
-    public static async Task<IResult> InvitationHistory(Guid id, IMessageBus bus, CancellationToken ct) =>
-        (await bus.SendAsync(new GetAccessHistoryQuery(id, true), ct)).ToEndpointResult(x => Results.Ok(x));
 }
 
 public static class InvitationAcceptanceEndpoints

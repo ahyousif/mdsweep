@@ -34,18 +34,5 @@ public sealed class TenantMembershipConfiguration : IEntityTypeConfiguration<Ten
             .WithMany()
             .HasForeignKey(membership => membership.UserId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.OwnsMany(
-            membership => membership.History,
-            history =>
-            {
-                history.ToTable("user_access_history");
-                history.WithOwner().HasForeignKey("membership_id");
-                history.HasKey(x => x.Id);
-                history.Property(x => x.Id).ValueGeneratedNever();
-                history.Property(x => x.ActorSubject).HasMaxLength(200);
-                history.Property(x => x.Action).HasMaxLength(100);
-                history.Property(x => x.Details).HasMaxLength(300);
-            }
-        );
     }
 }
