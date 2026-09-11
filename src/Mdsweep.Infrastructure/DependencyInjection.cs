@@ -1,5 +1,6 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Authorization;
+using Mdsweep.Application.Common.Configuration;
 using Mdsweep.Application.Common.Email;
 using Mdsweep.Application.Common.Security;
 using Mdsweep.Application.Trips.Import.Manifest;
@@ -26,6 +27,17 @@ public static class DependencyInjection
             .Validate(
                 options => !string.IsNullOrWhiteSpace(options.ClientSecret),
                 "Authentication client secret is required."
+            )
+            .ValidateOnStart();
+
+        services
+            .AddOptions<WebOptions>()
+            .Bind(configuration.GetSection(WebOptions.SectionName))
+            .Validate(
+                options =>
+                    Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps),
+                "Web base URL must be an absolute HTTP or HTTPS URL."
             )
             .ValidateOnStart();
 

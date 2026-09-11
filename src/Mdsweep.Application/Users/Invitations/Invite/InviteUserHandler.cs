@@ -7,7 +7,11 @@ namespace Mdsweep.Application.Users.Invitations.Invite;
 
 public sealed class InviteUserHandler(IRepository repository, ITokenService tokenService, IClock clock)
 {
-    public async Task<Result> Handle(InviteUserCommand command, TenantId tenantId, CancellationToken ct)
+    public async Task<(Result Result, OutgoingMessages Messages)> Handle(
+        InviteUserCommand command,
+        TenantId tenantId,
+        CancellationToken ct
+    )
     {
         var now = clock.GetCurrentInstant();
         var email = command.Email.Trim().ToLowerInvariant();
@@ -41,6 +45,16 @@ public sealed class InviteUserHandler(IRepository repository, ITokenService toke
 
         await repository.AddAsync(invitation, ct);
 
-        return Result.Success();
+        // Temporary workaround for Wolverine 6.35.0: Lightweight EF transactions do not scrape
+        // aggregate domain events with managed conjoined tenancy and a DbContext abstraction.
+        // Remove when upstream support is fixed.
+        var outgoingMessages = new OutgoingMessages();
+
+        foreach (var domainEvent in invitation.DequeueDomainEvents())
+        {
+            outgoingMessages.Add(domainEvent);
+        }
+
+        return (Result.Success(), outgoingMessages);
     }
 }

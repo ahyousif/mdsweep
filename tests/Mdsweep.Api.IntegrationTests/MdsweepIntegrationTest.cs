@@ -19,6 +19,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:mdsweep", database.GetConnectionString());
+            builder.UseSetting("Web:BaseUrl", "https://web.mdsweep.test");
             builder.UseSetting("Authentication:Authority", "https://keycloak.test/realms/mdsweep");
             builder.UseSetting("Authentication:ClientId", "mdsweep-test");
             builder.UseSetting("Authentication:ClientSecret", "test-secret");
