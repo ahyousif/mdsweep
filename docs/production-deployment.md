@@ -13,6 +13,51 @@ The current Azure target is:
 
 The environment remains synthetic-only until the deployment-readiness issue defines and verifies database migration, backup, restore, Keycloak administration, and data-safety approval.
 
+## Bootstrap first tenant
+
+After deploying a fresh or intentionally reset MDSweep application database, use the manually triggered `utility` Azure Container Apps Job to create the first Tenant Administrator. The API deployment must have applied all EF migrations first. Leave the separate Keycloak database intact and create or identify the administrator's Keycloak account before continuing.
+
+Obtain that Keycloak user's immutable `sub` claim. Then discover the deployed job name (Aspire may append a generated suffix):
+
+```bash
+az containerapp job list \
+  --resource-group rg-mdsweep-prod \
+  --query "[?contains(name, 'utility')].name" \
+  --output table
+```
+
+Start exactly one execution, substituting the discovered name and the existing Keycloak `sub`:
+
+```bash
+az containerapp job start \
+  --name <actual-deployed-utility-job-name> \
+  --resource-group rg-mdsweep-prod \
+  --args \
+    bootstrap-tenant \
+    --tenant-id mdsw-eep2-3456 \
+    --tenant-name "MDSweep" \
+    --keycloak-user-id "<KEYCLOAK_SUB>" \
+    --email "admin@example.com" \
+    --first-name "Arief" \
+    --last-name "Yousif" \
+    --display-name "Arief Yousif"
+```
+
+`--display-name` may be omitted; it defaults to `FirstName LastName`. The command-line arguments contain no database credentials. Aspire's `WithReference(database)` supplies the job's `ConnectionStrings__mdsweep` setting from the same Key Vault-backed PostgreSQL database resource used by the API. The job has no reference to `keycloak-db`.
+
+The job definition uses the Azure manual trigger type and the local Aspire resource uses explicit start, so neither deployment nor `aspire run` executes it. A successful execution stops after the command and returns exit code 0; conflicts, missing migrations, unusable schema, and persistence failures return a non-zero exit code without intentionally changing existing data.
+
+If it fails, list executions and inspect the selected execution's console logs in the Azure portal (Container Apps Job > Execution history > Console logs):
+
+```bash
+az containerapp job execution list \
+  --name <actual-deployed-utility-job-name> \
+  --resource-group rg-mdsweep-prod \
+  --output table
+```
+
+After a successful bootstrap, sign in to MDSweep with that Keycloak account. Use normal MDSweep Users and Invitations for every subsequent user; do not use this utility as a general user-management tool.
+
 ## One-time GitHub OIDC setup
 
 Create a user-assigned identity and federate only the protected GitHub `production` environment:

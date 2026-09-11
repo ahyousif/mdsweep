@@ -1,4 +1,4 @@
-using Mdsweep.AppHost;
+﻿using Mdsweep.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -7,6 +7,8 @@ builder.AddAzureContainerAppEnvironment("azure");
 var postgres = builder.AddMdsweepPostgres();
 
 var database = postgres.AddDatabase("mdsweep");
+
+builder.AddMdsweepUtility(database);
 
 var keycloakDatabase = postgres.AddDatabase("keycloak-db", databaseName: "keycloak");
 

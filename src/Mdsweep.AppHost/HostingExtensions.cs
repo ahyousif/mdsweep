@@ -1,5 +1,6 @@
-using Aspire.Hosting.Azure;
+﻿using Aspire.Hosting.Azure;
 using Aspire.Hosting.JavaScript;
+using Azure.Provisioning.AppContainers;
 
 namespace Mdsweep.AppHost;
 
@@ -114,6 +115,26 @@ public static class HostingExtensions
         }
 
         return api;
+    }
+
+    public static IResourceBuilder<ProjectResource> AddMdsweepUtility(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database
+    )
+    {
+        return builder
+            .AddProject<Projects.Mdsweep_Utility>("utility")
+            .WithReference(database)
+            .WaitFor(database)
+            .WithExplicitStart()
+            .PublishAsAzureContainerAppJob(
+                (_, job) =>
+                {
+                    job.Configuration.TriggerType = ContainerAppJobTriggerType.Manual;
+                    job.Configuration.ReplicaRetryLimit = 0;
+                    job.Configuration.ReplicaTimeout = 600;
+                }
+            );
     }
 
     private static void ConfigureProductionWebAndEmail(

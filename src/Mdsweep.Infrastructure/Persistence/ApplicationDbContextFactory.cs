@@ -1,4 +1,4 @@
-namespace Mdsweep.Infrastructure.Persistence;
+﻿namespace Mdsweep.Infrastructure.Persistence;
 
 public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
 {
@@ -6,10 +6,7 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        options.UseNpgsql(
-            "Host=localhost;Database=mdsweep_design;Username=postgres;Password=postgres",
-            npgsql => npgsql.UseNodaTime()
-        ).UseSnakeCaseNamingConvention();
+        options.ConfigureForMdsweep("Host=localhost;Database=mdsweep_design;Username=postgres;Password=postgres");
 
         return new ApplicationDbContext(options.Options);
     }

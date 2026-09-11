@@ -15,5 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Mdsweep.Api\Mdsweep.Api.csproj" />
+    <ProjectReference Include="..\Mdsweep.Utility\Mdsweep.Utility.csproj" />
   </ItemGroup>
 </Project>
