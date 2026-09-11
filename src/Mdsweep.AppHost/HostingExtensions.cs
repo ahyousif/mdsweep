@@ -88,14 +88,6 @@ public static class HostingExtensions
             ? builder.AddParameter("oidc-client-secret", "Development-only-secret", secret: true)
             : builder.AddParameter("oidc-client-secret", secret: true);
 
-        var administrationClientSecret = builder.ExecutionContext.IsRunMode
-            ? builder.AddParameter(
-                "administration-client-secret",
-                "Development-only-administration-secret",
-                secret: true
-            )
-            : builder.AddParameter("administration-client-secret", secret: true);
-
         var googleRoutesApiKey = builder.AddParameter("google-routes-api-key", secret: true);
 
         var keycloakAuthority = GetKeycloakAuthority(builder, keycloak);
@@ -108,8 +100,6 @@ public static class HostingExtensions
             .WithEnvironment("Authentication__Authority", keycloakAuthority)
             .WithEnvironment("Authentication__ClientId", "mdsweep-server")
             .WithEnvironment("Authentication__ClientSecret", oidcClientSecret)
-            .WithEnvironment("KeycloakAdministration__ClientId", "mdsweep-administration")
-            .WithEnvironment("KeycloakAdministration__ClientSecret", administrationClientSecret)
             .WithEnvironment("GoogleRoutes__ApiKey", googleRoutesApiKey)
             .WaitFor(database)
             .WaitFor(keycloak);

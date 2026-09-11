@@ -16,6 +16,29 @@ public sealed class InviteUserHandler(IRepository repository, ITokenService toke
         var now = clock.GetCurrentInstant();
         var email = command.Email.Trim().ToLowerInvariant();
 
+        var user = await repository.SingleOrDefaultAsync(new UsersSpecification().WithEmail(email).Build(), ct);
+
+        if (user is not null)
+        {
+            var membership = await repository.SingleOrDefaultAsync(
+                new MembershipsSpecification().WithTenantId(tenantId.Value).WithUserId(user.Id).Build(),
+                ct
+            );
+
+            if (membership is not null)
+            {
+                return (
+                    Result.Invalid(
+                        new ValidationError(
+                            "email",
+                            "This user already belongs to this Tenant. Edit or re-enable their access instead."
+                        )
+                    ),
+                    new OutgoingMessages()
+                );
+            }
+        }
+
         var existing = await repository.SingleOrDefaultAsync(
             new InvitationsSpecification()
                 .WithEmail(email)

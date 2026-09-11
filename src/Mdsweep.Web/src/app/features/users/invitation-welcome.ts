@@ -28,6 +28,7 @@ export default class InvitationWelcome {
   readonly accepted = output();
   readonly error = signal('');
   readonly accountMismatch = signal(false);
+  readonly acceptanceComplete = signal(false);
   readonly sessions = injectQuery(() => ({
     queryKey: ['auth', 'memberships'],
     queryFn: () => this.#auth.availableSessions(),
@@ -51,9 +52,8 @@ export default class InvitationWelcome {
       await this.#queries.invalidateQueries({ queryKey: ['auth', 'memberships'] });
 
       if (this.#auth.toTenantSession(session) === null) {
-        this.error.set(
-          'Tenant access could not be established. Try accepting the invitation again.',
-        );
+        this.acceptanceComplete.set(true);
+        this.error.set('');
         return;
       }
 

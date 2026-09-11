@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { ApplicationError } from '@app/core/errors/application-error';
 import { AuthSessionService } from '@app/core/auth/auth-session.service';
+import { ApplicationError } from '@app/core/errors/application-error';
+import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
+import InvitationWelcome from './invitation-welcome';
 import { UsersApi } from './users.api';
-import { InvitationWelcome } from './invitation-welcome';
 
 describe('InvitationWelcome', () => {
   let fixture: ComponentFixture<InvitationWelcome>;
@@ -21,9 +21,7 @@ describe('InvitationWelcome', () => {
     toTenantSession.mockReturnValue({ tenantId: 'mdsw-eep2-3456' });
     TestBed.configureTestingModule({
       providers: [
-        provideTanStackQuery(
-          new QueryClient({ defaultOptions: { queries: { retry: false } } }),
-        ),
+        provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
         {
           provide: AuthSessionService,
           useValue: {
@@ -73,9 +71,7 @@ describe('InvitationWelcome', () => {
       }),
     );
     const buttons = () =>
-      Array.from(
-        fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
-      );
+      Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>);
     buttons()
       .find((button) => button.textContent?.includes('Accept invitation'))!
       .click();
@@ -120,6 +116,37 @@ describe('InvitationWelcome', () => {
 
     await vi.waitFor(() => expect(establish).toHaveBeenCalledOnce());
     expect(accepted).toHaveBeenCalledOnce();
-    expect(establish.mock.invocationCallOrder[0]).toBeLessThan(accepted.mock.invocationCallOrder[0]);
+    expect(establish.mock.invocationCallOrder[0]).toBeLessThan(
+      accepted.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('confirms acceptance and offers Tenant selection when no Tenant is active', async () => {
+    accept.mockResolvedValue(undefined);
+    toTenantSession.mockReturnValue(null);
+    establish.mockResolvedValue({
+      userId: 'accepted-user',
+      displayName: 'Accepted User',
+      email: 'existing-user@example.com',
+      activeTenant: null,
+      availableTenants: [
+        { id: 'first-tenant', name: 'First Tenant', roles: ['Driver'] },
+        { id: 'invited-tenant', name: 'Invited Tenant', roles: ['Dispatcher'] },
+      ],
+    });
+
+    const acceptButton = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes('Accept invitation'))!;
+    acceptButton.click();
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Invitation accepted. Choose the Tenant you want to open.',
+      );
+    });
+    expect(fixture.nativeElement.textContent).not.toContain('Try accepting the invitation again.');
+    expect(fixture.nativeElement.textContent).not.toContain('Accept invitation');
   });
 });

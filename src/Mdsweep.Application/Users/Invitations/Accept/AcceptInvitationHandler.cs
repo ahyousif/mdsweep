@@ -53,8 +53,6 @@ public sealed class AcceptInvitationHandler(
             );
         }
 
-        invitation.Accept(now);
-
         var user = await repository.SingleOrDefaultAsync(
             new UsersSpecification().WithKeycloakUserId(currentIdentity.Subject).Build(),
             ct
@@ -77,17 +75,26 @@ public sealed class AcceptInvitationHandler(
             ct
         );
 
-        if (membership is null)
+        if (membership is not null)
         {
-            membership = TenantMembership.Create(
-                invitation.TenantId,
-                user.Id,
-                $"{invitation.FirstName} {invitation.LastName}",
-                invitation.Roles
+            return Result.Invalid(
+                new ValidationError(
+                    "membership",
+                    "This user already belongs to this Tenant. Edit or re-enable their access instead."
+                )
             );
-
-            await repository.AddAsync(membership, ct);
         }
+
+        invitation.Accept(now);
+
+        membership = TenantMembership.Create(
+            invitation.TenantId,
+            user.Id,
+            $"{invitation.FirstName} {invitation.LastName}",
+            invitation.Roles
+        );
+
+        await repository.AddAsync(membership, ct);
 
         return Result.Success();
     }

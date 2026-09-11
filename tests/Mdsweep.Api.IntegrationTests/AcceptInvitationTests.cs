@@ -62,6 +62,57 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         Assert.Single(await db.Users.Where(x => x.KeycloakUserId == subject).ToListAsync());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Acceptance_rejects_an_existing_tenant_membership_without_consuming_the_invitation(
+        bool isActive
+    )
+    {
+        const string token = "existing-membership-token";
+        const string subject = "existing-member";
+        const string email = "existing-member@example.test";
+
+        await using (var setupScope = Application.Services.CreateAsyncScope())
+        {
+            var setupDb = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var user = UserAggregate.Create("Existing", "Member", subject, email);
+            var membership = TenantMembership.Create(
+                TenantId,
+                user.Id,
+                "Existing Member",
+                ["Driver"]
+            );
+            membership.SetActive(isActive);
+            setupDb.Users.Add(user);
+            setupDb.TenantMemberships.Add(membership);
+            await setupDb.SaveChangesAsync();
+        }
+
+        await AddInvitation(token, email, NodaSystemClock.Instance.GetCurrentInstant() + Duration.FromHours(1));
+        using var client = CreateInviteeClient(subject, email);
+        await AddAntiforgeryToken(client);
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/users/invitations/accept",
+            new { token }
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        await using var verificationScope = Application.Services.CreateAsyncScope();
+        var db = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(
+            InvitationStatus.Pending,
+            (await db.Invitations.SingleAsync(x => x.Email == email)).Status
+        );
+        var persistedMembership = await db.TenantMemberships.SingleAsync(x =>
+            x.TenantId == TenantId && x.UserId == db.Users.Single(user => user.KeycloakUserId == subject).Id
+        );
+        Assert.Equal(isActive, persistedMembership.IsActive);
+        Assert.Equal(["Driver"], persistedMembership.Roles);
+    }
+
     [Fact]
     public async Task Wrong_email_is_rejected_before_invitation_or_membership_mutation()
     {

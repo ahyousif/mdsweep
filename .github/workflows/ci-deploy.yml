@@ -80,7 +80,6 @@ jobs:
       Parameters__postgres_username: ${{ secrets.POSTGRES_USERNAME }}
       Parameters__postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
       Parameters__oidc_client_secret: ${{ secrets.OIDC_CLIENT_SECRET }}
-      Parameters__administration_client_secret: ${{ secrets.KEYCLOAK_ADMINISTRATION_CLIENT_SECRET }}
       Parameters__google_routes_api_key: ${{ secrets.GOOGLE_ROUTES_API_KEY }}
       Parameters__web_base_url: ${{ vars.WEB_BASE_URL }}
       ConnectionStrings__smtp: ${{ secrets.SMTP_CONNECTION_STRING }}

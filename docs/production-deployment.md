@@ -66,7 +66,6 @@ Add these environment secrets using the existing production values; do not gener
 - `POSTGRES_USERNAME`
 - `POSTGRES_PASSWORD`
 - `OIDC_CLIENT_SECRET`
-- `KEYCLOAK_ADMINISTRATION_CLIENT_SECRET`
 - `GOOGLE_ROUTES_API_KEY`
 - `SMTP_CONNECTION_STRING`: SMTP endpoint in the form `Endpoint=smtp://host:port`
 - `SMTP_USERNAME`
@@ -93,6 +92,6 @@ The production `mdsweep` realm must also have **User registration** enabled in R
 ## Deployment security notes
 
 - Generated `aspire-output` and local `.aspire` deployment state are ignored. Deployment state can contain plain-text parameter values and must never be uploaded as an artifact or committed.
-- The GitHub workflow supplies the existing database, Keycloak client, Google Routes, public-origin, and SMTP configuration explicitly, so a clean runner does not rotate credentials or depend on a sensitive deployment-state cache.
+- The GitHub workflow supplies the existing database, OIDC client, Google Routes, public-origin, and SMTP configuration explicitly, so a clean runner does not rotate credentials or depend on a sensitive deployment-state cache.
 - Container Apps resolve PostgreSQL connection strings from the shared Key Vault through managed identities. Other Aspire-generated Container App secrets remain platform-managed.
 - Reassess whether a custom Azure role can replace `Role Based Access Control Administrator` after the generated role-assignment set stabilizes.

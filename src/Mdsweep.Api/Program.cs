@@ -1,5 +1,4 @@
 using Mdsweep.Api.Common.Authentication;
-using Mdsweep.Api.Common.Middleware;
 using Mdsweep.Api.Configuration;
 using Mdsweep.Api.Features.Identity;
 using Mdsweep.Infrastructure;
@@ -39,7 +38,6 @@ app.UseAuthorization();
 
 // This is the sole enforcement boundary for authenticated unsafe API requests.
 app.UseAuthenticatedApiAntiforgery();
-app.UseMiddleware<AccessFailureMiddleware>();
 app.UseAntiforgery();
 
 app.MapWolverineEndpoints(options =>

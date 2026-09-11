@@ -17,7 +17,7 @@ public sealed class EmailSender(IOptions<EmailOptions> options) : IEmailSender
 
         using var client = new SmtpClient();
         var secureSocketOptions = options.Value.UseStartTls
-            ? SecureSocketOptions.StartTlsWhenAvailable
+            ? SecureSocketOptions.StartTls
             : SecureSocketOptions.None;
 
         await client.ConnectAsync(options.Value.Host, options.Value.Port, secureSocketOptions, ct);

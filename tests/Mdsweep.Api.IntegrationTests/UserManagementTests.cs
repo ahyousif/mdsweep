@@ -12,6 +12,58 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     private const string ActiveTenantId = "mdsw-eep2-3456";
     private const string OtherTenantId = "tnnt-bbbb-2345";
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Invite_user_rejects_an_existing_tenant_member(bool isActive)
+    {
+        const string email = "existing-member@example.test";
+
+        await using (var setupScope = Application.Services.CreateAsyncScope())
+        {
+            var db = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var administrator = await db.TenantMemberships.SingleAsync();
+            administrator.SetRoles(["Administrator"]);
+
+            var user = UserAggregate.Create("Existing", "Member", "existing-member", email);
+            var membership = TenantMembership.Create(
+                ActiveTenantId,
+                user.Id,
+                "Existing Member",
+                ["Driver"]
+            );
+            membership.SetActive(isActive);
+            db.Users.Add(user);
+            db.TenantMemberships.Add(membership);
+            await db.SaveChangesAsync();
+        }
+
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/users/invitations",
+            new
+            {
+                email,
+                firstName = "Existing",
+                lastName = "Member",
+                roles = new[] { "Dispatcher" },
+            }
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
+        Assert.Contains(
+            "already belongs to this Tenant",
+            problem.RootElement.GetProperty("errors").GetProperty("email")[0].GetString()
+        );
+
+        await using var verificationScope = Application.Services.CreateAsyncScope();
+        var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.DoesNotContain(await verificationDb.Invitations.ToListAsync(), x => x.Email == email);
+    }
+
     [Fact]
     public async Task Update_user_route_disables_and_reenables_the_same_membership()
     {
