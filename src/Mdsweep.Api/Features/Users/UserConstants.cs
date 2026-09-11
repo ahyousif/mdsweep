@@ -10,7 +10,7 @@ public static class UserConstants
     {
         public const string Route = Index + "/invitations";
         public const string IdRoute = Route + "/{id:guid}";
-        public const string ResendRoute = IdRoute + "/resend";
+        public const string Resend = IdRoute + "/resend";
         public const string Accept = Route + "/accept";
     }
 }

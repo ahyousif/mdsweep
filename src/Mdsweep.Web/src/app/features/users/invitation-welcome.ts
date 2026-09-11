@@ -1,14 +1,14 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, inject, input, output, signal } from '@angular/core';
+import { httpErrorMessage } from '@app/core/api/http-error-message';
+import { AuthSessionService } from '@app/core/auth/auth-session.service';
+import { ApplicationError } from '@app/core/errors/application-error';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
-import { HlmSpinner } from '@spartan-ng/helm/spinner';
-import { HlmMuted } from '@spartan-ng/helm/typography';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
+import { HlmSpinner } from '@spartan-ng/helm/spinner';
+import { HlmMuted } from '@spartan-ng/helm/typography';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
-import { AuthSessionService } from '@app/core/auth/auth-session.service';
-import { httpErrorMessage } from '@app/core/api/http-error-message';
-import { ApplicationError } from '@app/core/errors/application-error';
 import { UsersApi } from './users.api';
 
 @Component({
@@ -16,7 +16,7 @@ import { UsersApi } from './users.api';
   imports: [HlmButton, HlmSpinner, HlmMuted, HlmAlertImports, HlmCardImports],
   templateUrl: './invitation-welcome.html',
 })
-export class InvitationWelcome {
+export default class InvitationWelcome {
   readonly #api = inject(UsersApi);
   readonly #auth = inject(AuthSessionService);
   readonly #document = inject(DOCUMENT);
@@ -51,7 +51,9 @@ export class InvitationWelcome {
       await this.#queries.invalidateQueries({ queryKey: ['auth', 'memberships'] });
 
       if (this.#auth.toTenantSession(session) === null) {
-        this.error.set('Tenant access could not be established. Try accepting the invitation again.');
+        this.error.set(
+          'Tenant access could not be established. Try accepting the invitation again.',
+        );
         return;
       }
 

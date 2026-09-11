@@ -8,9 +8,9 @@ import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { injectQuery } from '@tanstack/angular-query-experimental';
 import { AuthSessionService } from './core/auth/auth-session.service';
 import { ApplicationError } from './core/errors/application-error';
+import InvitationWelcome from './features/users/invitation-welcome';
 import { AppShell } from './shell/app-shell';
 import { uiText } from './ui-text';
-import { InvitationWelcome } from './features/users/invitation-welcome';
 
 @Component({
   selector: 'app-root',
@@ -64,6 +64,7 @@ export class App {
     return error instanceof Error ? error.message : '';
   }
 
+  // TODO: can we use a guard instead?
   invitationAccepted(): void {
     this.invitationToken.set(null);
     void this.router.navigateByUrl('/');

@@ -63,6 +63,7 @@ export default class UsersPage {
     };
   });
 
+  // TODO: revisit this mess
   readonly users = computed(() => {
     const search = this.search().trim().toLowerCase();
     const filter = this.activeFilter();
@@ -73,6 +74,7 @@ export default class UsersPage {
         `${user.displayName} ${user.firstName} ${user.lastName} ${user.email}`
           .toLowerCase()
           .includes(search);
+
       const matchesFilter =
         filter === 'All' ||
         user.status === filter ||
@@ -85,11 +87,10 @@ export default class UsersPage {
   readonly selectedUser = computed<UserListItem | null>(() => {
     const selectedKey = this.selectedUserKey();
 
-    return (
-      (this.listing.data() ?? []).find((user) => this.userKey(user) === selectedKey) ?? null
-    );
+    return (this.listing.data() ?? []).find((user) => this.userKey(user) === selectedKey) ?? null;
   });
 
+  //TODO: revisit this mess
   readonly mutation = injectMutation(() => ({
     mutationFn: (action: Action) => this.perform(action),
     onSuccess: async (_: void, action: Action) => {

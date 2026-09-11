@@ -12,11 +12,11 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
 
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.TenantId).HasMaxLength(14);
-        builder.Property(x => x.Email).HasMaxLength(254);
-        builder.Property(x => x.FirstName).HasMaxLength(200);
-        builder.Property(x => x.LastName).HasMaxLength(200);
+        builder.Property(x => x.Email).HasMaxLength(100);
+        builder.Property(x => x.FirstName).HasMaxLength(100);
+        builder.Property(x => x.LastName).HasMaxLength(100);
         builder.Property(x => x.Roles).HasColumnType("text[]");
-        builder.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(64);
+        builder.Property(x => x.TokenHash).HasMaxLength(64);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
 
         builder.HasIndex(x => x.TokenHash).IsUnique();

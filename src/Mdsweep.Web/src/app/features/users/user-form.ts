@@ -1,12 +1,13 @@
 import { Component, effect, inject, input, output } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { HlmInput } from '@spartan-ng/helm/input';
-import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { HlmCheckbox } from '@spartan-ng/helm/checkbox';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
+import { HlmInput } from '@spartan-ng/helm/input';
+import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { type UserDetails, type UserRole } from './users.api';
 
+// TODO: revisit to use signal forms
 @Component({
   selector: 'app-user-form',
   imports: [ReactiveFormsModule, HlmButton, HlmInput, HlmCheckbox, HlmFieldImports, HlmSpinner],

@@ -56,9 +56,7 @@ export class UsersApi {
   }
 
   cancelInvitation(id: string): Promise<void> {
-    return firstValueFrom(
-      this.#api.http.delete<void>(this.#api.url(`users/invitations/${id}`)),
-    );
+    return firstValueFrom(this.#api.http.delete<void>(this.#api.url(`users/invitations/${id}`)));
   }
 
   resendInvitation(id: string): Promise<void> {
@@ -67,6 +65,7 @@ export class UsersApi {
     );
   }
 
+  // TODO: intersting? revisit
   async accept(token: string): Promise<void> {
     await firstValueFrom(this.#api.http.get(this.#api.url('auth/antiforgery')));
     await firstValueFrom(
