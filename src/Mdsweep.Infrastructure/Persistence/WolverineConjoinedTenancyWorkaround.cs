@@ -9,7 +9,7 @@ public static class WolverineConjoinedTenancyWorkaround
     /// context factory to use the active IMessageBus tenant.
     ///
     /// Eager mode is currently unusable with WithDbContextAbstraction&lt;IRepository,
-    /// ApplicationDbContext&gt;: Wolverine 6.30.3 generates duplicate concrete
+    /// ApplicationDbContext&gt;: Wolverine 6.35.0 generates duplicate concrete
     /// ApplicationDbContext variables (CS0841/CS0136). Remove this workaround when the
     /// upstream Wolverine defect is fixed.
     /// </summary>

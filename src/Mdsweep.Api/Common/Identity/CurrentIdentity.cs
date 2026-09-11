@@ -9,6 +9,4 @@ public sealed class CurrentIdentity(IHttpContextAccessor httpContextAccessor) : 
     public string Subject => User?.FindFirstValue("sub") ?? string.Empty;
 
     public string? Email => User?.FindFirstValue("email");
-
-    public bool EmailVerified => bool.TryParse(User?.FindFirstValue("email_verified"), out var verified) && verified;
 }

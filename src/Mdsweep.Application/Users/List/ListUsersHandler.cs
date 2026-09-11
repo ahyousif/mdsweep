@@ -7,9 +7,16 @@ namespace Mdsweep.Application.Users.List;
 
 public sealed class ListUsersHandler(IRepository repository)
 {
-    public async Task<Result<IReadOnlyList<UserListItem>>> Handle(ListUsersQuery _, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<UserListItem>>> Handle(
+        ListUsersQuery _,
+        TenantId tenantId,
+        CancellationToken ct
+    )
     {
-        var memberships = await repository.ListAsync(new MembershipsSpecification().AsNoTracking().Build(), ct);
+        var memberships = await repository.ListAsync(
+            new MembershipsSpecification().WithTenantId(tenantId.Value).AsNoTracking().Build(),
+            ct
+        );
 
         var users = await repository.ListAsync(
             new UsersSpecification().WithIds(memberships.Select(x => x.UserId)).AsNoTracking().Build(),
@@ -17,7 +24,11 @@ public sealed class ListUsersHandler(IRepository repository)
         );
 
         var invitations = await repository.ListAsync(
-            new InvitationsSpecification().WithStatus(InvitationStatus.Pending).AsNoTracking().Build(),
+            new InvitationsSpecification()
+                .WithTenantId(tenantId.Value)
+                .WithStatus(InvitationStatus.Pending)
+                .AsNoTracking()
+                .Build(),
             ct
         );
 

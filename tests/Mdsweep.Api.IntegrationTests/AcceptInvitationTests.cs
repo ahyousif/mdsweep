@@ -13,7 +13,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
     private const string TenantId = "mdsw-eep2-3456";
 
     [Fact]
-    public async Task Matching_verified_email_accepts_and_creates_the_membership()
+    public async Task Matching_email_accepts_without_email_verification_and_creates_the_membership()
     {
         const string token = "matching-token";
         const string subject = "matching-invitee";
@@ -119,7 +119,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         var client = Application.CreateClient();
         client.DefaultRequestHeaders.Add("X-Test-Subject", subject);
         client.DefaultRequestHeaders.Add("X-Test-Email", email);
-        client.DefaultRequestHeaders.Add("X-Test-Email-Verified", bool.TrueString);
+        client.DefaultRequestHeaders.Add("X-Test-Email-Verified", bool.FalseString);
         return client;
     }
 

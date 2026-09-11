@@ -60,6 +60,17 @@ public static class ApiExtensions
                     oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";
+                    oidc.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                    {
+                        // A freshly saved ID token is Keycloak's preferred RP identifier. New invitees
+                        // can sign out before one is available, so fall back to the configured client ID.
+                        if (string.IsNullOrWhiteSpace(context.ProtocolMessage.IdTokenHint))
+                        {
+                            context.ProtocolMessage.ClientId = context.Options.ClientId;
+                        }
+
+                        return Task.CompletedTask;
+                    };
                     oidc.Events.OnTokenValidated = async context =>
                     {
                         var subject = context.Principal?.FindFirstValue("sub");

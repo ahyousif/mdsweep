@@ -118,8 +118,32 @@ public static class HostingExtensions
         {
             api.WithReference(mailpit).WaitFor(mailpit);
         }
+        else
+        {
+            ConfigureProductionWebAndEmail(builder, api);
+        }
 
         return api;
+    }
+
+    private static void ConfigureProductionWebAndEmail(
+        IDistributedApplicationBuilder builder,
+        IResourceBuilder<ProjectResource> api
+    )
+    {
+        var webBaseUrl = builder.AddParameter("web-base-url");
+        var smtpConnection = builder.AddConnectionString("smtp");
+        var smtpUsername = builder.AddParameter("smtp-username", secret: true);
+        var smtpPassword = builder.AddParameter("smtp-password", secret: true);
+        var smtpFrom = builder.AddParameter("smtp-from");
+
+        api.WithEnvironment("Web__BaseUrl", webBaseUrl)
+            .WithReference(smtpConnection)
+            .WithEnvironment("Email__ConnectionStringName", "smtp")
+            .WithEnvironment("Email__Username", smtpUsername)
+            .WithEnvironment("Email__Password", smtpPassword)
+            .WithEnvironment("Email__From", smtpFrom)
+            .WithEnvironment("Email__UseStartTls", "true");
     }
 
     public static IResourceBuilder<ViteAppResource> AddMdsweepWeb(

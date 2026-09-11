@@ -24,7 +24,7 @@ public sealed class AcceptInvitationHandler(
         if (string.IsNullOrWhiteSpace(currentIdentity.Email))
         {
             return Result.Invalid(
-                new ValidationError("identity", "Your email address must be verified before accepting an invitation.")
+                new ValidationError("identity", "Your account does not provide an email address.")
             );
         }
 
