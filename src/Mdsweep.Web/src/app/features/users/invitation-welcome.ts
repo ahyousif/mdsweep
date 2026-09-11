@@ -42,7 +42,19 @@ export class InvitationWelcome {
   readonly acceptance = injectMutation(() => ({
     mutationFn: (token: string) => this.#api.accept(token),
     onSuccess: async () => {
-      await this.#queries.invalidateQueries({ queryKey: ['auth'] });
+      await this.#queries.invalidateQueries({ queryKey: ['auth', 'session'], refetchType: 'none' });
+      const session = await this.#queries.fetchQuery({
+        queryKey: ['auth', 'session'],
+        queryFn: () => this.#auth.establish(),
+        staleTime: 0,
+      });
+      await this.#queries.invalidateQueries({ queryKey: ['auth', 'memberships'] });
+
+      if (this.#auth.toTenantSession(session) === null) {
+        this.error.set('Tenant access could not be established. Try accepting the invitation again.');
+        return;
+      }
+
       this.accepted.emit();
     },
     onError: (error: unknown) => {

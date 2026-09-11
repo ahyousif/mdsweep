@@ -1,76 +1,94 @@
-using Mdsweep.Application.Common.Abstractions;
+﻿using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Security;
+using Mdsweep.Application.Users.Specifications;
+using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
 
 namespace Mdsweep.Application.Users.Invitations.Accept;
 
 public sealed class AcceptInvitationHandler(
-    IInvitationRepository repository,
+    IInvitationRepository invitationRepository,
+    IRepository repository,
     ICurrentIdentity currentIdentity,
     ITokenService tokenService,
     IClock clock
 )
 {
-    public async Task<(Result Result, OutgoingMessages Messages)> Handle(
-        AcceptInvitationCommand command,
-        CancellationToken ct
-    )
+    public async Task<Result> Handle(AcceptInvitationCommand command, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(currentIdentity.Subject))
         {
-            return (Result.Unauthorized(), []);
+            return Result.Unauthorized();
         }
 
         if (string.IsNullOrWhiteSpace(currentIdentity.Email))
         {
-            return (
-                Result.Invalid(
-                    new ValidationError(
-                        "identity",
-                        "Your email address must be verified before accepting an invitation."
-                    )
-                ),
-                []
+            return Result.Invalid(
+                new ValidationError("identity", "Your email address must be verified before accepting an invitation.")
             );
         }
 
         var now = clock.GetCurrentInstant();
 
-        var invitation = await repository.GetPendingByTokenHashAsync(tokenService.Hash(command.Token), now, ct);
+        var invitation = await invitationRepository.GetPendingByTokenHashAsync(
+            tokenService.Hash(command.Token),
+            now,
+            ct
+        );
 
         if (invitation is null)
         {
-            return (
-                Result.Invalid(
-                    new ValidationError("token", "This invitation is invalid, expired, cancelled, or already used.")
-                ),
-                []
+            return Result.Invalid(
+                new ValidationError("token", "This invitation is invalid, expired, cancelled, or already used.")
             );
         }
 
         if (!string.Equals(invitation.Email, currentIdentity.Email, StringComparison.OrdinalIgnoreCase))
         {
-            return (
-                Result.Invalid(
-                    new ValidationError(
-                        "invitationEmailMismatch",
-                        "Sign in with the email address this invitation was sent to."
-                    )
-                ),
-                []
+            return Result.Invalid(
+                new ValidationError(
+                    "invitationEmailMismatch",
+                    "Sign in with the email address this invitation was sent to."
+                )
             );
         }
 
-        invitation.Accept(now, currentIdentity.Subject);
+        invitation.Accept(now);
 
-        // Preserve the established Wolverine 6.35 workaround used by invitation creation:
-        // managed conjoined tenancy does not currently scrape these aggregate events.
-        var outgoingMessages = new OutgoingMessages();
-        foreach (var domainEvent in invitation.DequeueDomainEvents())
+        var user = await repository.SingleOrDefaultAsync(
+            new UsersSpecification().WithKeycloakUserId(currentIdentity.Subject).Build(),
+            ct
+        );
+
+        if (user is null)
         {
-            outgoingMessages.Add(domainEvent);
+            user = UserAggregate.Create(
+                invitation.FirstName,
+                invitation.LastName,
+                currentIdentity.Subject,
+                invitation.Email
+            );
+
+            await repository.AddAsync(user, ct);
         }
 
-        return (Result.Success(), outgoingMessages);
+        var membership = await repository.SingleOrDefaultAsync(
+            new MembershipsSpecification().WithTenantId(invitation.TenantId).WithUserId(user.Id).Build(),
+            ct
+        );
+
+        if (membership is null)
+        {
+            membership = TenantMembership.Create(
+                invitation.TenantId,
+                user.Id,
+                $"{invitation.FirstName} {invitation.LastName}",
+                invitation.Roles
+            );
+
+            await repository.AddAsync(membership, ct);
+        }
+
+        return Result.Success();
     }
 }

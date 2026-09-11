@@ -1,4 +1,4 @@
-using Mdsweep.Application.Common.Email;
+﻿using Mdsweep.Application.Common.Email;
 
 namespace Mdsweep.Infrastructure.Email;
 
@@ -9,15 +9,11 @@ public sealed class EmailSender(IOptions<EmailOptions> options) : IEmailSender
         string subject,
         string body,
         string? from = null,
+        bool isHtml = false,
         CancellationToken ct = default
     )
     {
-        var email = new MimeMessage();
-
-        email.From.Add(MailboxAddress.Parse(string.IsNullOrWhiteSpace(from) ? options.Value.From : from));
-        email.To.Add(MailboxAddress.Parse(to));
-        email.Subject = subject;
-        email.Body = new BodyBuilder { TextBody = body }.ToMessageBody();
+        var email = CreateMessage(to, subject, body, string.IsNullOrWhiteSpace(from) ? options.Value.From : from, isHtml);
 
         using var client = new SmtpClient();
         var secureSocketOptions = options.Value.UseStartTls
@@ -33,5 +29,17 @@ public sealed class EmailSender(IOptions<EmailOptions> options) : IEmailSender
 
         await client.SendAsync(email, ct);
         await client.DisconnectAsync(true, ct);
+    }
+
+    internal static MimeMessage CreateMessage(string to, string subject, string body, string from, bool isHtml)
+    {
+        var email = new MimeMessage();
+        email.From.Add(MailboxAddress.Parse(from));
+        email.To.Add(MailboxAddress.Parse(to));
+        email.Subject = subject;
+        email.Body = isHtml
+            ? new BodyBuilder { HtmlBody = body }.ToMessageBody()
+            : new BodyBuilder { TextBody = body }.ToMessageBody();
+        return email;
     }
 }

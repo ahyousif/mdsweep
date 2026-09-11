@@ -1,7 +1,7 @@
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
 
-namespace Mdsweep.Application.Users.List;
+namespace Mdsweep.Application.Users;
 
 public sealed record UserListItem(
     Guid Id,
@@ -11,7 +11,8 @@ public sealed record UserListItem(
     string Email,
     string DisplayName,
     string[] Roles,
-    UserListItemStatus Status
+    UserListItemStatus Status,
+    Instant? ExpiresAt
 )
 {
     public static UserListItem FromUser(UserAggregate user, TenantMembership membership) =>
@@ -23,7 +24,8 @@ public sealed record UserListItem(
             user.Email,
             membership.DisplayName ?? $"{user.FirstName} {user.LastName}",
             membership.Roles,
-            membership.IsActive ? UserListItemStatus.Active : UserListItemStatus.Inactive
+            membership.IsActive ? UserListItemStatus.Active : UserListItemStatus.Inactive,
+            null
         );
 
     public static UserListItem FromInvitation(InvitationAggregate invitation) =>
@@ -35,6 +37,7 @@ public sealed record UserListItem(
             invitation.Email,
             $"{invitation.FirstName} {invitation.LastName}",
             invitation.Roles,
-            UserListItemStatus.Invited
+            UserListItemStatus.Invited,
+            invitation.ExpiresAt
         );
 }

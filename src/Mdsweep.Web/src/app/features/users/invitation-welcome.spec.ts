@@ -9,11 +9,16 @@ describe('InvitationWelcome', () => {
   let fixture: ComponentFixture<InvitationWelcome>;
   const accept = vi.fn();
   const signOut = vi.fn();
+  const establish = vi.fn();
+  const toTenantSession = vi.fn();
 
   beforeEach(async () => {
     window.history.replaceState({}, '', '/invitations/accept?token=ABC');
     accept.mockReset();
     signOut.mockReset();
+    establish.mockReset();
+    toTenantSession.mockReset();
+    toTenantSession.mockReturnValue({ tenantId: 'mdsw-eep2-3456' });
     TestBed.configureTestingModule({
       providers: [
         provideTanStackQuery(
@@ -21,7 +26,12 @@ describe('InvitationWelcome', () => {
         ),
         {
           provide: AuthSessionService,
-          useValue: { availableSessions: () => Promise.resolve([]), signOut },
+          useValue: {
+            availableSessions: () => Promise.resolve([]),
+            establish,
+            signOut,
+            toTenantSession,
+          },
         },
         { provide: UsersApi, useValue: { accept } },
       ],
@@ -79,5 +89,37 @@ describe('InvitationWelcome', () => {
       .click();
 
     expect(signOut).toHaveBeenCalledWith('/invitations/accept?token=ABC');
+  });
+
+  it('refreshes tenant access before completing invitation acceptance', async () => {
+    accept.mockResolvedValue(undefined);
+    establish.mockResolvedValue({
+      userId: 'accepted-user',
+      displayName: 'Accepted User',
+      email: 'existing-user@example.com',
+      activeTenant: {
+        id: 'mdsw-eep2-3456',
+        name: 'Synthetic Tenant',
+        roles: ['Driver'],
+      },
+      availableTenants: [
+        {
+          id: 'mdsw-eep2-3456',
+          name: 'Synthetic Tenant',
+          roles: ['Driver'],
+        },
+      ],
+    });
+    const accepted = vi.fn();
+    fixture.componentInstance.accepted.subscribe(accepted);
+
+    const acceptButton = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes('Accept invitation'))!;
+    acceptButton.click();
+
+    await vi.waitFor(() => expect(establish).toHaveBeenCalledOnce());
+    expect(accepted).toHaveBeenCalledOnce();
+    expect(establish.mock.invocationCallOrder[0]).toBeLessThan(accepted.mock.invocationCallOrder[0]);
   });
 });

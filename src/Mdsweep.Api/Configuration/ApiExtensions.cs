@@ -1,4 +1,4 @@
-using Mdsweep.Api.Common.Authentication;
+﻿using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Common.Authorization;
 using Mdsweep.Api.Common.Identity;
 using Mdsweep.Application.Common.Abstractions;
@@ -55,18 +55,11 @@ public static class ApiExtensions
                     oidc.ClientId = configuration.ClientId;
                     oidc.ClientSecret = configuration.ClientSecret;
                     oidc.ResponseType = OpenIdConnectResponseType.Code;
-                    // The OIDC handler reads this ID token as id_token_hint during RP-initiated logout.
+                    oidc.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    oidc.SignOutScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";
-                    oidc.Events.OnRedirectToIdentityProviderForSignOut = context =>
-                    {
-                        // The application cookie can outlive Keycloak's short-lived ID token.
-                        // Identify the RP by client_id so an expired hint cannot block logout.
-                        context.ProtocolMessage.IdTokenHint = null;
-                        context.ProtocolMessage.ClientId = context.Options.ClientId;
-                        return Task.CompletedTask;
-                    };
                     oidc.Events.OnTokenValidated = async context =>
                     {
                         var subject = context.Principal?.FindFirstValue("sub");

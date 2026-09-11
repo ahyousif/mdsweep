@@ -33,7 +33,7 @@ export class AppShell {
   readonly navigation = computed(() => [
     { label: 'Trips', route: '/trips', icon: 'lucideRoute' },
     ...(this.session().roles.includes('Administrator')
-      ? [{ label: 'Users & Invitations', route: '/users', icon: 'lucideUsers' }]
+      ? [{ label: 'Users', route: '/users', icon: 'lucideUsers' }]
       : []),
   ]);
 

@@ -22,4 +22,7 @@
     <ProjectReference Include="..\Mdsweep.Application\Mdsweep.Application.csproj" />
     <ProjectReference Include="..\Mdsweep.Domain\Mdsweep.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mdsweep.Api.IntegrationTests" />
+  </ItemGroup>
 </Project>

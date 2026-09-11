@@ -1,4 +1,4 @@
-namespace Mdsweep.Application.Users.List;
+namespace Mdsweep.Application.Users;
 
 public enum UserListItemType
 {

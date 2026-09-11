@@ -81,18 +81,23 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         return invitation;
     }
 
-    public void Accept(Instant acceptedAt, string keycloakUserId)
+    public void Accept(Instant acceptedAt)
     {
         Guard.Against.Invalid(IsExpired(acceptedAt));
         Guard.Against.Invalid(Status is not InvitationStatus.Pending);
-        Guard.Against.NullOrWhiteSpace(keycloakUserId);
 
         Status = InvitationStatus.Accepted;
         AcceptedAt = acceptedAt;
+    }
 
-        AddDomainEvent(
-            new InvitationAcceptedDomainEvent(Id, TenantId, keycloakUserId, Email, FirstName, LastName, Roles)
-        );
+    public void Resend(string token, string tokenHash, Instant expiresAt)
+    {
+        Guard.Against.Invalid(Status is not InvitationStatus.Pending);
+
+        TokenHash = Guard.Against.NullOrWhiteSpace(tokenHash);
+        ExpiresAt = expiresAt;
+
+        AddDomainEvent(new InvitationCreatedDomainEvent(Id, Email, FirstName, token, ExpiresAt));
     }
 
     public void Cancel()

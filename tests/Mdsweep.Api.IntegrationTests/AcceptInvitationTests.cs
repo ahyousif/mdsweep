@@ -1,8 +1,7 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Mdsweep.Application.Common.Security;
-using Mdsweep.Domain.Users;
 using Mdsweep.Infrastructure.Persistence;
 using NodaTime;
 using NodaSystemClock = NodaTime.SystemClock;
@@ -29,7 +28,38 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         );
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        await WaitForAcceptedMembership(email, subject);
+        await AssertAcceptedMembershipExists(email, subject);
+    }
+
+    [Fact]
+    public async Task Matching_existing_user_receives_the_membership_before_acceptance_returns()
+    {
+        const string token = "existing-user-token";
+        const string subject = "existing-invitee";
+        const string email = "existing-invitee@example.test";
+
+        await using (var setupScope = Application.Services.CreateAsyncScope())
+        {
+            var setupDb = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            setupDb.Users.Add(UserAggregate.Create("Existing", "Invitee", subject, email));
+            await setupDb.SaveChangesAsync();
+        }
+
+        await AddInvitation(token, email, NodaSystemClock.Instance.GetCurrentInstant() + Duration.FromHours(1));
+        using var client = CreateInviteeClient(subject, email);
+        await AddAntiforgeryToken(client);
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/users/invitations/accept",
+            new { token }
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await AssertAcceptedMembershipExists(email, subject);
+
+        await using var verificationScope = Application.Services.CreateAsyncScope();
+        var db = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Single(await db.Users.Where(x => x.KeycloakUserId == subject).ToListAsync());
     }
 
     [Fact]
@@ -113,26 +143,15 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         await db.SaveChangesAsync();
     }
 
-    private async Task WaitForAcceptedMembership(string email, string subject)
+    private async Task AssertAcceptedMembershipExists(string email, string subject)
     {
-        for (var attempt = 0; attempt < 50; attempt++)
-        {
-            await using var scope = Application.Services.CreateAsyncScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var invitation = await db.Invitations.SingleAsync(x => x.Email == email);
-            var user = await db.Users.SingleOrDefaultAsync(x => x.KeycloakUserId == subject);
-            if (
-                invitation.Status == InvitationStatus.Accepted
-                && user is not null
-                && await db.TenantMemberships.AnyAsync(x => x.TenantId == TenantId && x.UserId == user.Id)
-            )
-            {
-                return;
-            }
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var invitation = await db.Invitations.SingleAsync(x => x.Email == email);
+        var user = await db.Users.SingleOrDefaultAsync(x => x.KeycloakUserId == subject);
 
-            await Task.Delay(100);
-        }
-
-        throw new Xunit.Sdk.XunitException("The accepted invitation did not create its Tenant Membership.");
+        Assert.Equal(InvitationStatus.Accepted, invitation.Status);
+        Assert.NotNull(user);
+        Assert.True(await db.TenantMemberships.AnyAsync(x => x.TenantId == TenantId && x.UserId == user.Id));
     }
 }

@@ -1,92 +1,119 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
-import { HlmBadge } from '@spartan-ng/helm/badge';
-import { HlmEmptyImports } from '@spartan-ng/helm/empty';
-import { HlmFieldImports } from '@spartan-ng/helm/field';
-import { HlmSpinner } from '@spartan-ng/helm/spinner';
-import { HlmH3, HlmMuted } from '@spartan-ng/helm/typography';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
-import { HlmInput } from '@spartan-ng/helm/input';
-import { HlmTabsImports } from '@spartan-ng/helm/tabs';
-import { HlmTableImports } from '@spartan-ng/helm/table';
+import { HlmSpinner } from '@spartan-ng/helm/spinner';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
+
 import { httpErrorMessage } from '@app/core/api/http-error-message';
+
+import UserDetail from './user-detail/user-detail';
 import { UserForm } from './user-form';
-import { UsersApi, type Invitation, type ManagedUser, type UserDetails } from './users.api';
+import UserList from './user-list/user-list';
+import UserToolbar, {
+  type UserStatusCounts,
+  type UserStatusFilter,
+} from './user-toolbar/user-toolbar';
+import { UsersApi, type UserDetails, type UserListItem } from './users.api';
 import { userQueryKeys, usersQueryOptions } from './users.queries';
 
 type Action =
   | { kind: 'invite'; details: UserDetails }
-  | { kind: 'update'; user: ManagedUser; details: UserDetails }
-  | { kind: 'resend' | 'revoke' | 'reset'; id: string };
+  | { kind: 'update'; user: UserListItem; details: UserDetails }
+  | { kind: 'resendInvitation'; user: UserListItem }
+  | { kind: 'cancelInvitation'; user: UserListItem };
 
 @Component({
   selector: 'app-users-page',
   imports: [
-    DatePipe,
-    UserForm,
     HlmButton,
-    HlmInput,
-    HlmBadge,
-    HlmH3,
-    HlmMuted,
     HlmSpinner,
-    HlmEmptyImports,
-    HlmFieldImports,
+    UserDetail,
+    UserForm,
+    UserList,
+    UserToolbar,
     ...HlmAlertImports,
-    ...HlmCardImports,
     ...HlmDialogImports,
-    ...HlmTableImports,
-    HlmTabsImports,
   ],
   templateUrl: './users-page.html',
+  host: { class: 'block h-full min-h-0' },
 })
 export default class UsersPage {
   readonly #api = inject(UsersApi);
   readonly #queries = inject(QueryClient);
+
   readonly listing = injectQuery(() => usersQueryOptions(this.#api));
   readonly search = signal('');
-  readonly activeTab = signal('users');
+  readonly activeFilter = signal<UserStatusFilter>('All');
+  readonly selectedUserKey = signal<string | null>(null);
   readonly inviting = signal(false);
-  readonly editing = signal<ManagedUser | null>(null);
+  readonly editing = signal(false);
   readonly message = signal('');
   readonly error = signal('');
-  readonly editingValue = computed(() => {
-    const user = this.editing();
-    return user ? { ...user, email: user.email ?? '' } : null;
+
+  readonly statusCounts = computed<UserStatusCounts>(() => {
+    const users = this.listing.data() ?? [];
+
+    return {
+      All: users.length,
+      Active: users.filter((user) => user.status === 'Active').length,
+      Invited: users.filter((user) => user.status === 'Invited').length,
+      Disabled: users.filter((user) => user.status === 'Inactive').length,
+    };
   });
-  readonly users = computed(() =>
-    (this.listing.data()?.users ?? []).filter((x) => this.matches(x)),
-  );
-  readonly invitations = computed(() =>
-    (this.listing.data()?.invitations ?? []).filter((x) => this.matches(x)),
-  );
+
+  readonly users = computed(() => {
+    const search = this.search().trim().toLowerCase();
+    const filter = this.activeFilter();
+
+    return (this.listing.data() ?? []).filter((user) => {
+      const matchesSearch =
+        !search ||
+        `${user.displayName} ${user.firstName} ${user.lastName} ${user.email}`
+          .toLowerCase()
+          .includes(search);
+      const matchesFilter =
+        filter === 'All' ||
+        user.status === filter ||
+        (filter === 'Disabled' && user.status === 'Inactive');
+
+      return matchesSearch && matchesFilter;
+    });
+  });
+
+  readonly selectedUser = computed<UserListItem | null>(() => {
+    const selectedKey = this.selectedUserKey();
+
+    return (
+      (this.listing.data() ?? []).find((user) => this.userKey(user) === selectedKey) ?? null
+    );
+  });
+
   readonly mutation = injectMutation(() => ({
     mutationFn: (action: Action) => this.perform(action),
-    onSuccess: async (invitation: Invitation | void, action: Action) => {
-      if (action.kind === 'invite') {
-        this.activeTab.set('invitations');
-        this.search.set('');
-      }
+    onSuccess: async (_: void, action: Action) => {
       this.inviting.set(false);
-      this.editing.set(null);
+      this.editing.set(false);
       this.message.set(
-        invitation?.deliveryError
-          ? 'Invitation saved. Email delivery failed; use Resend after email delivery is configured.'
-          : action.kind === 'invite' || action.kind === 'resend'
-            ? 'Invitation email sent.'
-            : action.kind === 'reset'
-              ? 'Password reset email sent.'
-              : action.kind === 'revoke'
-                ? 'Invitation revoked.'
-                : 'User updated.',
+        action.kind === 'invite'
+          ? `Invitation sent to ${action.details.email}`
+          : action.kind === 'resendInvitation'
+            ? `Invitation resent to ${action.user.email}`
+            : action.kind === 'cancelInvitation'
+              ? 'Invitation cancelled.'
+              : 'User updated.',
       );
+
+      if (action.kind === 'cancelInvitation') {
+        this.selectedUserKey.set(null);
+      }
+
       await this.#queries.invalidateQueries({ queryKey: userQueryKeys.all });
-      if (action.kind === 'update')
+
+      if (action.kind === 'update') {
         await this.#queries.invalidateQueries({ queryKey: ['auth', 'session'] });
+      }
     },
     onError: async (error: unknown) => {
       this.error.set(
@@ -95,48 +122,109 @@ export default class UsersPage {
       await this.#queries.invalidateQueries({ queryKey: userQueryKeys.all });
     },
   }));
+
   loadError(): string {
     return httpErrorMessage(this.listing.error(), 'Users could not be loaded. Try again.');
   }
+
+  setSearch(value: string): void {
+    this.search.set(value);
+  }
+
+  setFilter(filter: UserStatusFilter): void {
+    this.activeFilter.set(filter);
+  }
+
   startInvite(): void {
-    this.editing.set(null);
+    this.editing.set(false);
     this.inviting.set(true);
-    this.error.set('');
-    this.message.set('');
+    this.clearFeedback();
   }
-  edit(user: ManagedUser): void {
-    this.inviting.set(false);
-    this.editing.set(user);
-    this.error.set('');
-    this.message.set('');
+
+  selectUser(user: UserListItem): void {
+    this.selectedUserKey.set(this.userKey(user));
+    this.editing.set(false);
+    this.clearFeedback();
   }
-  run(action: Action): void {
-    if (this.mutation.isPending()) return;
-    this.error.set('');
-    this.message.set('');
+
+  closeUserDetail(): void {
+    this.selectedUserKey.set(null);
+    this.editing.set(false);
+  }
+
+  save(details: UserDetails): void {
+    const user = this.selectedUser();
+
+    this.run(
+      user && this.editing() ? { kind: 'update', user, details } : { kind: 'invite', details },
+    );
+  }
+
+  changeAccess(isActive: boolean): void {
+    const user = this.selectedUser();
+
+    if (!user || user.type !== 'User') {
+      return;
+    }
+
+    this.run({
+      kind: 'update',
+      user,
+      details: {
+        displayName: user.displayName,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        roles: user.roles,
+        isActive,
+      },
+    });
+  }
+
+  cancelInvitation(): void {
+    const user = this.selectedUser();
+
+    if (user?.type === 'Invitation') {
+      this.run({ kind: 'cancelInvitation', user });
+    }
+  }
+
+  resendInvitation(): void {
+    const user = this.selectedUser();
+
+    if (user?.type === 'Invitation') {
+      this.run({ kind: 'resendInvitation', user });
+    }
+  }
+
+  private run(action: Action): void {
+    if (this.mutation.isPending()) {
+      return;
+    }
+
+    this.clearFeedback();
     this.mutation.mutate(action);
   }
-  save(details: UserDetails): void {
-    const user = this.editing();
-    this.run(user ? { kind: 'update', user, details } : { kind: 'invite', details });
+
+  private userKey(user: UserListItem): string {
+    return `${user.type}:${user.id}`;
   }
-  private matches(value: ManagedUser | Invitation): boolean {
-    return `${'displayName' in value ? value.displayName : ''} ${value.firstName} ${value.lastName} ${value.email ?? ''} ${value.roles.join(' ')}`
-      .toLowerCase()
-      .includes(this.search().toLowerCase());
+
+  private clearFeedback(): void {
+    this.error.set('');
+    this.message.set('');
   }
-  private async perform(action: Action): Promise<Invitation | void> {
+
+  private perform(action: Action): Promise<void> {
     switch (action.kind) {
       case 'invite':
         return this.#api.invite(action.details);
       case 'update':
         return this.#api.update(action.user, action.details);
-      case 'resend':
-        return this.#api.resend(action.id);
-      case 'revoke':
-        return this.#api.revoke(action.id);
-      case 'reset':
-        return this.#api.resetPassword(action.id);
+      case 'resendInvitation':
+        return this.#api.resendInvitation(action.user.id);
+      case 'cancelInvitation':
+        return this.#api.cancelInvitation(action.user.id);
     }
   }
 }

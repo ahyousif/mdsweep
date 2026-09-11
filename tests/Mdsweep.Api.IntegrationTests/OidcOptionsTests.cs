@@ -1,7 +1,7 @@
-using Mdsweep.Api.Configuration;
+﻿using Mdsweep.Api.Configuration;
 using Mdsweep.Infrastructure.Identity;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
@@ -18,7 +18,7 @@ public sealed class OidcOptionsTests
     }
 
     [Fact]
-    public async Task Sign_out_identifies_the_client_without_replaying_an_expired_id_token()
+    public async Task Sign_out_preserves_the_saved_id_token_hint()
     {
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddSingleton<IOptions<KeycloakAuthenticationOptions>>(
@@ -49,14 +49,13 @@ public sealed class OidcOptionsTests
         {
             ProtocolMessage = new OpenIdConnectMessage
             {
-                IdTokenHint = "expired-id-token",
+                IdTokenHint = "saved-id-token",
                 PostLogoutRedirectUri = "https://web.mdsweep.test/signout-callback-oidc",
             },
         };
 
         await options.Events.OnRedirectToIdentityProviderForSignOut(context);
 
-        Assert.Null(context.ProtocolMessage.IdTokenHint);
-        Assert.Equal("mdsweep-test", context.ProtocolMessage.ClientId);
+        Assert.Equal("saved-id-token", context.ProtocolMessage.IdTokenHint);
     }
 }

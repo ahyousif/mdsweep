@@ -1,8 +1,10 @@
 import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+
 import { ApiClient } from '@app/core/api/api-client';
 
 export type UserRole = 'Administrator' | 'Dispatcher' | 'Driver';
+
 export type UserDetails = {
   displayName: string;
   firstName: string;
@@ -11,59 +13,60 @@ export type UserDetails = {
   roles: UserRole[];
   isActive: boolean;
 };
-export type ManagedUser = UserDetails & {
+
+export type UserListItem = {
   id: string;
-  version: number;
+  type: 'User' | 'Invitation';
+  firstName: string;
+  lastName: string;
+  email: string;
+  displayName: string;
+  roles: UserRole[];
+  status: 'Active' | 'Inactive' | 'Invited';
+  expiresAt: string | null;
 };
-export type Invitation = Omit<UserDetails, 'isActive' | 'displayName'> & {
-  id: string;
-  status: 'Pending' | 'Expired' | 'Accepted' | 'Revoked';
-  expiresAt: string;
-  sentAt: string | null;
-  deliveryError: string | null;
-  version: number;
-};
-export type UserManagement = {
-  users: ManagedUser[];
-  invitations: Invitation[];
-  isAdministrator: boolean;
-};
+
 @Service()
 export class UsersApi {
   readonly #api = inject(ApiClient);
-  list(): Promise<UserManagement> {
-    return firstValueFrom(this.#api.http.get<UserManagement>(this.#api.url('users')));
+
+  list(): Promise<UserListItem[]> {
+    return firstValueFrom(this.#api.http.get<UserListItem[]>(this.#api.url('users')));
   }
-  invite(details: UserDetails): Promise<Invitation> {
+
+  invite(details: UserDetails): Promise<void> {
     return firstValueFrom(
-      this.#api.http.post<Invitation>(this.#api.url('users/invitations'), details),
+      this.#api.http.post<void>(this.#api.url('users/invitations'), {
+        firstName: details.firstName,
+        lastName: details.lastName,
+        email: details.email,
+        roles: details.roles,
+      }),
     );
   }
-  update(user: ManagedUser, details: UserDetails): Promise<void> {
+
+  update(user: UserListItem, details: UserDetails): Promise<void> {
     return firstValueFrom(
       this.#api.http.put<void>(this.#api.url(`users/${user.id}`), {
         displayName: details.displayName,
         roles: details.roles,
         isActive: details.isActive,
-        version: user.version,
       }),
     );
   }
-  resend(id: string): Promise<Invitation> {
+
+  cancelInvitation(id: string): Promise<void> {
     return firstValueFrom(
-      this.#api.http.post<Invitation>(this.#api.url(`users/invitations/${id}/resend`), {}),
+      this.#api.http.delete<void>(this.#api.url(`users/invitations/${id}`)),
     );
   }
-  revoke(id: string): Promise<void> {
+
+  resendInvitation(id: string): Promise<void> {
     return firstValueFrom(
-      this.#api.http.post<void>(this.#api.url(`users/invitations/${id}/revoke`), {}),
+      this.#api.http.post<void>(this.#api.url(`users/invitations/${id}/resend`), {}),
     );
   }
-  resetPassword(id: string): Promise<void> {
-    return firstValueFrom(
-      this.#api.http.post<void>(this.#api.url(`users/${id}/password-reset`), {}),
-    );
-  }
+
   async accept(token: string): Promise<void> {
     await firstValueFrom(this.#api.http.get(this.#api.url('auth/antiforgery')));
     await firstValueFrom(
