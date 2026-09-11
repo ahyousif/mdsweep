@@ -2,22 +2,6 @@
   "realm": "mdsweep",
   "enabled": true,
   "browserFlow": "mdsweep-browser",
-  "organizationsEnabled": true,
-  "organizations": [
-    {
-      "id": "b6d8ea17-b31c-45c0-b5f2-4fec5df7c6cf",
-      "name": "Synthetic Provider",
-      "alias": "synthetic-provider",
-      "redirectUrl": "http://localhost:4200/",
-      "enabled": true,
-      "domains": [
-        {
-          "name": "synthetic-provider.example.test",
-          "verified": false
-        }
-      ]
-    }
-  ],
   "authenticationFlows": [
     {
       "alias": "mdsweep-browser",

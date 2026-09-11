@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Mdsweep.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260910221521_InitialSchema")]
+    [Migration("20260910225750_InitialSchema")]
     partial class InitialSchema
     {
         /// <inheritdoc />
@@ -76,12 +76,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("default_sender_email");
 
-                    b.Property<string>("KeycloakOrganizationId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("keycloak_organization_id");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -96,10 +90,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_tenants");
-
-                    b.HasIndex("KeycloakOrganizationId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_tenants_keycloak_organization_id");
 
                     b.ToTable("tenants", (string)null);
                 });

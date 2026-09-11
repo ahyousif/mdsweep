@@ -37,7 +37,6 @@ describe('App', () => {
       const page = fixture.nativeElement.textContent as string;
       expect(signIn).toHaveBeenCalledOnce();
       expect(page).not.toContain('Sign in');
-      expect(page).not.toContain('Organization selection required');
     });
   });
 });

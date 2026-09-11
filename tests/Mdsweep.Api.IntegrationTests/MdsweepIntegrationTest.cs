@@ -51,7 +51,7 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
         });
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant", "synthetic-tenant");
+        var tenant = TenantAggregate.Create("mdsw-eep2-3456", "Synthetic Tenant");
         var user = UserAggregate.Create("Synthetic", "Dispatcher", "dispatcher-test", "dispatcher@example.test");
         db.Tenants.Add(tenant);
         db.Users.Add(user);

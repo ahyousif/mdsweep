@@ -33,7 +33,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
                     name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    keycloak_organization_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     default_sender_email = table.Column<string>(type: "text", nullable: true),
                     pickup_buffer_minutes = table.Column<int>(type: "integer", nullable: false, defaultValue: 15)
                 },
@@ -187,12 +186,6 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 name: "ix_tenant_memberships_user_id",
                 table: "tenant_memberships",
                 column: "user_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_tenants_keycloak_organization_id",
-                table: "tenants",
-                column: "keycloak_organization_id",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_trips_passenger_id",

@@ -128,11 +128,5 @@ public sealed class KeycloakRealmImportTests
             }
         );
         Assert.Equal(HttpStatusCode.NoContent, resetResponse.StatusCode);
-
-        using var membershipResponse = await client.PostAsJsonAsync(
-            "/admin/realms/mdsweep/organizations/b6d8ea17-b31c-45c0-b5f2-4fec5df7c6cf/members",
-            subject
-        );
-        Assert.Equal(HttpStatusCode.Created, membershipResponse.StatusCode);
     }
 }
