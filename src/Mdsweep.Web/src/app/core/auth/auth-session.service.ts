@@ -21,6 +21,7 @@ export type AvailableTenant = {
 export type SessionBootstrap = {
   userId: string | null;
   displayName: string;
+  email: string;
   activeTenant: AvailableTenant | null;
   availableTenants: AvailableTenant[];
 };
@@ -108,10 +109,13 @@ export class AuthSessionService {
     );
   }
 
-  signOut(): void {
+  signOut(returnUrl?: string): void {
     const form = this.#document.createElement('form');
     form.method = 'post';
-    form.action = this.#api.url('auth/logout');
+    const logoutUrl = this.#api.url('auth/logout');
+    form.action = returnUrl
+      ? `${logoutUrl}?returnUrl=${encodeURIComponent(returnUrl)}`
+      : logoutUrl;
 
     const token = this.#document.createElement('input');
     token.type = 'hidden';

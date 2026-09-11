@@ -1,4 +1,5 @@
 using Mdsweep.Api.Common.Authentication;
+using Mdsweep.Application.Common.Abstractions;
 
 namespace Mdsweep.Api.Features.Identity;
 
@@ -17,6 +18,7 @@ internal static class SessionEndpoints
 
     private static async Task<IResult> GetSession(
         ClaimsPrincipal user,
+        ICurrentIdentity currentIdentity,
         ITenantAccess tenantAccess,
         IAntiforgery antiforgery,
         HttpContext httpContext,
@@ -54,6 +56,7 @@ internal static class SessionEndpoints
             new SessionResponse(
                 membership?.UserId,
                 $"{membership?.FirstName} {membership?.LastName}".Trim(),
+                currentIdentity.Email ?? string.Empty,
                 activeTenant,
                 tenants
             )
@@ -139,6 +142,7 @@ internal static class SessionEndpoints
     private sealed record SessionResponse(
         Guid? UserId,
         string DisplayName,
+        string Email,
         TenantSessionResponse? ActiveTenant,
         TenantSessionResponse[] AvailableTenants
     );

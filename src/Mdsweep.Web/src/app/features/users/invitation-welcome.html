@@ -25,18 +25,41 @@
         }
       }
       @if (token(); as invitationToken) {
-        <p>Accept this invitation to add its Tenant access to your account.</p>
-        <button
-          hlmBtn
-          type="button"
-          [disabled]="acceptance.isPending() || selection.isPending() || signingOut()"
-          (click)="acceptance.mutate(invitationToken)"
-        >
-          @if (acceptance.isPending()) {
-            <hlm-spinner aria-hidden="true" />
-          }
-          {{ acceptance.isPending() ? 'Accepting...' : 'Accept invitation' }}
-        </button>
+        @if (accountMismatch()) {
+          <div hlmAlert variant="destructive" role="alert">
+            <h2 hlmAlertTitle>This invitation belongs to a different account.</h2>
+            <div hlmAlertDescription class="grid gap-2">
+              @if (currentEmail()) {
+                <p>You're currently signed in as: {{ currentEmail() }}</p>
+              }
+              <p>Continue with the account that received this invitation.</p>
+            </div>
+          </div>
+          <button
+            hlmBtn
+            type="button"
+            [disabled]="signingOut()"
+            (click)="continueWithAnotherAccount()"
+          >
+            @if (signingOut()) {
+              <hlm-spinner aria-hidden="true" />
+            }
+            Continue with another account
+          </button>
+        } @else {
+          <p>Accept this invitation to add its Tenant access to your account.</p>
+          <button
+            hlmBtn
+            type="button"
+            [disabled]="acceptance.isPending() || selection.isPending() || signingOut()"
+            (click)="acceptance.mutate(invitationToken)"
+          >
+            @if (acceptance.isPending()) {
+              <hlm-spinner aria-hidden="true" />
+            }
+            {{ acceptance.isPending() ? 'Accepting...' : 'Accept invitation' }}
+          </button>
+        }
       } @else if (!hasAccess() && !sessions.isPending()) {
         <p hlmMuted>
           You do not have Tenant access. Open the secure link from your invitation email or ask an

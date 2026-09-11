@@ -19,6 +19,7 @@ public sealed class KeycloakRealmImportTests
             "mdsweep-realm.json"
         );
         using var realm = JsonDocument.Parse(File.ReadAllText(realmPath));
+        Assert.True(realm.RootElement.GetProperty("registrationAllowed").GetBoolean());
         var redirectUris = realm.RootElement
             .GetProperty("clients")
             .EnumerateArray()

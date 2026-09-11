@@ -19,6 +19,7 @@
   <app-invitation-welcome
     [hasAccess]="activeSession() !== null"
     [token]="invitationToken()"
+    [currentEmail]="sessionQuery.data()?.email ?? null"
     (accepted)="invitationAccepted()"
     (closed)="managingAccess.set(false)"
   />

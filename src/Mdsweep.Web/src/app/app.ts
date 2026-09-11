@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -26,6 +27,7 @@ import { InvitationWelcome } from './features/users/invitation-welcome';
 export class App {
   private readonly auth = inject(AuthSessionService);
   private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
 
   readonly text = uiText;
   readonly managingAccess = signal(false);
@@ -64,12 +66,12 @@ export class App {
 
   invitationAccepted(): void {
     this.invitationToken.set(null);
-    this.document.defaultView?.history.replaceState({}, '', '/');
+    void this.router.navigateByUrl('/');
   }
 
   private readInvitationToken(): string | null {
     const location = this.document.defaultView?.location;
-    if (location?.pathname !== '/invitation/accept') return null;
+    if (location?.pathname !== '/invitations/accept') return null;
     return new URLSearchParams(location.search).get('token');
   }
 }

@@ -1,6 +1,7 @@
 {
   "realm": "mdsweep",
   "enabled": true,
+  "registrationAllowed": true,
   "browserFlow": "mdsweep-browser",
   "authenticationFlows": [
     {

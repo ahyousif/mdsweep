@@ -35,10 +35,10 @@ internal static class AuthenticationEndpoints
         return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
     }
 
-    private static IResult Logout()
+    private static IResult Logout(string? returnUrl)
     {
         return Results.SignOut(
-            properties: null,
+            properties: new AuthenticationProperties { RedirectUri = SafeReturnPath(returnUrl) },
             authenticationSchemes:
             [
                 CookieAuthenticationDefaults.AuthenticationScheme,

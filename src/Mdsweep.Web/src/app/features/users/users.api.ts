@@ -67,7 +67,7 @@ export class UsersApi {
   async accept(token: string): Promise<void> {
     await firstValueFrom(this.#api.http.get(this.#api.url('auth/antiforgery')));
     await firstValueFrom(
-      this.#api.http.post<void>(this.#api.url('invitations/accept'), { token }),
+      this.#api.http.post<void>(this.#api.url('users/invitations/accept'), { token }),
     );
   }
 }

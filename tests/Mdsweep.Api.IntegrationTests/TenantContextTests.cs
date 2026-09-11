@@ -39,12 +39,44 @@ public sealed class TenantContextTests : MdsweepIntegrationTest
         response.EnsureSuccessStatusCode();
         var session = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(JsonValueKind.Null, session.GetProperty("userId").ValueKind);
+        Assert.Equal("dispatcher@example.test", session.GetProperty("email").GetString());
         Assert.Equal(JsonValueKind.Null, session.GetProperty("activeTenant").ValueKind);
         Assert.Empty(session.GetProperty("availableTenants").EnumerateArray());
         Assert.Contains(
             response.Headers.GetValues("Set-Cookie"),
             value => value.StartsWith("XSRF-TOKEN=", StringComparison.Ordinal)
         );
+    }
+
+    [Theory]
+    [InlineData("/invitations/accept?token=ABC", "/invitations/accept?token=ABC")]
+    [InlineData("https://attacker.example/", "/")]
+    public async Task Logout_only_preserves_safe_application_return_paths(
+        string returnUrl,
+        string expectedRedirectUri
+    )
+    {
+        using var client = Application.CreateClient(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false }
+        );
+        await AddAntiforgeryToken(client);
+
+        using var response = await client.PostAsync(
+            $"/api/auth/logout?returnUrl={Uri.EscapeDataString(returnUrl)}",
+            content: null
+        );
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var logoutParameters = QueryHelpers.ParseQuery(response.Headers.Location!.Query);
+        Assert.Equal("mdsweep-test", logoutParameters["client_id"].Single());
+        Assert.False(logoutParameters.ContainsKey("id_token_hint"));
+        var state = logoutParameters["state"].Single();
+        var oidc = Application
+            .Services.GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
+            .Get(OpenIdConnectDefaults.AuthenticationScheme);
+        var properties = oidc.StateDataFormat.Unprotect(state);
+
+        Assert.Equal(expectedRedirectUri, properties?.RedirectUri);
     }
 
     [Fact]

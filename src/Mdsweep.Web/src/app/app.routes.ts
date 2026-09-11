@@ -3,6 +3,11 @@ import { usersGuard } from './features/users/users.guard';
 
 export const routes: Routes = [
   {
+    path: 'invitations/accept',
+    loadComponent: () =>
+      import('./features/users/invitation-welcome').then((module) => module.InvitationWelcome),
+  },
+  {
     path: 'users',
     canActivate: [usersGuard],
     loadComponent: () => import('./features/users/users-page'),

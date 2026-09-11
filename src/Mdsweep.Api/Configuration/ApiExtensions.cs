@@ -59,6 +59,14 @@ public static class ApiExtensions
                     oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";
+                    oidc.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                    {
+                        // The application cookie can outlive Keycloak's short-lived ID token.
+                        // Identify the RP by client_id so an expired hint cannot block logout.
+                        context.ProtocolMessage.IdTokenHint = null;
+                        context.ProtocolMessage.ClientId = context.Options.ClientId;
+                        return Task.CompletedTask;
+                    };
                     oidc.Events.OnTokenValidated = async context =>
                     {
                         var subject = context.Principal?.FindFirstValue("sub");

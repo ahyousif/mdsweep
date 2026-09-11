@@ -17,6 +17,11 @@ public sealed class DispatcherAuthenticationHandler(
         var claims = new List<Claim>
         {
             new("sub", Request.Headers["X-Test-Subject"].FirstOrDefault() ?? "dispatcher-test"),
+            new("email", Request.Headers["X-Test-Email"].FirstOrDefault() ?? "dispatcher@example.test"),
+            new(
+                "email_verified",
+                Request.Headers["X-Test-Email-Verified"].FirstOrDefault() ?? bool.TrueString
+            ),
         };
         var tenantId =
             Request.Headers["X-Test-Tenant"].FirstOrDefault()

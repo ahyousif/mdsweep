@@ -31,6 +31,7 @@ describe('AuthSessionService', () => {
     session.flush({
       userId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
       displayName: 'Synthetic Dispatcher',
+      email: 'dispatcher@example.test',
       activeTenant: {
         id: 'acme-transport',
         name: 'Acme Transport',
@@ -42,6 +43,7 @@ describe('AuthSessionService', () => {
     await expect(establishing).resolves.toEqual({
       userId: 'd449d57a-8f51-4a2a-9624-d6d474aaa6e7',
       displayName: 'Synthetic Dispatcher',
+      email: 'dispatcher@example.test',
       activeTenant: {
         id: 'acme-transport',
         name: 'Acme Transport',
@@ -53,7 +55,13 @@ describe('AuthSessionService', () => {
 
   it('allows a new invitee to bootstrap without a local User or Tenant', async () => {
     const establishing = service.establish();
-    const session = { userId: null, displayName: '', activeTenant: null, availableTenants: [] };
+    const session = {
+      userId: null,
+      displayName: '',
+      email: 'invitee@example.test',
+      activeTenant: null,
+      availableTenants: [],
+    };
     http.expectOne('/api/auth/session').flush(session);
     await expect(establishing).resolves.toEqual(session);
     expect(service.toTenantSession(session)).toBeNull();
@@ -65,6 +73,7 @@ describe('AuthSessionService', () => {
     const session = {
       userId: 'user',
       displayName: 'Synthetic User',
+      email: 'user@example.test',
       activeTenant: null,
       availableTenants: [tenant],
     };
@@ -87,6 +96,7 @@ describe('AuthSessionService', () => {
       .flush({
         userId: 'user',
         displayName: 'Synthetic User',
+        email: 'user@example.test',
         activeTenant: tenant,
         availableTenants: [tenant],
       });
@@ -105,6 +115,7 @@ describe('AuthSessionService', () => {
       .flush({
         userId: 'user',
         displayName: 'Synthetic User',
+        email: 'user@example.test',
         activeTenant: tenants[0],
         availableTenants: tenants,
       });
@@ -150,6 +161,23 @@ describe('AuthSessionService', () => {
     expect(
       form.querySelector('input[name="__RequestVerificationToken"]')?.getAttribute('value'),
     ).toBe('sign-out-token');
+
+    form.remove();
+    submit.mockRestore();
+  });
+
+  it('preserves a safe invitation return URL when switching accounts', () => {
+    const submit = vi
+      .spyOn(HTMLFormElement.prototype, 'submit')
+      .mockImplementation(() => undefined);
+    document.cookie = 'XSRF-TOKEN=sign-out-token; path=/';
+
+    service.signOut('/invitations/accept?token=ABC');
+
+    const form = submit.mock.instances[0] as HTMLFormElement;
+    expect(form.getAttribute('action')).toBe(
+      '/api/auth/logout?returnUrl=%2Finvitations%2Faccept%3Ftoken%3DABC',
+    );
 
     form.remove();
     submit.mockRestore();
