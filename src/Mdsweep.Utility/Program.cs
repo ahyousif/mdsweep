@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NodaTime;
+using Wolverine;
 
 if (!UtilityArguments.TryParse(args, out var command, out var error))
 {
@@ -31,6 +32,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
     return 1;
 }
 
+builder.UseWolverine(options => options.AddPersistence(builder.Configuration));
 builder.Services.AddScoped(_ => new ApplicationDbContext(
     new DbContextOptionsBuilder<ApplicationDbContext>().ConfigureForMdsweep(connectionString).Options
 ));
@@ -72,6 +74,7 @@ try
 
         case UtilityCommand.TenantProvision provision:
             await databaseOperations.EnsureAndMigrateAsync();
+            await JasperFx.Resources.ResourceHostExtensions.SetupResources(host);
             await using (var scope = host.Services.CreateAsyncScope())
             {
                 var result = await scope

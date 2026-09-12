@@ -4,6 +4,7 @@ using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Security;
 using Mdsweep.Application.Users.Invitations.DomainEventHandlers;
 using Mdsweep.Application.Users.Invitations.Invite;
+using Mdsweep.Application.Users.Invitations.Resend;
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Users;
 using Mdsweep.Domain.Users.Events;
@@ -18,6 +19,7 @@ public sealed class TenantProvisioningService(
     ApplicationDbContext db,
     ITokenService tokenService,
     IClock clock,
+    IDynamicTenantSource<string> tenantSource,
     SendEmailWhenInvitationCreatedHandler emailHandler
 )
 {
@@ -48,7 +50,7 @@ public sealed class TenantProvisioningService(
 
             if (tenant is not null)
             {
-                var compatibleInvitation = await db.Invitations.AnyAsync(
+                var compatibleInvitation = await db.Invitations.SingleOrDefaultAsync(
                     invitation =>
                         invitation.TenantId == tenant.Id
                         && invitation.Email == email
@@ -57,12 +59,32 @@ public sealed class TenantProvisioningService(
                         && invitation.Roles.Contains(AdministratorRole),
                     cancellationToken
                 );
-                if (compatibleInvitation)
+                if (compatibleInvitation is not null)
                 {
-                    await transaction.RollbackAsync(cancellationToken);
+                    var resendHandler = new ResendInvitationHandler(db, tokenService, clock);
+                    var (resendResult, resendMessages) = await resendHandler.Handle(
+                        new ResendInvitationCommand(compatibleInvitation.Id),
+                        new TenantId(options.TenantId),
+                        cancellationToken
+                    );
+                    if (!resendResult.IsSuccess)
+                    {
+                        return await ConflictAsync(
+                            transaction,
+                            "The pending Administrator invitation could not be reissued.",
+                            cancellationToken
+                        );
+                    }
+
+                    var reissuedEvent = resendMessages.OfType<InvitationCreatedDomainEvent>().Single();
+                    await db.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    await tenantSource.AddTenantAsync(options.TenantId, cancellationToken);
+                    await emailHandler.Handle(reissuedEvent, new TenantId(options.TenantId), cancellationToken);
+
                     return new TenantProvisioningResult(
-                        TenantProvisioningStatus.AlreadySatisfied,
-                        "Tenant provisioning is already satisfied. No changes were made."
+                        TenantProvisioningStatus.Provisioned,
+                        $"Tenant already exists. Administrator invitation reissued to {email}."
                     );
                 }
 
@@ -76,6 +98,7 @@ public sealed class TenantProvisioningService(
                     if (membership is not null && membership.IsActive && membership.Roles.Contains(AdministratorRole))
                     {
                         await transaction.RollbackAsync(cancellationToken);
+                        await tenantSource.AddTenantAsync(options.TenantId, cancellationToken);
                         return new TenantProvisioningResult(
                             TenantProvisioningStatus.AlreadySatisfied,
                             "Tenant provisioning is already satisfied. No changes were made."
@@ -124,6 +147,7 @@ public sealed class TenantProvisioningService(
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+            await tenantSource.AddTenantAsync(options.TenantId, cancellationToken);
             await emailHandler.Handle(invitationEvent, new TenantId(options.TenantId), cancellationToken);
 
             return new TenantProvisioningResult(

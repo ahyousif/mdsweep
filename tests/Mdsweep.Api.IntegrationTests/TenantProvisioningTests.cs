@@ -1,3 +1,5 @@
+using System.Reflection;
+using JasperFx.MultiTenancy;
 using Mdsweep.Application.Common.Configuration;
 using Mdsweep.Application.Common.Email;
 using Mdsweep.Application.Common.Security;
@@ -14,6 +16,8 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
     private readonly PostgreSqlContainer database = new PostgreSqlBuilder().WithImage("postgres:17-alpine").Build();
     private readonly RecordingEmailSender emailSender = new();
     private readonly IncrementingTokenService tokenService = new();
+    private readonly DynamicTenantSourceProxy tenantSourceProxy;
+    private readonly IDynamicTenantSource<string> tenantSource;
 
     private static readonly TenantProvisioningOptions Options = new(
         "mdsw-eep2-3456",
@@ -23,6 +27,12 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         "Administrator",
         "Operations Owner"
     );
+
+    public TenantProvisioningTests()
+    {
+        tenantSource = DispatchProxy.Create<IDynamicTenantSource<string>, DynamicTenantSourceProxy>();
+        tenantSourceProxy = (DynamicTenantSourceProxy)(object)tenantSource;
+    }
 
     public async Task InitializeAsync()
     {
@@ -48,20 +58,49 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
         Assert.Equal(InvitationStatus.Pending, invitation.Status);
         Assert.Single(emailSender.Messages);
         Assert.Equal("admin@example.test", emailSender.Messages[0].To);
+        Assert.Contains(Options.TenantId, tenantSourceProxy.RegisteredTenantIds);
     }
 
     [Fact]
-    public async Task Compatible_rerun_is_idempotent()
+    public async Task Compatible_rerun_reissues_the_pending_administrator_invitation()
     {
         Assert.Equal(TenantProvisioningStatus.Provisioned, (await ExecuteAsync()).Status);
+        string originalTokenHash;
+        await using (var original = CreateDbContext())
+        {
+            originalTokenHash = (await original.Invitations.SingleAsync()).TokenHash;
+        }
 
         var result = await ExecuteAsync();
 
-        Assert.Equal(TenantProvisioningStatus.AlreadySatisfied, result.Status);
+        Assert.Equal(TenantProvisioningStatus.Provisioned, result.Status);
         await using var db = CreateDbContext();
         Assert.Equal(1, await db.Tenants.CountAsync());
         Assert.Equal(1, await db.Invitations.CountAsync());
+        Assert.NotEqual(originalTokenHash, (await db.Invitations.SingleAsync()).TokenHash);
+        Assert.Equal(2, emailSender.Messages.Count);
+    }
+
+    [Fact]
+    public async Task Rerun_reissues_pending_administrator_invitation_after_email_failure()
+    {
+        emailSender.FailNext = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => ExecuteAsync());
+        Assert.Single(tenantSourceProxy.RegisteredTenantIds);
+        Assert.Equal(Options.TenantId, tenantSourceProxy.RegisteredTenantIds[0]);
+
+        await using (var committed = CreateDbContext())
+        {
+            Assert.Single(await committed.Tenants.ToListAsync());
+            Assert.Single(await committed.Invitations.ToListAsync());
+        }
+
+        var result = await ExecuteAsync();
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, emailSender.Attempts);
         Assert.Single(emailSender.Messages);
+        Assert.Equal(2, tenantSourceProxy.RegisteredTenantIds.Count);
     }
 
     [Fact]
@@ -129,7 +168,13 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
             db,
             Microsoft.Extensions.Options.Options.Create(new WebOptions { BaseUrl = "https://web.mdsweep.test" })
         );
-        var service = new TenantProvisioningService(db, tokenService, NodaTime.SystemClock.Instance, emailHandler);
+        var service = new TenantProvisioningService(
+            db,
+            tokenService,
+            NodaTime.SystemClock.Instance,
+            tenantSource,
+            emailHandler
+        );
         return await service.ExecuteAsync(options ?? Options);
     }
 
@@ -148,6 +193,8 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
 
     private sealed class RecordingEmailSender : IEmailSender
     {
+        public int Attempts { get; private set; }
+        public bool FailNext { get; set; }
         public List<EmailMessage> Messages { get; } = [];
 
         public Task SendEmailAsync(
@@ -159,10 +206,56 @@ public sealed class TenantProvisioningTests : IAsyncLifetime
             CancellationToken ct = default
         )
         {
+            Attempts++;
+            if (FailNext)
+            {
+                FailNext = false;
+                throw new InvalidOperationException("Synthetic email failure.");
+            }
+
             Messages.Add(new EmailMessage(to, subject));
             return Task.CompletedTask;
         }
     }
 
     private sealed record EmailMessage(string To, string Subject);
+
+    private class DynamicTenantSourceProxy : DispatchProxy
+    {
+        public List<string> RegisteredTenantIds { get; } = [];
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            if (targetMethod?.Name == nameof(IDynamicTenantSource<string>.AddTenantAsync) && args is not null)
+            {
+                RegisteredTenantIds.Add((string)args[0]!);
+                return CompletedResult(targetMethod.ReturnType, args[0]);
+            }
+
+            throw new NotSupportedException(targetMethod?.Name);
+        }
+
+        private static object CompletedResult(Type returnType, object? result)
+        {
+            if (returnType == typeof(Task))
+            {
+                return Task.CompletedTask;
+            }
+
+            if (returnType == typeof(ValueTask))
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
+            {
+                return typeof(Task)
+                    .GetMethod(nameof(Task.FromResult))!
+                    .MakeGenericMethod(returnType.GenericTypeArguments[0])
+                    .Invoke(null, [result])!;
+            }
+
+            return Activator.CreateInstance(returnType, result)!;
+        }
+    }
 }
