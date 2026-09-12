@@ -187,6 +187,21 @@ test('Arabic import feedback preserves the filename and required broker column n
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test('mobile navigation has an accessible English title and restores focus after dismissal', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApplication(page);
+  await page.goto('/trips');
+  const trigger = page.getByRole('button', { name: 'Toggle navigation' });
+  await trigger.click();
+  await expect(page.getByRole('dialog')).toHaveAccessibleName('Main navigation');
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
 for (const theme of ['light', 'dark']) {
   for (const mobile of [false, true]) {
     test(`Arabic is readable and accessible in ${theme} theme on ${mobile ? 'mobile' : 'desktop'}`, async ({
@@ -207,8 +222,11 @@ for (const theme of ['light', 'dark']) {
       );
       if (mobile) {
         await page.getByRole('button', { name: 'إظهار قائمة التنقل أو إخفاؤها' }).click();
+        await expect(page.getByRole('dialog')).toHaveAccessibleName('التنقل الرئيسي');
         await expect(page.getByRole('link', { name: 'المستخدمون' })).toBeVisible();
+        expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
         await page.keyboard.press('Escape');
+        await expect(page.getByRole('dialog')).toHaveCount(0);
       }
       const result = await new AxeBuilder({ page }).analyze();
       expect(result.violations).toEqual([]);
