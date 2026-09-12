@@ -1,10 +1,10 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { AuthSessionService, type TenantSession } from '@app/core/auth/auth-session.service';
 import { type ThemePreference, ThemeService } from '@app/core/theme/theme.service';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideMonitor, lucideMoon, lucideRoute, lucideSun } from '@ng-icons/lucide';
+import { lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUsers } from '@ng-icons/lucide';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 
@@ -18,7 +18,7 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
     ...HlmDropdownMenuImports,
     ...HlmSidebarImports,
   ],
-  providers: [provideIcons({ lucideMonitor, lucideMoon, lucideRoute, lucideSun })],
+  providers: [provideIcons({ lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUsers })],
   templateUrl: './app-shell.html',
 })
 export class AppShell {
@@ -26,10 +26,16 @@ export class AppShell {
   readonly theme = inject(ThemeService);
 
   readonly session = input.required<TenantSession>();
+  readonly manageAccess = output();
   readonly signOutPending = signal(false);
   readonly signOutError = signal('');
 
-  readonly navigation = [{ label: 'Trips', route: '/trips', icon: 'lucideRoute' }];
+  readonly navigation = computed(() => [
+    { label: 'Trips', route: '/trips', icon: 'lucideRoute' },
+    ...(this.session().roles.includes('Administrator')
+      ? [{ label: 'Users', route: '/users', icon: 'lucideUsers' }]
+      : []),
+  ]);
 
   setTheme(theme: ThemePreference): void {
     this.theme.setTheme(theme);

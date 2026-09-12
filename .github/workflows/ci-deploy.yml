@@ -50,6 +50,12 @@ jobs:
         working-directory: src/Mdsweep.Web
         run: npm test -- --watch=false
 
+      - name: Test User management in the browser
+        working-directory: src/Mdsweep.Web
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e -- --workers=1
+
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: verify
@@ -74,8 +80,12 @@ jobs:
       Parameters__postgres_username: ${{ secrets.POSTGRES_USERNAME }}
       Parameters__postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
       Parameters__oidc_client_secret: ${{ secrets.OIDC_CLIENT_SECRET }}
-      Parameters__administration_client_secret: ${{ secrets.KEYCLOAK_ADMINISTRATION_CLIENT_SECRET }}
       Parameters__google_routes_api_key: ${{ secrets.GOOGLE_ROUTES_API_KEY }}
+      Parameters__web_base_url: ${{ vars.WEB_BASE_URL }}
+      ConnectionStrings__smtp: ${{ secrets.SMTP_CONNECTION_STRING }}
+      Parameters__smtp_username: ${{ secrets.SMTP_USERNAME }}
+      Parameters__smtp_password: ${{ secrets.SMTP_PASSWORD }}
+      Parameters__smtp_from: ${{ vars.SMTP_FROM }}
 
     steps:
       - uses: actions/checkout@v7
@@ -92,8 +102,8 @@ jobs:
           cache: npm
           cache-dependency-path: src/Mdsweep.Web/package-lock.json
 
-      - name: Install Aspire CLI 13.5.2
-        run: dotnet tool install --global Aspire.Cli --version 13.5.2
+      - name: Install Aspire CLI 13.5.3
+        run: dotnet tool install --global Aspire.Cli --version 13.5.3
 
       - name: Restore dependencies
         run: |

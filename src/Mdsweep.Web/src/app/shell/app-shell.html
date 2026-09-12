@@ -1,5 +1,5 @@
 <div hlmSidebarWrapper class="h-dvh overflow-hidden">
-  <hlm-sidebar>
+  <hlm-sidebar role="navigation" aria-label="Main navigation">
     <button hlmSidebarRail type="button" aria-label="Toggle navigation"></button>
 
     <div hlmSidebarHeader>
@@ -17,7 +17,7 @@
 
     <div hlmSidebarContent>
       <ul hlmSidebarMenu class="px-2">
-        @for (item of navigation; track item.route) {
+        @for (item of navigation(); track item.route) {
           <li hlmSidebarMenuItem>
             <a
               hlmSidebarMenuButton
@@ -84,6 +84,10 @@
 <ng-template #userMenu>
   <div hlmDropdownMenu class="w-64">
     <span hlmDropdownMenuLabel>{{ session().displayName }}</span>
+    <span hlmDropdownMenuLabel>{{ session().tenantName || session().tenantId }}</span>
+    <button hlmDropdownMenuItem type="button" (triggered)="manageAccess.emit()">
+      Tenant access
+    </button>
     <span hlmDropdownMenuLabel>{{ session().roles.join(' · ') }}</span>
     <div hlmDropdownMenuSeparator></div>
     <span hlmDropdownMenuLabel>Theme</span>

@@ -1,10 +1,16 @@
 using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Authorization;
+using Mdsweep.Application.Common.Configuration;
+using Mdsweep.Application.Common.Email;
+using Mdsweep.Application.Common.Security;
 using Mdsweep.Application.Trips.Import.Manifest;
 using Mdsweep.Application.Trips.Scheduling;
+using Mdsweep.Domain.Users;
+using Mdsweep.Infrastructure.Email;
 using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Manifests;
 using Mdsweep.Infrastructure.Persistence;
+using Mdsweep.Infrastructure.Persistence.Repositories;
 using Mdsweep.Infrastructure.Routing;
 
 namespace Mdsweep.Infrastructure;
@@ -25,23 +31,76 @@ public static class DependencyInjection
             .ValidateOnStart();
 
         services
-            .AddOptions<KeycloakAdministrationOptions>()
-            .Bind(configuration.GetSection(KeycloakAdministrationOptions.SectionName))
+            .AddOptions<WebOptions>()
+            .Bind(configuration.GetSection(WebOptions.SectionName))
             .Validate(
-                options => !string.IsNullOrWhiteSpace(options.ClientId),
-                "Keycloak administration client id is required."
-            )
-            .Validate(
-                options => !string.IsNullOrWhiteSpace(options.ClientSecret),
-                "Keycloak administration client secret is required."
+                options =>
+                    Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps),
+                "Web base URL must be an absolute HTTP or HTTPS URL."
             )
             .ValidateOnStart();
 
         services.AddSingleton<IClock>(SystemClock.Instance);
+        services.AddSingleton<ITokenService, SecureTokenService>();
         services.AddScoped<IRepository>(serviceProvider => serviceProvider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<ITenantAccess, TenantAccess>();
         services.AddScoped<IMtmManifestReader, MtmManifestReader>();
 
+        services.AddGoogleMaps(configuration);
+        services.AddMdsweepEmail(configuration);
+
+        return services;
+    }
+
+    public static IServiceCollection AddMdsweepEmail(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        // TODO: consider using options monitoring across the board for all options
+        services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName));
+
+        services.PostConfigure<EmailOptions>(options =>
+        {
+            // Aspire provides SMTP networking through a connection string; MailKit needs host/port.
+            var connectionStringName = Guard.Against.NullOrWhiteSpace(
+                options.ConnectionStringName,
+                "Email:ConnectionStringName"
+            );
+            var connectionString = Guard.Against.NullOrWhiteSpace(
+                configuration.GetConnectionString(connectionStringName),
+                $"ConnectionStrings:{connectionStringName}"
+            );
+
+            var endpoint = ParseSmtpEndpoint(connectionString, connectionStringName);
+
+            options.Host = endpoint.Host;
+            options.Port = endpoint.Port;
+        });
+
+        services.AddScoped<IEmailSender, EmailSender>();
+        return services;
+    }
+
+    private static (string Host, int Port) ParseSmtpEndpoint(string connectionString, string connectionStringName)
+    {
+        var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
+        var endpointValue = Guard.Against.Null(
+            builder.TryGetValue("endpoint", out var value) ? value : null,
+            $"ConnectionStrings:{connectionStringName}:endpoint"
+        );
+        var endpoint = Guard.Against.Null(
+            Uri.TryCreate(endpointValue.ToString(), UriKind.Absolute, out var uri) ? uri : null,
+            $"ConnectionStrings:{connectionStringName}:endpoint"
+        );
+
+        return (endpoint.Host, endpoint.Port);
+    }
+
+    private static void AddGoogleMaps(this IServiceCollection services, IConfiguration configuration)
+    {
         services
             .AddOptions<GoogleRoutesOptions>()
             .Bind(configuration.GetSection(GoogleRoutesOptions.SectionName))
@@ -58,9 +117,5 @@ public static class DependencyInjection
         );
 
         services.AddScoped<IRouteEstimateProvider, GoogleRouteEstimateProvider>();
-
-        services.AddHttpClient<IKeycloakUserAdministration, KeycloakUserAdministration>();
-
-        return services;
     }
 }

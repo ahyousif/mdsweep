@@ -36,8 +36,7 @@ public sealed class GoogleRoutesConfigurationTests
             ["Authentication:Authority"] = "https://keycloak.test/realms/mdsweep",
             ["Authentication:ClientId"] = "mdsweep-test",
             ["Authentication:ClientSecret"] = "test-secret",
-            ["KeycloakAdministration:ClientId"] = "mdsweep-administration-test",
-            ["KeycloakAdministration:ClientSecret"] = "test-administration-secret",
+            ["Web:BaseUrl"] = "https://web.mdsweep.test",
             ["GoogleRoutes:ApiKey"] = apiKey,
         };
 

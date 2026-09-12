@@ -1,6 +1,7 @@
-using System.Security.Claims;
-using Mdsweep.Api.Common.Authentication;
+﻿using Mdsweep.Api.Common.Authentication;
 using Mdsweep.Api.Common.Authorization;
+using Mdsweep.Api.Common.Identity;
+using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Infrastructure.Identity;
 
 namespace Mdsweep.Api.Configuration;
@@ -9,6 +10,8 @@ public static class ApiExtensions
 {
     public static WebApplicationBuilder AddApi(this WebApplicationBuilder builder)
     {
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<ICurrentIdentity, CurrentIdentity>();
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
             options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -52,10 +55,22 @@ public static class ApiExtensions
                     oidc.ClientId = configuration.ClientId;
                     oidc.ClientSecret = configuration.ClientSecret;
                     oidc.ResponseType = OpenIdConnectResponseType.Code;
-                    // The OIDC handler reads this ID token as id_token_hint during RP-initiated logout.
+                    oidc.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                    oidc.SignOutScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     oidc.SaveTokens = true;
                     oidc.RequireHttpsMetadata = !environment.IsDevelopment();
                     oidc.TokenValidationParameters.NameClaimType = "sub";
+                    oidc.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                    {
+                        // A freshly saved ID token is Keycloak's preferred RP identifier. New invitees
+                        // can sign out before one is available, so fall back to the configured client ID.
+                        if (string.IsNullOrWhiteSpace(context.ProtocolMessage.IdTokenHint))
+                        {
+                            context.ProtocolMessage.ClientId = context.Options.ClientId;
+                        }
+
+                        return Task.CompletedTask;
+                    };
                     oidc.Events.OnTokenValidated = async context =>
                     {
                         var subject = context.Principal?.FindFirstValue("sub");
@@ -86,6 +101,13 @@ public static class ApiExtensions
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy(
+                AuthorizationPolicies.UsersManage,
+                policy =>
+                    policy
+                        .RequireAuthenticatedUser()
+                        .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator))
+            );
+            options.AddPolicy(
                 AuthorizationPolicies.TripsViewAll,
                 policy =>
                 {
@@ -98,23 +120,17 @@ public static class ApiExtensions
             options.AddPolicy(
                 AuthorizationPolicies.TripsManage,
                 policy =>
-                    policy.AddRequirements(
-                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
-                    )
+                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
             );
             options.AddPolicy(
                 AuthorizationPolicies.TripsImport,
                 policy =>
-                    policy.AddRequirements(
-                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
-                    )
+                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
             );
             options.AddPolicy(
                 AuthorizationPolicies.PassengersManage,
                 policy =>
-                    policy.AddRequirements(
-                        new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher)
-                    )
+                    policy.AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
             );
         });
 

@@ -12,13 +12,23 @@ public sealed class DispatcherAuthenticationHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var identity = new ClaimsIdentity(
-            [
-                new Claim("sub", "dispatcher-test"),
-                new Claim(CustomClaimTypes.ActiveTenantId, "mdsw-eep2-3456"),
-            ],
-            Scheme.Name
-        );
+        if (Request.Headers["X-Test-Anonymous"] == "true")
+            return Task.FromResult(AuthenticateResult.NoResult());
+        var claims = new List<Claim>
+        {
+            new("sub", Request.Headers["X-Test-Subject"].FirstOrDefault() ?? "dispatcher-test"),
+            new("email", Request.Headers["X-Test-Email"].FirstOrDefault() ?? "dispatcher@example.test"),
+            new(
+                "email_verified",
+                Request.Headers["X-Test-Email-Verified"].FirstOrDefault() ?? bool.TrueString
+            ),
+        };
+        var tenantId =
+            Request.Headers["X-Test-Tenant"].FirstOrDefault()
+            ?? "mdsw-eep2-3456";
+        if (!string.IsNullOrWhiteSpace(tenantId))
+            claims.Add(new Claim(CustomClaimTypes.ActiveTenantId, tenantId));
+        var identity = new ClaimsIdentity(claims, Scheme.Name);
         return Task.FromResult(
             AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name))
         );

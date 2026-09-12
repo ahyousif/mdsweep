@@ -10,11 +10,17 @@ Each Tenant has a lowercase, unambiguous identifier in `xxxx-xxxx-xxxx` form.
 _Avoid_: Provider, client, account
 
 **User**:
-A person who can authenticate to MDSweep. A User may hold more than one role for a Tenant.
+A person who can authenticate to MDSweep. A User may access multiple Tenants and holds one or two distinct roles in each Tenant Membership.
 _Avoid_: App User
 
 **Tenant Membership**:
-A User's authorized relationship to a Tenant, including roles such as Dispatcher or Driver.
+A User's authorized relationship to one Tenant, with one or two distinct roles chosen from Administrator, Dispatcher, and Driver. Roles and active access belong to that membership; changes do not alter the User's other memberships.
+
+**Administrator**:
+A Tenant Membership role allowed to manage all Users and Invitations in that Tenant, as well as Dispatcher operations.
+
+**Invitation**:
+A Tenant's pending offer of access to an email address with one or two roles. The recipient signs up or signs in through Keycloak and accepts before the Tenant Membership is created. An existing User identity is reused across Tenants. An invitation expires after seven days and may be resent or revoked.
 
 **Dispatcher**:
 A Tenant Membership role allowed to manage Passengers and Drivers, accept Manifests, plan and assign Trips, review outcomes, and prepare billing.

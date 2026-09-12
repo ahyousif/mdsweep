@@ -8,21 +8,20 @@ public sealed class TenantMembershipConfiguration : IEntityTypeConfiguration<Ten
     public void Configure(EntityTypeBuilder<TenantMembership> builder)
     {
         builder.ToTable("tenant_memberships");
-        builder.HasKey(membership => membership.Id);
-        builder.Property(membership => membership.Id).HasColumnName("id");
-        builder.Property(membership => membership.TenantId).HasColumnName("tenant_id").HasMaxLength(14);
-        builder.Property(membership => membership.UserId).HasColumnName("user_id");
-        builder.Property(membership => membership.Role).HasColumnName("role").HasMaxLength(40);
-        builder.HasIndex(membership => new { membership.TenantId, membership.UserId, membership.Role }).IsUnique();
-        builder
-            .HasOne<TenantAggregate>()
-            .WithMany()
-            .HasForeignKey(membership => membership.TenantId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder
-            .HasOne<UserAggregate>()
-            .WithMany()
-            .HasForeignKey(membership => membership.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.Property(x => x.TenantId).HasMaxLength(14).IsRequired();
+        builder.Property(x => x.UserId).IsRequired();
+        builder.Property(x => x.Roles).HasColumnType("text[]").IsRequired();
+        builder.Property(x => x.DisplayName).HasMaxLength(100);
+        builder.Property(x => x.IsActive).IsRequired();
+
+        builder.HasIndex(x => new { x.TenantId, x.UserId }).IsUnique();
+
+        builder.HasOne<TenantAggregate>().WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<UserAggregate>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
     }
 }

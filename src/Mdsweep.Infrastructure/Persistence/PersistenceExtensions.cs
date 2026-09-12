@@ -1,4 +1,4 @@
-using Mdsweep.Application.Common.Abstractions;
+﻿using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Domain.Common.Abstractions;
 
 namespace Mdsweep.Infrastructure.Persistence;
@@ -23,10 +23,7 @@ public static class PersistenceExtensions
 
         options.Services.AddDbContextWithWolverineManagedConjoinedTenancy<ApplicationDbContext>(
             (db, connectionString) =>
-                db.UseNpgsql(
-                        connectionString.Value,
-                        opts => opts.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName).UseNodaTime()
-                    )
+                db.ConfigureForMdsweep(connectionString.Value)
                     // Narrowly suppresses Wolverine-managed conjoined-tenancy runtime filters,
                     // which do not change the EF migration model.
                     .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))

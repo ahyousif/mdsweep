@@ -1,0 +1,125 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div hlmFieldGroup>
+    @if (inviting()) {
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div hlmField>
+          <label hlmFieldLabel [for]="prefix() + '-first'">First name</label>
+          <input
+            hlmInput
+            [id]="prefix() + '-first'"
+            formControlName="firstName"
+            autocomplete="given-name"
+            maxlength="200"
+            required
+          />
+          @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
+            <hlm-field-error>Enter a first name.</hlm-field-error>
+          }
+        </div>
+        <div hlmField>
+          <label hlmFieldLabel [for]="prefix() + '-last'">Last name</label>
+          <input
+            hlmInput
+            [id]="prefix() + '-last'"
+            formControlName="lastName"
+            autocomplete="family-name"
+            maxlength="200"
+            required
+          />
+          @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
+            <hlm-field-error>Enter a last name.</hlm-field-error>
+          }
+        </div>
+      </div>
+    } @else {
+      <div hlmField>
+        <label hlmFieldLabel [for]="prefix() + '-display-name'">Display name</label>
+        <input
+          hlmInput
+          [id]="prefix() + '-display-name'"
+          formControlName="displayName"
+          maxlength="401"
+          required
+        />
+        <p hlmFieldDescription>The name used in this Tenant.</p>
+        @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+          <hlm-field-error>Enter a display name of up to 401 characters.</hlm-field-error>
+        }
+      </div>
+      <p hlmFieldDescription>
+        Profile: {{ value()?.firstName }} {{ value()?.lastName }} · {{ value()?.email }}
+      </p>
+    }
+    @if (inviting()) {
+      <div hlmField>
+        <label hlmFieldLabel [for]="prefix() + '-email'">Email</label>
+        <input
+          hlmInput
+          [id]="prefix() + '-email'"
+          formControlName="email"
+          type="email"
+          autocomplete="email"
+          maxlength="254"
+          required
+        />
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <hlm-field-error>Enter a valid email address.</hlm-field-error>
+        }
+      </div>
+    }
+    <div class="flex flex-col gap-3">
+      <fieldset
+        hlmFieldSet
+        [attr.aria-describedby]="
+          prefix() +
+          '-roles-help' +
+          (form.controls.roles.invalid && form.controls.roles.touched
+            ? ' ' + prefix() + '-roles-error'
+            : '')
+        "
+      >
+        <legend hlmFieldLegend>Roles</legend>
+        <p hlmFieldDescription [id]="prefix() + '-roles-help'">Choose one or two roles.</p>
+        <div hlmFieldGroup data-slot="checkbox-group">
+          @for (role of availableRoles; track role) {
+            <div hlmField orientation="horizontal">
+              <hlm-checkbox
+                [inputId]="prefix() + '-role-' + role"
+                [checked]="form.controls.roles.value.includes(role)"
+                [disabled]="
+                  form.controls.roles.value.length >= 2 && !form.controls.roles.value.includes(role)
+                "
+                (checkedChange)="setRole(role, $event)"
+              />
+              <label hlmFieldLabel [for]="prefix() + '-role-' + role">{{ role }}</label>
+            </div>
+          }
+        </div>
+      </fieldset>
+      <!-- Keep the error outside the fieldset to avoid Chrome collapsing its container-query controls. -->
+      @if (form.controls.roles.invalid && form.controls.roles.touched) {
+        <hlm-field-error [id]="prefix() + '-roles-error'">Choose one or two roles.</hlm-field-error>
+      }
+    </div>
+    @if (!inviting()) {
+      <div hlmField orientation="horizontal">
+        <hlm-checkbox [inputId]="prefix() + '-active'" formControlName="isActive" />
+        <div hlmFieldContent>
+          <label hlmFieldLabel [for]="prefix() + '-active'">Active access</label>
+          <p hlmFieldDescription>Deactivating blocks access to this Tenant.</p>
+        </div>
+      </div>
+    }
+    <div hlmField orientation="horizontal">
+      <button hlmBtn type="submit" [disabled]="busy()">
+        @if (busy()) {
+          <hlm-spinner aria-hidden="true" />
+        }
+        {{ busy() ? 'Saving...' : inviting() ? 'Send invitation' : 'Save changes' }}
+      </button>
+      <button hlmBtn variant="outline" type="button" [disabled]="busy()" (click)="cancelled.emit()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</form>

@@ -87,6 +87,18 @@
       ],
       "@spartan-ng/helm/dialog": [
         "./src/app/ui/dialog/src/index.ts"
+      ],
+      "@spartan-ng/helm/field": [
+        "./src/app/ui/field/src/index.ts"
+      ],
+      "@spartan-ng/helm/empty": [
+        "./src/app/ui/empty/src/index.ts"
+      ],
+      "@spartan-ng/helm/typography": [
+        "./src/app/ui/typography/src/index.ts"
+      ],
+      "@spartan-ng/helm/tabs": [
+        "./src/app/ui/tabs/src/index.ts"
       ]
     }
   },

@@ -5,11 +5,13 @@
     <PackageReference Include="Ardalis.Specification" />
     <PackageReference Include="Ardalis.Specification.EntityFrameworkCore" />
     <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
     <PackageReference Include="WolverineFx" />
@@ -19,5 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Mdsweep.Application\Mdsweep.Application.csproj" />
     <ProjectReference Include="..\Mdsweep.Domain\Mdsweep.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mdsweep.Api.IntegrationTests" />
   </ItemGroup>
 </Project>

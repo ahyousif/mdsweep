@@ -1,22 +1,8 @@
 {
   "realm": "mdsweep",
   "enabled": true,
+  "registrationAllowed": true,
   "browserFlow": "mdsweep-browser",
-  "organizationsEnabled": true,
-  "organizations": [
-    {
-      "id": "b6d8ea17-b31c-45c0-b5f2-4fec5df7c6cf",
-      "name": "Synthetic Provider",
-      "alias": "synthetic-provider",
-      "enabled": true,
-      "domains": [
-        {
-          "name": "synthetic-provider.example.test",
-          "verified": false
-        }
-      ]
-    }
-  ],
   "authenticationFlows": [
     {
       "alias": "mdsweep-browser",
@@ -81,25 +67,9 @@
         "post.logout.redirect.uris": "http://localhost:4200/signout-callback-oidc"
       },
       "webOrigins": ["http://localhost:4200"]
-    },
-    {
-      "clientId": "mdsweep-administration",
-      "enabled": true,
-      "publicClient": false,
-      "secret": "Development-only-administration-secret",
-      "serviceAccountsEnabled": true,
-      "standardFlowEnabled": false
     }
   ],
   "users": [
-    {
-      "username": "service-account-mdsweep-administration",
-      "enabled": true,
-      "serviceAccountClientId": "mdsweep-administration",
-      "clientRoles": {
-        "realm-management": ["manage-realm", "manage-users", "view-users"]
-      }
-    },
     {
       "id": "d4ba70d7-6173-4ad0-9b48-59aa2c6a322a",
       "username": "developer@mdsweep.com",

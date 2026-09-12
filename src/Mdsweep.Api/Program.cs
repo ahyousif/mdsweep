@@ -35,6 +35,7 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
 // This is the sole enforcement boundary for authenticated unsafe API requests.
 app.UseAuthenticatedApiAntiforgery();
 app.UseAntiforgery();

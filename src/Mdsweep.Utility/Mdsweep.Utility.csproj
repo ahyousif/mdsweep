@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mdsweep.Application\Mdsweep.Application.csproj" />
+    <ProjectReference Include="..\Mdsweep.Infrastructure\Mdsweep.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

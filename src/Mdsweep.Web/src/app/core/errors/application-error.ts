@@ -5,6 +5,7 @@ export class ApplicationError extends Error {
     message: string,
     readonly status: number,
     readonly title?: string,
+    readonly validationErrors: Readonly<Record<string, readonly string[]>> = {},
   ) {
     super(message);
   }
@@ -16,11 +17,26 @@ export function toApplicationError(error: unknown): ApplicationError {
   }
 
   const detail = error.error?.detail ?? error.error?.message;
+  const validation = error.error?.errors;
+  const validationErrors =
+    validation && typeof validation === 'object'
+      ? (validation as Record<string, readonly string[]>)
+      : {};
+  const validationMessage =
+    validation && typeof validation === 'object'
+      ? Object.values(validationErrors)
+          .flat()
+          .filter((value): value is string => typeof value === 'string')
+          .join(' ')
+      : '';
   const message =
     typeof detail === 'string'
       ? detail
-      : error.status === 0
-        ? 'Network connection unavailable.'
-        : 'The request could not be completed.';
-  return new ApplicationError(message, error.status, error.error?.title);
+      : validationMessage ||
+        (error.status === 409
+          ? 'This record changed. Refresh the page before trying again.'
+          : error.status === 0
+            ? 'Network connection unavailable.'
+            : 'The request could not be completed.');
+  return new ApplicationError(message, error.status, error.error?.title, validationErrors);
 }

@@ -1,0 +1,65 @@
+<div class="flex flex-col gap-8 pb-4">
+  <div class="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight">Users</h1>
+      <p class="text-muted-foreground mt-1">Manage who can access your tenant.</p>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="relative sm:w-72">
+        <ng-icon
+          name="lucideSearch"
+          class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4
+            -translate-y-1/2"
+          aria-hidden="true"
+        />
+        <input
+          hlmInput
+          id="user-search"
+          type="search"
+          class="w-full pl-9"
+          [value]="search()"
+          (input)="onSearchInput($event)"
+          placeholder="Search by name or email"
+          aria-label="Search users"
+        />
+      </div>
+
+      <button
+        hlmBtn
+        type="button"
+        class="inline-flex items-center gap-2"
+        [disabled]="busy()"
+        (click)="inviteClicked.emit()"
+      >
+        <ng-icon name="lucidePlus" class="size-4" aria-hidden="true" />
+        Invite user
+      </button>
+    </div>
+  </div>
+
+  <nav class="flex gap-2 overflow-x-auto border-b" aria-label="Filter users by status">
+    @for (filter of filters; track filter) {
+      <button
+        type="button"
+        class="relative flex shrink-0 items-center gap-2 px-3 pb-3 text-sm font-medium
+          transition-colors"
+        [class.text-primary]="activeFilter() === filter"
+        [class.text-muted-foreground]="activeFilter() !== filter"
+        [attr.aria-pressed]="activeFilter() === filter"
+        (click)="filterChange.emit(filter)"
+      >
+        {{ filter }}
+        <span
+          class="bg-muted text-muted-foreground inline-flex min-w-6 items-center justify-center
+            rounded-full px-2 py-0.5 text-xs"
+        >
+          {{ counts()[filter] }}
+        </span>
+        @if (activeFilter() === filter) {
+          <span class="bg-primary absolute inset-x-0 bottom-0 h-0.5" aria-hidden="true"></span>
+        }
+      </button>
+    }
+  </nav>
+</div>

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Mdsweep.Api.Common.Authentication;
 
 namespace Mdsweep.Api.Common.Authorization;

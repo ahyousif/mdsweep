@@ -24,7 +24,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_passengers", x => x.id);
+                    table.PrimaryKey("pk_passengers", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -33,12 +33,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 {
                     id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
                     name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    keycloak_organization_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    default_sender_email = table.Column<string>(type: "text", nullable: true),
                     pickup_buffer_minutes = table.Column<int>(type: "integer", nullable: false, defaultValue: 15)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_tenants", x => x.id);
+                    table.PrimaryKey("pk_tenants", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -46,13 +46,14 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    first_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    keycloak_user_id = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
+                    first_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    last_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    keycloak_user_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_users", x => x.id);
+                    table.PrimaryKey("pk_users", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -88,11 +89,38 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_trips", x => x.id);
+                    table.PrimaryKey("pk_trips", x => x.id);
                     table.ForeignKey(
-                        name: "FK_trips_passengers_PassengerId",
+                        name: "fk_trips_passengers_passenger_id",
                         column: x => x.passenger_id,
                         principalTable: "passengers",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "invitations",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
+                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    first_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    last_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    display_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    roles = table.Column<string[]>(type: "text[]", nullable: false),
+                    token_hash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    expires_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                    accepted_at = table.Column<Instant>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_invitations", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_invitations_tenants_tenant_id",
+                        column: x => x.tenant_id,
+                        principalTable: "tenants",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -104,19 +132,21 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    role = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false)
+                    roles = table.Column<string[]>(type: "text[]", nullable: false),
+                    display_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_tenant_memberships", x => x.id);
+                    table.PrimaryKey("pk_tenant_memberships", x => x.id);
                     table.ForeignKey(
-                        name: "FK_tenant_memberships_tenants_tenant_id",
+                        name: "fk_tenant_memberships_tenants_tenant_id",
                         column: x => x.tenant_id,
                         principalTable: "tenants",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_tenant_memberships_users_user_id",
+                        name: "fk_tenant_memberships_users_user_id",
                         column: x => x.user_id,
                         principalTable: "users",
                         principalColumn: "id",
@@ -124,41 +154,59 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_passengers_TenantId_BrokerMemberId",
+                name: "ix_invitations_tenant_id",
+                table: "invitations",
+                column: "tenant_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_invitations_tenant_id_email",
+                table: "invitations",
+                columns: new[] { "tenant_id", "email" },
+                unique: true,
+                filter: "status = 'Pending'");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_invitations_token_hash",
+                table: "invitations",
+                column: "token_hash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_passengers_tenant_id_broker_member_id",
                 table: "passengers",
                 columns: new[] { "tenant_id", "broker_member_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_tenant_id_user_id_role",
+                name: "ix_tenant_memberships_tenant_id_user_id",
                 table: "tenant_memberships",
-                columns: new[] { "tenant_id", "user_id", "role" },
+                columns: new[] { "tenant_id", "user_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_tenant_memberships_user_id",
+                name: "ix_tenant_memberships_user_id",
                 table: "tenant_memberships",
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_tenants_KeycloakOrganizationId",
-                table: "tenants",
-                column: "keycloak_organization_id",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_trips_PassengerId",
+                name: "ix_trips_passenger_id",
                 table: "trips",
                 column: "passenger_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_trips_TenantId_BrokerTripNumber",
+                name: "ix_trips_tenant_id_broker_trip_number",
                 table: "trips",
                 columns: new[] { "tenant_id", "broker_trip_number" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_users_keycloak_user_id",
+                name: "ix_users_email",
+                table: "users",
+                column: "email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_users_keycloak_user_id",
                 table: "users",
                 column: "keycloak_user_id",
                 unique: true);
@@ -167,6 +215,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "invitations");
+
             migrationBuilder.DropTable(
                 name: "tenant_memberships");
 
