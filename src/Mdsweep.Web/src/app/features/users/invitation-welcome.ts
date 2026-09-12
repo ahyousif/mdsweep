@@ -1,3 +1,5 @@
+import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
+import { TranslatePipe } from '@ngx-translate/core';
 import { DOCUMENT } from '@angular/common';
 import { Component, inject, input, output, signal } from '@angular/core';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
@@ -13,7 +15,15 @@ import { UsersApi } from './users.api';
 
 @Component({
   selector: 'app-invitation-welcome',
-  imports: [HlmButton, HlmSpinner, HlmMuted, HlmAlertImports, HlmCardImports],
+  imports: [
+    UiMessagePipe,
+    TranslatePipe,
+    HlmButton,
+    HlmSpinner,
+    HlmMuted,
+    HlmAlertImports,
+    HlmCardImports,
+  ],
   templateUrl: './invitation-welcome.html',
 })
 export default class InvitationWelcome {
@@ -26,7 +36,7 @@ export default class InvitationWelcome {
   readonly currentEmail = input<string | null>(null);
   readonly closed = output();
   readonly accepted = output();
-  readonly error = signal('');
+  readonly error = signal<UiMessage | null>(null);
   readonly accountMismatch = signal(false);
   readonly acceptanceComplete = signal(false);
   readonly sessions = injectQuery(() => ({
@@ -36,8 +46,7 @@ export default class InvitationWelcome {
   }));
   readonly selection = injectMutation(() => ({
     mutationFn: (tenantId: string) => this.#auth.switchTenant(tenantId),
-    onError: (error: unknown) =>
-      this.error.set(httpErrorMessage(error, 'Could not switch Tenant. Try again.')),
+    onError: (error: unknown) => this.error.set(httpErrorMessage(error, 'errors.switchTenant')),
   }));
   readonly signingOut = signal(false);
   readonly acceptance = injectMutation(() => ({
@@ -53,7 +62,7 @@ export default class InvitationWelcome {
 
       if (this.#auth.toTenantSession(session) === null) {
         this.acceptanceComplete.set(true);
-        this.error.set('');
+        this.error.set(null);
         return;
       }
 
@@ -65,10 +74,10 @@ export default class InvitationWelcome {
         error.validationErrors['invitationEmailMismatch'] !== undefined
       ) {
         this.accountMismatch.set(true);
-        this.error.set('');
+        this.error.set(null);
         return;
       }
-      this.error.set(httpErrorMessage(error, 'The invitation could not be accepted. Try again.'));
+      this.error.set(httpErrorMessage(error, 'errors.acceptInvitation'));
     },
   }));
 
@@ -86,7 +95,7 @@ export default class InvitationWelcome {
     try {
       await this.#auth.signOut();
     } catch (error) {
-      this.error.set(httpErrorMessage(error, 'Could not sign out. Try again.'));
+      this.error.set(httpErrorMessage(error, 'errors.signOut'));
       this.signingOut.set(false);
     }
   }

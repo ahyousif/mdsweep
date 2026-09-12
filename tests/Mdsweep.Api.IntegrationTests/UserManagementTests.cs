@@ -26,12 +26,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             administrator.SetRoles(["Administrator"]);
 
             var user = UserAggregate.Create("Existing", "Member", "existing-member", email);
-            var membership = TenantMembership.Create(
-                ActiveTenantId,
-                user.Id,
-                "Existing Member",
-                ["Driver"]
-            );
+            var membership = TenantMembership.Create(ActiveTenantId, user.Id, "Existing Member", ["Driver"]);
             membership.SetActive(isActive);
             db.Users.Add(user);
             db.TenantMemberships.Add(membership);
@@ -58,10 +53,50 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             "already belongs to this Tenant",
             problem.RootElement.GetProperty("errors").GetProperty("email")[0].GetString()
         );
+        Assert.Equal(
+            "membershipExists",
+            problem.RootElement.GetProperty("localizedErrors")[0].GetProperty("code").GetString()
+        );
+        Assert.Equal("email", problem.RootElement.GetProperty("localizedErrors")[0].GetProperty("field").GetString());
 
         await using var verificationScope = Application.Services.CreateAsyncScope();
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.DoesNotContain(await verificationDb.Invitations.ToListAsync(), x => x.Email == email);
+    }
+
+    [Fact]
+    public async Task Invalid_invitation_fields_return_codes_with_field_names()
+    {
+        await using (var scope = Application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            (await db.TenantMemberships.SingleAsync()).SetRoles(["Administrator"]);
+            await db.SaveChangesAsync();
+        }
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var response = await client.PostAsJsonAsync(
+            "/api/users/invitations",
+            new
+            {
+                email = "invalid",
+                firstName = "",
+                lastName = "Synthetic",
+                roles = new[] { "UnknownRole" },
+            }
+        );
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
+        var errors = problem.RootElement.GetProperty("localizedErrors").EnumerateArray().ToArray();
+        Assert.Contains(
+            errors,
+            error =>
+                error.GetProperty("code").GetString() == "emailInvalid"
+                && error.GetProperty("field").GetString() == "Email"
+        );
+        Assert.Contains(errors, error => error.GetProperty("code").GetString() == "firstNameRequired");
+        Assert.Contains(errors, error => error.GetProperty("code").GetString() == "rolesInvalid");
+        Assert.True(problem.RootElement.TryGetProperty("errors", out _));
     }
 
     [Fact]
@@ -75,12 +110,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             var administrator = await db.TenantMemberships.SingleAsync();
             administrator.SetRoles(["Administrator"]);
 
-            var user = UserAggregate.Create(
-                "Synthetic",
-                "Driver",
-                "synthetic-driver",
-                "synthetic-driver@example.test"
-            );
+            var user = UserAggregate.Create("Synthetic", "Driver", "synthetic-driver", "synthetic-driver@example.test");
             userId = user.Id;
             db.Users.Add(user);
             db.TenantMemberships.Add(
@@ -94,7 +124,12 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
 
         using var disableResponse = await client.PutAsJsonAsync(
             $"/api/users/{userId}",
-            new { displayName = "Synthetic Driver", roles = new[] { "Driver" }, isActive = false }
+            new
+            {
+                displayName = "Synthetic Driver",
+                roles = new[] { "Driver" },
+                isActive = false,
+            }
         );
 
         Assert.Equal(HttpStatusCode.NoContent, disableResponse.StatusCode);
@@ -102,7 +137,12 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
 
         using var enableResponse = await client.PutAsJsonAsync(
             $"/api/users/{userId}",
-            new { displayName = "Synthetic Driver", roles = new[] { "Driver" }, isActive = true }
+            new
+            {
+                displayName = "Synthetic Driver",
+                roles = new[] { "Driver" },
+                isActive = true,
+            }
         );
 
         Assert.Equal(HttpStatusCode.NoContent, enableResponse.StatusCode);
@@ -119,17 +159,10 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             administrator.SetRoles(["Administrator"]);
 
             var otherTenant = TenantAggregate.Create(OtherTenantId, "Other Synthetic Tenant");
-            var otherUser = UserAggregate.Create(
-                "Other",
-                "User",
-                "other-tenant-user",
-                "other-user@example.test"
-            );
+            var otherUser = UserAggregate.Create("Other", "User", "other-tenant-user", "other-user@example.test");
             db.Tenants.Add(otherTenant);
             db.Users.Add(otherUser);
-            db.TenantMemberships.Add(
-                TenantMembership.Create(OtherTenantId, otherUser.Id, "Other User", ["Driver"])
-            );
+            db.TenantMemberships.Add(TenantMembership.Create(OtherTenantId, otherUser.Id, "Other User", ["Driver"]));
             db.Invitations.AddRange(
                 CreateInvitation(ActiveTenantId, "active-invitee@example.test"),
                 CreateInvitation(OtherTenantId, "other-invitee@example.test")
@@ -142,10 +175,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
-        var emails = body
-            .RootElement.EnumerateArray()
-            .Select(item => item.GetProperty("email").GetString())
-            .ToList();
+        var emails = body.RootElement.EnumerateArray().Select(item => item.GetProperty("email").GetString()).ToList();
         Assert.Contains("dispatcher@example.test", emails);
         Assert.Contains("active-invitee@example.test", emails);
         Assert.DoesNotContain("other-user@example.test", emails);
@@ -179,8 +209,8 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         await using var verificationScope = Application.Services.CreateAsyncScope();
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var invitationStatus = await verificationDb.Invitations
-            .Where(invitation => invitation.Id == invitationId)
+        var invitationStatus = await verificationDb
+            .Invitations.Where(invitation => invitation.Id == invitationId)
             .Select(invitation => invitation.Status)
             .SingleAsync();
         Assert.Equal(InvitationStatus.Pending, invitationStatus);

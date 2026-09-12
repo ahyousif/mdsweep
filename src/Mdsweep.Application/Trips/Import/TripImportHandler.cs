@@ -76,7 +76,8 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                         row.RowNumber,
                         row.TripNumber,
                         "TripNumber",
-                        "Trip number appears more than once in this manifest."
+                        "Trip number appears more than once in this manifest.",
+                        "manifest.duplicateTrip"
                     )
                 );
             }
@@ -95,7 +96,8 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                                 row.RowNumber,
                                 row.TripNumber,
                                 "MemberId",
-                                "This trip is already assigned to a different passenger."
+                                "This trip is already assigned to a different passenger.",
+                                "manifest.passengerMismatch"
                             )
                         );
                     }

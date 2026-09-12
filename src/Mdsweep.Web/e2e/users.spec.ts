@@ -187,7 +187,9 @@ test('manages active, invited, and disabled users in one selectable list', async
   await expect(detailPanel.getByRole('heading', { name: 'Details', exact: true })).toBeVisible();
   await expect(detailPanel.getByText('Roles', { exact: true })).toBeVisible();
   await expect(detailPanel.getByText('Status', { exact: true })).toBeVisible();
-  await expect(detailPanel.getByText('Prevent this user from accessing this tenant.')).toBeVisible();
+  await expect(
+    detailPanel.getByText('Prevent this user from accessing this tenant.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Disable user' })).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
@@ -321,8 +323,9 @@ test('invitation dialog supports keyboard dismissal and preserves failed submiss
       status: 400,
       json: {
         errors: {
-          email: ['An invitation already exists for this email. Resend or revoke it first.'],
+          email: ['This user already belongs to this Tenant.'],
         },
+        localizedErrors: [{ field: 'email', code: 'membershipExists' }],
       },
     }),
   );
@@ -350,7 +353,7 @@ test('invitation dialog supports keyboard dismissal and preserves failed submiss
   await dialog.getByLabel('Last name', { exact: true }).fill('Example');
   await dialog.getByLabel('Email', { exact: true }).fill('jordan@example.test');
   await dialog.getByRole('button', { name: 'Send invitation', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('An invitation already exists');
+  await expect(dialog.getByRole('alert')).toContainText('already belongs to this Tenant');
   await expect(dialog.getByLabel('Email', { exact: true })).toHaveValue('jordan@example.test');
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('invite-dialog-mobile.png'), fullPage: true });
@@ -387,9 +390,7 @@ test('Users list errors recover to accessible empty results', async ({ page }) =
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
-test('invitation acceptance shows failed token feedback', async ({
-  page,
-}, testInfo) => {
+test('invitation acceptance shows failed token feedback', async ({ page }, testInfo) => {
   await page.route('**/api/auth/**', (route) =>
     route.fulfill({
       json: route.request().url().endsWith('/session')
@@ -398,12 +399,18 @@ test('invitation acceptance shows failed token feedback', async ({
     }),
   );
   await page.route('**/api/users/invitations/accept', (route) =>
-    route.fulfill({ status: 400, json: { detail: 'This invitation token is invalid.' } }),
+    route.fulfill({
+      status: 400,
+      json: {
+        errors: { token: ['Invalid invitation'] },
+        localizedErrors: [{ field: 'token', code: 'invitationInvalid' }],
+      },
+    }),
   );
   await page.goto('/invitations/accept?token=invalid-token');
   await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText(
-    'This invitation token is invalid.',
+    'This invitation is invalid, expired, cancelled, or already used.',
   );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('invitation-feedback.png'), fullPage: true });
@@ -510,9 +517,7 @@ test('existing Users can accept another Tenant invitation from its secure link',
       });
     return route.fulfill({ json: { token: 'synthetic-token' } });
   });
-  await page.route('**/api/users', (route) =>
-    route.fulfill({ json: [] }),
-  );
+  await page.route('**/api/users', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/users/invitations/accept', (route) => {
     expect(route.request().postDataJSON()).toEqual({ token: 'second-tenant-token' });
     accepted = true;

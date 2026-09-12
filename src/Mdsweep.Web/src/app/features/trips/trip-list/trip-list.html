@@ -3,12 +3,11 @@
     <section>
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-lg font-semibold">
-          {{ group.label }}
+          {{ group.label | translate }}
         </h2>
 
         <span class="text-muted-foreground text-sm">
-          {{ group.trips.length }}
-          {{ group.trips.length === 1 ? 'trip' : 'trips' }}
+          {{ 'trips.count' | translate: { count: group.trips.length } }}
         </span>
       </div>
 

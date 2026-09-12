@@ -1,3 +1,4 @@
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -12,7 +13,7 @@ export const userStatusFilters: UserStatusFilter[] = ['All', 'Active', 'Invited'
 
 @Component({
   selector: 'app-user-toolbar',
-  imports: [NgIcon, HlmButton, HlmInput],
+  imports: [TranslatePipe, NgIcon, HlmButton, HlmInput],
   providers: [provideIcons({ lucidePlus, lucideSearch })],
   templateUrl: './user-toolbar.html',
 })

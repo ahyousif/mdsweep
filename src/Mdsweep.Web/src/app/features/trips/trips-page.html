@@ -1,4 +1,4 @@
-<div class="flex h-full min-h-0 overflow-hidden">
+<div class="relative flex h-full min-h-0 overflow-hidden">
   <!-- Trips workspace -->
   <section class="bg-muted/10 flex min-w-0 flex-1 flex-col overflow-hidden">
     <!-- Fixed toolbar -->
@@ -19,6 +19,16 @@
 
     <!-- Only the trip list scrolls -->
     <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+      @if (tripsQuery.isPending()) {
+        <p class="py-4" role="status">{{ 'trips.loading' | translate }}</p>
+      } @else if (tripsQuery.isError()) {
+        <p class="text-destructive py-4" role="alert">{{ loadError() | uiMessage }}</p>
+        <button hlmBtn variant="outline" (click)="tripsQuery.refetch()">
+          {{ 'common.retry' | translate }}
+        </button>
+      } @else if (trips().length === 0) {
+        <p class="py-4" role="status">{{ 'trips.empty' | translate }}</p>
+      }
       <app-trip-list
         [trips]="trips()"
         [selectedTripId]="selectedTripId()"
@@ -29,7 +39,9 @@
 
   <!-- Fixed right detail workspace -->
   @if (selectedTrip(); as trip) {
-    <aside class="bg-background h-full w-136 shrink-0 overflow-hidden border-l">
+    <aside
+      class="bg-background absolute inset-0 z-10 h-full w-full shrink-0 overflow-hidden border-s xl:static xl:w-136"
+    >
       <app-trip-detail class="block h-full min-h-0" [trip]="trip" (closed)="closeTripDetail()" />
     </aside>
   }

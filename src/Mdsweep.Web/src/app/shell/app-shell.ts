@@ -1,3 +1,6 @@
+import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
+import { LanguageService } from '@app/core/i18n/language.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
@@ -11,6 +14,8 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 @Component({
   selector: 'app-shell',
   imports: [
+    UiMessagePipe,
+    TranslatePipe,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -24,16 +29,17 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 export class AppShell {
   private readonly auth = inject(AuthSessionService);
   readonly theme = inject(ThemeService);
+  readonly language = inject(LanguageService);
 
   readonly session = input.required<TenantSession>();
   readonly manageAccess = output();
   readonly signOutPending = signal(false);
-  readonly signOutError = signal('');
+  readonly signOutError = signal<UiMessage | null>(null);
 
   readonly navigation = computed(() => [
-    { label: 'Trips', route: '/trips', icon: 'lucideRoute' },
+    { label: 'trips.title', route: '/trips', icon: 'lucideRoute' },
     ...(this.session().roles.includes('Administrator')
-      ? [{ label: 'Users', route: '/users', icon: 'lucideUsers' }]
+      ? [{ label: 'users.title', route: '/users', icon: 'lucideUsers' }]
       : []),
   ]);
 
@@ -46,7 +52,7 @@ export class AppShell {
       return;
     }
 
-    this.signOutError.set('');
+    this.signOutError.set(null);
     this.signOutPending.set(true);
 
     try {
@@ -56,7 +62,7 @@ export class AppShell {
       // logout flow, so leave the action pending.
     } catch (error) {
       this.signOutPending.set(false);
-      this.signOutError.set(httpErrorMessage(error, 'Could not sign out. Try again.'));
+      this.signOutError.set(httpErrorMessage(error, 'errors.signOut'));
     }
   }
 }

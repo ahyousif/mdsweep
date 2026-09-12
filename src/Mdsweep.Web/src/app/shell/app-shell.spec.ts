@@ -1,3 +1,4 @@
+import { provideLocalization } from '@app/core/i18n/localization.providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthSessionService } from '@app/core/auth/auth-session.service';
@@ -13,6 +14,7 @@ describe('AppShell', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideLocalization(),
         provideRouter([]),
         {
           provide: AuthSessionService,
@@ -59,8 +61,6 @@ describe('AppShell', () => {
 
     await fixture.componentInstance.signOut();
     fixture.detectChanges();
-
-    expect(fixture.componentInstance.signOutError()).toBe('Could not sign out. Try again.');
 
     expect(fixture.nativeElement.textContent).toContain('Could not sign out. Try again.');
   });

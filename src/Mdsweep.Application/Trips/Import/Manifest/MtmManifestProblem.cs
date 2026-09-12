@@ -1,3 +1,10 @@
 namespace Mdsweep.Application.Trips.Import.Manifest;
 
-public sealed record MtmManifestProblem(int? RowNumber, string? TripNumber, string? Field, string Message);
+public sealed record MtmManifestProblem(
+    int? RowNumber,
+    string? TripNumber,
+    string? Field,
+    string Message,
+    string Code = "manifest.problem",
+    IReadOnlyDictionary<string, string>? Parameters = null
+);

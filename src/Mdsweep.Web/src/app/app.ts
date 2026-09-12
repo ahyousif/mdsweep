@@ -1,3 +1,7 @@
+import { httpErrorMessage } from './core/api/http-error-message';
+import { UiMessagePipe, type UiMessage } from './core/i18n/ui-message';
+import { LanguagePicker } from './core/i18n/language-picker';
+import { TranslatePipe } from '@ngx-translate/core';
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -10,11 +14,13 @@ import { AuthSessionService } from './core/auth/auth-session.service';
 import { ApplicationError } from './core/errors/application-error';
 import InvitationWelcome from './features/users/invitation-welcome';
 import { AppShell } from './shell/app-shell';
-import { uiText } from './ui-text';
 
 @Component({
   selector: 'app-root',
   imports: [
+    UiMessagePipe,
+    LanguagePicker,
+    TranslatePipe,
     AppShell,
     InvitationWelcome,
     HlmButton,
@@ -29,7 +35,6 @@ export class App {
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
 
-  readonly text = uiText;
   readonly managingAccess = signal(false);
   readonly invitationToken = signal(this.readInvitationToken());
 
@@ -54,14 +59,14 @@ export class App {
     );
   });
 
-  sessionError(): string {
+  sessionError(): UiMessage | null {
     const error = this.sessionQuery.error();
 
     if (error instanceof ApplicationError && error.status === 401) {
-      return '';
+      return null;
     }
 
-    return error instanceof Error ? error.message : '';
+    return error ? httpErrorMessage(error, 'errors.requestFailed') : null;
   }
 
   // TODO: can we use a guard instead?
