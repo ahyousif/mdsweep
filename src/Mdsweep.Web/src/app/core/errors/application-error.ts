@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import type { UiMessage } from '../i18n/ui-message';
 
 export class ApplicationError extends Error {
   constructor(
@@ -6,6 +7,9 @@ export class ApplicationError extends Error {
     readonly status: number,
     readonly title?: string,
     readonly validationErrors: Readonly<Record<string, readonly string[]>> = {},
+    readonly code?: string,
+    readonly parameters: Record<string, string | number> = {},
+    readonly localizedErrors: UiMessage[] = [],
   ) {
     super(message);
   }
@@ -38,5 +42,19 @@ export function toApplicationError(error: unknown): ApplicationError {
           : error.status === 0
             ? 'Network connection unavailable.'
             : 'The request could not be completed.');
-  return new ApplicationError(message, error.status, error.error?.title, validationErrors);
+  const failures = error.error?.localizedErrors;
+  const localizedErrors: UiMessage[] = Array.isArray(failures)
+    ? failures
+        .filter((failure) => failure && typeof failure.code === 'string')
+        .map((failure) => ({ key: `errors.${failure.code}`, params: failure.parameters ?? {} }))
+    : [];
+  return new ApplicationError(
+    message,
+    error.status,
+    error.error?.title,
+    validationErrors,
+    error.error?.code,
+    error.error?.parameters ?? {},
+    localizedErrors,
+  );
 }

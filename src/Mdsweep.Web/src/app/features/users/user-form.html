@@ -3,67 +3,79 @@
     @if (inviting()) {
       <div class="grid gap-4 sm:grid-cols-2">
         <div hlmField>
-          <label hlmFieldLabel [for]="prefix() + '-first'">First name</label>
+          <label hlmFieldLabel [for]="prefix() + '-first'">{{
+            'users.firstName' | translate
+          }}</label>
           <input
             hlmInput
             [id]="prefix() + '-first'"
             formControlName="firstName"
             autocomplete="given-name"
-            maxlength="200"
+            maxlength="100"
             required
           />
           @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
-            <hlm-field-error>Enter a first name.</hlm-field-error>
+            <hlm-field-error>{{ 'users.firstNameRequired' | translate }}</hlm-field-error>
           }
         </div>
         <div hlmField>
-          <label hlmFieldLabel [for]="prefix() + '-last'">Last name</label>
+          <label hlmFieldLabel [for]="prefix() + '-last'">{{ 'users.lastName' | translate }}</label>
           <input
             hlmInput
             [id]="prefix() + '-last'"
             formControlName="lastName"
             autocomplete="family-name"
-            maxlength="200"
+            maxlength="100"
             required
           />
           @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
-            <hlm-field-error>Enter a last name.</hlm-field-error>
+            <hlm-field-error>{{ 'users.lastNameRequired' | translate }}</hlm-field-error>
           }
         </div>
       </div>
     } @else {
       <div hlmField>
-        <label hlmFieldLabel [for]="prefix() + '-display-name'">Display name</label>
+        <label hlmFieldLabel [for]="prefix() + '-display-name'">{{
+          'users.displayName' | translate
+        }}</label>
         <input
           hlmInput
           [id]="prefix() + '-display-name'"
           formControlName="displayName"
-          maxlength="401"
+          maxlength="100"
           required
         />
-        <p hlmFieldDescription>The name used in this Tenant.</p>
+        <p hlmFieldDescription>{{ 'users.displayNameHelp' | translate }}</p>
         @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
-          <hlm-field-error>Enter a display name of up to 401 characters.</hlm-field-error>
+          <hlm-field-error>{{ 'users.displayNameRequired' | translate }}</hlm-field-error>
         }
       </div>
       <p hlmFieldDescription>
-        Profile: {{ value()?.firstName }} {{ value()?.lastName }} · {{ value()?.email }}
+        {{
+          'users.profile'
+            | translate
+              : {
+                  firstName: value()?.firstName,
+                  lastName: value()?.lastName,
+                  email: value()?.email,
+                }
+        }}
       </p>
     }
     @if (inviting()) {
       <div hlmField>
-        <label hlmFieldLabel [for]="prefix() + '-email'">Email</label>
+        <label hlmFieldLabel [for]="prefix() + '-email'">{{ 'users.email' | translate }}</label>
         <input
           hlmInput
           [id]="prefix() + '-email'"
           formControlName="email"
           type="email"
           autocomplete="email"
-          maxlength="254"
+          maxlength="200"
           required
         />
         @if (form.controls.email.invalid && form.controls.email.touched) {
-          <hlm-field-error>Enter a valid email address.</hlm-field-error>
+          <hlm-field-error>{{ 'users.emailRequired' | translate }}</hlm-field-error>
         }
       </div>
     }
@@ -78,8 +90,10 @@
             : '')
         "
       >
-        <legend hlmFieldLegend>Roles</legend>
-        <p hlmFieldDescription [id]="prefix() + '-roles-help'">Choose one or two roles.</p>
+        <legend hlmFieldLegend>{{ 'common.roles' | translate }}</legend>
+        <p hlmFieldDescription [id]="prefix() + '-roles-help'">
+          {{ 'users.chooseRoles' | translate }}
+        </p>
         <div hlmFieldGroup data-slot="checkbox-group">
           @for (role of availableRoles; track role) {
             <div hlmField orientation="horizontal">
@@ -91,22 +105,28 @@
                 "
                 (checkedChange)="setRole(role, $event)"
               />
-              <label hlmFieldLabel [for]="prefix() + '-role-' + role">{{ role }}</label>
+              <label hlmFieldLabel [for]="prefix() + '-role-' + role">{{
+                'roles.' + role | translate
+              }}</label>
             </div>
           }
         </div>
       </fieldset>
       <!-- Keep the error outside the fieldset to avoid Chrome collapsing its container-query controls. -->
       @if (form.controls.roles.invalid && form.controls.roles.touched) {
-        <hlm-field-error [id]="prefix() + '-roles-error'">Choose one or two roles.</hlm-field-error>
+        <hlm-field-error [id]="prefix() + '-roles-error'">{{
+          'users.chooseRoles' | translate
+        }}</hlm-field-error>
       }
     </div>
     @if (!inviting()) {
       <div hlmField orientation="horizontal">
         <hlm-checkbox [inputId]="prefix() + '-active'" formControlName="isActive" />
         <div hlmFieldContent>
-          <label hlmFieldLabel [for]="prefix() + '-active'">Active access</label>
-          <p hlmFieldDescription>Deactivating blocks access to this Tenant.</p>
+          <label hlmFieldLabel [for]="prefix() + '-active'">{{
+            'users.activeAccess' | translate
+          }}</label>
+          <p hlmFieldDescription>{{ 'users.deactivateHelp' | translate }}</p>
         </div>
       </div>
     }
@@ -115,10 +135,13 @@
         @if (busy()) {
           <hlm-spinner aria-hidden="true" />
         }
-        {{ busy() ? 'Saving...' : inviting() ? 'Send invitation' : 'Save changes' }}
+        {{
+          (busy() ? 'common.saving' : inviting() ? 'users.sendInvitation' : 'users.saveChanges')
+            | translate
+        }}
       </button>
       <button hlmBtn variant="outline" type="button" [disabled]="busy()" (click)="cancelled.emit()">
-        Cancel
+        {{ 'common.cancel' | translate }}
       </button>
     </div>
   </div>

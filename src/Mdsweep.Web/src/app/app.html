@@ -1,7 +1,10 @@
+@if (!activeSession() || managingAccess() || invitationToken() !== null || isDriverOnly()) {
+  <header class="bg-background flex justify-end px-4 py-3"><app-language-picker /></header>
+}
 @if (sessionQuery.isPending()) {
   <main class="grid min-h-svh place-items-center p-4">
     <div class="text-muted-foreground flex items-center gap-2" role="status">
-      <hlm-spinner /> Establishing your secure session
+      <hlm-spinner aria-hidden="true" /> {{ 'access.establishing' | translate }}
     </div>
   </main>
 } @else if (sessionQuery.isError()) {
@@ -9,8 +12,8 @@
     <div class="grid w-full max-w-md gap-4">
       @if (sessionError()) {
         <div hlmAlert variant="destructive">
-          <h1 hlmAlertTitle>Unable to establish your session</h1>
-          <p hlmAlertDescription>{{ sessionError() }}</p>
+          <h1 hlmAlertTitle>{{ 'access.sessionFailed' | translate }}</h1>
+          <p hlmAlertDescription>{{ sessionError() | uiMessage }}</p>
         </div>
       }
     </div>
@@ -27,9 +30,9 @@
   <main class="grid min-h-svh place-items-center p-4">
     <section hlmCard class="w-full max-w-md">
       <div hlmCardHeader>
-        <h1 hlmCardTitle>My Trips is not available in this build yet.</h1>
+        <h1 hlmCardTitle>{{ 'access.driverUnavailable' | translate }}</h1>
         <button hlmBtn variant="outline" type="button" (click)="managingAccess.set(true)">
-          Tenant access
+          {{ 'access.title' | translate }}
         </button>
       </div>
     </section>

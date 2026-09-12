@@ -8,6 +8,8 @@ export type TripImportProblem = {
   tripNumber: string | null;
   field: string | null;
   message: string;
+  code?: string;
+  parameters?: Record<string, string | number>;
 };
 
 export type TripImportResult = {

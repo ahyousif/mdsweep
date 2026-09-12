@@ -50,11 +50,15 @@ jobs:
         working-directory: src/Mdsweep.Web
         run: npm test -- --watch=false
 
-      - name: Test User management in the browser
+      - name: Test web workflows in the browser
         working-directory: src/Mdsweep.Web
         run: |
           npx playwright install --with-deps chromium
           npm run test:e2e -- --workers=1
+
+      - name: Test localization in the installed PWA
+        working-directory: src/Mdsweep.Web
+        run: npm run test:e2e:pwa -- --workers=1
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

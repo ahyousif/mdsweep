@@ -104,6 +104,8 @@ Wolverine's lightweight EF Core transaction middleware calls one `SaveChangesAsy
 
 Angular is organized as a small authenticated shell with lazy Trips routes. Angular code is organized by product capability: Administrator, Dispatcher, and Driver roles authorize routes and actions; they do not define top-level domain feature folders. Trips owns All Trips, My Trips, and Trip Import experiences. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Trip management tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local Trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
 
+The Angular interface supports English and Arabic using ngx-translate, with build-time ICU compilation and both catalogs bundled for instant offline switching. Language preference is browser-local. See [Localization](./localization.md).
+
 The pilot may colocate PostgreSQL with the application on one small Linux host when the chosen BAA-covered environment and backup design permit it. Encrypted off-machine backups and a tested restore are required before real data is used.
 
 ## Suggested source layout
@@ -144,5 +146,5 @@ The pilot acceptance path is: import a representative manifest without spreadshe
 - Any authorized MTM API or browser automation
 - Live mapping provider
 - Managed PostgreSQL migration
-- Arabic and other translations
+- Additional languages and account-synchronized language preferences
 - Automatic assignment and route optimization

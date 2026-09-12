@@ -1,6 +1,14 @@
 <div hlmSidebarWrapper class="h-dvh overflow-hidden">
-  <hlm-sidebar role="navigation" aria-label="Main navigation">
-    <button hlmSidebarRail type="button" aria-label="Toggle navigation"></button>
+  <hlm-sidebar
+    [side]="language.direction() === 'rtl' ? 'right' : 'left'"
+    role="navigation"
+    [attr.aria-label]="'shell.mainNavigation' | translate"
+  >
+    <button
+      hlmSidebarRail
+      type="button"
+      [aria-label]="'shell.toggleNavigation' | translate"
+    ></button>
 
     <div hlmSidebarHeader>
       <a routerLink="/trips" class="flex items-center gap-3 rounded-md px-2 py-2">
@@ -29,7 +37,7 @@
               [variant]="active.isActive ? 'outline' : 'default'"
             >
               <ng-icon [name]="item.icon" />
-              <span>{{ item.label }}</span>
+              <span>{{ item.label | translate }}</span>
             </a>
           </li>
         }
@@ -42,7 +50,7 @@
         size="lg"
         type="button"
         [hlmDropdownMenuTrigger]="userMenu"
-        aria-label="Open user menu"
+        [attr.aria-label]="'shell.openUserMenu' | translate"
       >
         <span
           class="bg-sidebar-accent text-sidebar-accent-foreground grid size-8 shrink-0 place-items-center rounded-md text-sm font-semibold"
@@ -52,24 +60,35 @@
         <span
           class="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden"
         >
-          <span class="w-full truncate text-sm font-medium">{{ session().displayName }}</span>
-          <span class="w-full truncate text-sm text-muted-foreground">{{
-            session().roles.join(' · ')
-          }}</span>
+          <span class="w-full truncate text-sm font-medium"
+            ><bdi>{{ session().displayName }}</bdi></span
+          >
+          <span class="w-full truncate text-sm text-muted-foreground">
+            @for (role of session().roles; track role) {
+              {{ 'roles.' + role | translate }}
+              @if (!$last) {
+                ·
+              }
+            }
+          </span>
         </span>
       </button>
     </div>
 
     @if (signOutError()) {
       <p class="text-destructive px-2 text-sm" role="alert">
-        {{ signOutError() }}
+        {{ signOutError() | uiMessage }}
       </p>
     }
   </hlm-sidebar>
 
   <main hlmSidebarInset class="flex min-h-0 min-w-0 flex-col overflow-hidden">
     <header class="border-border flex h-14 shrink-0 items-center gap-3 border-b px-4 md:hidden">
-      <button hlmSidebarTrigger type="button"></button>
+      <button
+        hlmSidebarTrigger
+        type="button"
+        [srOnlyText]="'shell.toggleNavigation' | translate"
+      ></button>
       <span class="text-base font-semibold">MDSweep</span>
     </header>
 
@@ -83,21 +102,52 @@
 
 <ng-template #userMenu>
   <div hlmDropdownMenu class="w-64">
-    <span hlmDropdownMenuLabel>{{ session().displayName }}</span>
+    <span hlmDropdownMenuLabel
+      ><bdi>{{ session().displayName }}</bdi></span
+    >
     <span hlmDropdownMenuLabel>{{ session().tenantName || session().tenantId }}</span>
     <button hlmDropdownMenuItem type="button" (triggered)="manageAccess.emit()">
-      Tenant access
+      {{ 'access.title' | translate }}
     </button>
-    <span hlmDropdownMenuLabel>{{ session().roles.join(' · ') }}</span>
+    <span hlmDropdownMenuLabel>
+      @for (role of session().roles; track role) {
+        {{ 'roles.' + role | translate }}
+        @if (!$last) {
+          ·
+        }
+      }
+    </span>
     <div hlmDropdownMenuSeparator></div>
-    <span hlmDropdownMenuLabel>Theme</span>
+    <div hlmDropdownMenuGroup [attr.aria-label]="'common.language' | translate">
+      <span hlmDropdownMenuLabel>{{ 'common.language' | translate }}</span>
+      <button
+        hlmDropdownMenuRadio
+        type="button"
+        [checked]="language.language() === 'en'"
+        (triggered)="language.setLanguage('en')"
+      >
+        <span lang="en" dir="ltr">English</span>
+        <hlm-dropdown-menu-radio-indicator />
+      </button>
+      <button
+        hlmDropdownMenuRadio
+        type="button"
+        [checked]="language.language() === 'ar'"
+        (triggered)="language.setLanguage('ar')"
+      >
+        <span lang="ar" dir="rtl">العربية</span>
+        <hlm-dropdown-menu-radio-indicator />
+      </button>
+    </div>
+    <div hlmDropdownMenuSeparator></div>
+    <span hlmDropdownMenuLabel>{{ 'shell.theme' | translate }}</span>
     <button
       hlmDropdownMenuCheckbox
       [checked]="theme.preference() === 'system'"
       (triggered)="setTheme('system')"
     >
       <ng-icon name="lucideMonitor" />
-      <span>System</span>
+      <span>{{ 'shell.system' | translate }}</span>
       <hlm-dropdown-menu-checkbox-indicator />
     </button>
     <button
@@ -106,7 +156,7 @@
       (triggered)="setTheme('light')"
     >
       <ng-icon name="lucideSun" />
-      <span>Light</span>
+      <span>{{ 'shell.light' | translate }}</span>
       <hlm-dropdown-menu-checkbox-indicator />
     </button>
     <button
@@ -115,12 +165,12 @@
       (triggered)="setTheme('dark')"
     >
       <ng-icon name="lucideMoon" />
-      <span>Dark</span>
+      <span>{{ 'shell.dark' | translate }}</span>
       <hlm-dropdown-menu-checkbox-indicator />
     </button>
     <div hlmDropdownMenuSeparator></div>
     <button hlmDropdownMenuItem type="button" [disabled]="signOutPending()" (triggered)="signOut()">
-      {{ signOutPending() ? 'Signing out…' : 'Sign out' }}
+      {{ (signOutPending() ? 'common.signingOut' : 'common.signOut') | translate }}
     </button>
   </div>
 </ng-template>

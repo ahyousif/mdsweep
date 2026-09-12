@@ -1,3 +1,5 @@
+import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, signal } from '@angular/core';
 
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
@@ -27,6 +29,8 @@ type Action =
 @Component({
   selector: 'app-users-page',
   imports: [
+    UiMessagePipe,
+    TranslatePipe,
     HlmButton,
     HlmSpinner,
     UserDetail,
@@ -49,8 +53,8 @@ export default class UsersPage {
   readonly selectedUserKey = signal<string | null>(null);
   readonly inviting = signal(false);
   readonly editing = signal(false);
-  readonly message = signal('');
-  readonly error = signal('');
+  readonly message = signal<UiMessage | null>(null);
+  readonly error = signal<UiMessage | null>(null);
 
   readonly statusCounts = computed<UserStatusCounts>(() => {
     const users = this.listing.data() ?? [];
@@ -98,12 +102,12 @@ export default class UsersPage {
       this.editing.set(false);
       this.message.set(
         action.kind === 'invite'
-          ? `Invitation sent to ${action.details.email}`
+          ? { key: 'users.invitationSent', params: { email: action.details.email } }
           : action.kind === 'resendInvitation'
-            ? `Invitation resent to ${action.user.email}`
+            ? { key: 'users.invitationResent', params: { email: action.user.email } }
             : action.kind === 'cancelInvitation'
-              ? 'Invitation cancelled.'
-              : 'User updated.',
+              ? { key: 'users.invitationCancelled' }
+              : { key: 'users.updated' },
       );
 
       if (action.kind === 'cancelInvitation') {
@@ -117,15 +121,13 @@ export default class UsersPage {
       }
     },
     onError: async (error: unknown) => {
-      this.error.set(
-        httpErrorMessage(error, 'The change could not be saved. Refresh and try again.'),
-      );
+      this.error.set(httpErrorMessage(error, 'errors.saveUser'));
       await this.#queries.invalidateQueries({ queryKey: userQueryKeys.all });
     },
   }));
 
-  loadError(): string {
-    return httpErrorMessage(this.listing.error(), 'Users could not be loaded. Try again.');
+  loadError(): UiMessage {
+    return httpErrorMessage(this.listing.error(), 'errors.loadUsers');
   }
 
   setSearch(value: string): void {
@@ -212,8 +214,8 @@ export default class UsersPage {
   }
 
   private clearFeedback(): void {
-    this.error.set('');
-    this.message.set('');
+    this.error.set(null);
+    this.message.set(null);
   }
 
   private perform(action: Action): Promise<void> {

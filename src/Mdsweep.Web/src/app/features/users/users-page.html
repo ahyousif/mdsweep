@@ -1,4 +1,4 @@
-<div class="flex h-full min-h-0 overflow-hidden">
+<div class="relative flex h-full min-h-0 overflow-hidden">
   <section class="bg-muted/10 flex min-w-0 flex-1 flex-col overflow-hidden">
     <div class="shrink-0 px-6 pt-6">
       <app-user-toolbar
@@ -13,12 +13,12 @@
 
       @if (message()) {
         <div hlmAlert class="mb-4" role="status">
-          <p hlmAlertDescription>{{ message() }}</p>
+          <p hlmAlertDescription>{{ message() | uiMessage }}</p>
         </div>
       }
       @if (error() && !inviting()) {
         <div hlmAlert variant="destructive" class="mb-4" role="alert">
-          <p hlmAlertDescription>{{ error() }}</p>
+          <p hlmAlertDescription>{{ error() | uiMessage }}</p>
         </div>
       }
     </div>
@@ -26,14 +26,16 @@
     <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
       @if (listing.isPending()) {
         <div class="flex items-center gap-2 py-8" role="status">
-          <hlm-spinner aria-hidden="true" /> Loading users…
+          <hlm-spinner aria-hidden="true" /> {{ 'users.loading' | translate }}
         </div>
       } @else if (listing.isError()) {
         <div class="flex flex-col items-start gap-3 py-4">
           <div hlmAlert variant="destructive">
-            <p hlmAlertDescription>{{ loadError() }}</p>
+            <p hlmAlertDescription>{{ loadError() | uiMessage }}</p>
           </div>
-          <button hlmBtn variant="outline" type="button" (click)="listing.refetch()">Retry</button>
+          <button hlmBtn variant="outline" type="button" (click)="listing.refetch()">
+            {{ 'common.retry' | translate }}
+          </button>
         </div>
       } @else {
         <app-user-list
@@ -46,7 +48,9 @@
   </section>
 
   @if (selectedUser(); as user) {
-    <aside class="bg-background h-full w-136 shrink-0 overflow-hidden border-l">
+    <aside
+      class="bg-background absolute inset-0 z-10 h-full w-full shrink-0 overflow-hidden border-s xl:static xl:w-136"
+    >
       <app-user-detail
         [user]="user"
         [editing]="editing()"
@@ -75,14 +79,14 @@
     [showCloseButton]="!mutation.isPending()"
   >
     <hlm-dialog-header>
-      <h2 hlmDialogTitle>Invite user</h2>
+      <h2 hlmDialogTitle>{{ 'users.invite' | translate }}</h2>
       <p hlmDialogDescription>
-        The recipient must accept before receiving access. Invitations expire after seven days.
+        {{ 'users.inviteHelp' | translate }}
       </p>
     </hlm-dialog-header>
     @if (error()) {
       <div hlmAlert variant="destructive" role="alert">
-        <p hlmAlertDescription>{{ error() }}</p>
+        <p hlmAlertDescription>{{ error() | uiMessage }}</p>
       </div>
     }
     <app-user-form

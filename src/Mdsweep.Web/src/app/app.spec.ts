@@ -1,3 +1,4 @@
+import { provideLocalization } from '@app/core/i18n/localization.providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-experimental';
@@ -18,6 +19,7 @@ describe('App', () => {
     window.history.replaceState({}, '', '/invitations/accept?token=ABC');
     TestBed.configureTestingModule({
       providers: [
+        provideLocalization(),
         provideTanStackQuery(new QueryClient()),
         provideRouter([]),
         {
@@ -53,6 +55,7 @@ describe('App', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        provideLocalization(),
         provideTanStackQuery(new QueryClient()),
         provideRouter([]),
         {

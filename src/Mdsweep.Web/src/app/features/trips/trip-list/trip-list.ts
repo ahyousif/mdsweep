@@ -1,3 +1,4 @@
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, input, output } from '@angular/core';
 
 import TripCard from '../trip-card/trip-card';
@@ -10,7 +11,7 @@ type TripGroup = {
 
 @Component({
   selector: 'app-trip-list',
-  imports: [TripCard],
+  imports: [TranslatePipe, TripCard],
   templateUrl: './trip-list.html',
 })
 export default class TripList {
@@ -30,22 +31,22 @@ export default class TripList {
 
     return [
       {
-        label: 'Morning',
+        label: 'trips.groups.morning',
         trips: scheduled.filter((trip) => getHour(trip.scheduledPickupTime!) < 12),
       },
       {
-        label: 'Afternoon',
+        label: 'trips.groups.afternoon',
         trips: scheduled.filter((trip) => {
           const hour = getHour(trip.scheduledPickupTime!);
           return hour >= 12 && hour < 17;
         }),
       },
       {
-        label: 'Evening',
+        label: 'trips.groups.evening',
         trips: scheduled.filter((trip) => getHour(trip.scheduledPickupTime!) >= 17),
       },
       {
-        label: 'Unscheduled',
+        label: 'trips.groups.unscheduled',
         trips: unscheduled,
       },
     ].filter((group) => group.trips.length > 0);

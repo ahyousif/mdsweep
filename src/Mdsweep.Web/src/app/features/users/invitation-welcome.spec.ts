@@ -1,3 +1,4 @@
+import { provideLocalization } from '@app/core/i18n/localization.providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AuthSessionService } from '@app/core/auth/auth-session.service';
 import { ApplicationError } from '@app/core/errors/application-error';
@@ -21,6 +22,7 @@ describe('InvitationWelcome', () => {
     toTenantSession.mockReturnValue({ tenantId: 'mdsw-eep2-3456' });
     TestBed.configureTestingModule({
       providers: [
+        provideLocalization(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
         {
           provide: AuthSessionService,

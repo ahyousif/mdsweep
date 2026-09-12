@@ -41,3 +41,8 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Generated from the translation JSON catalogs
+/src/app/core/i18n/generated/
+
+/test-results-pwa/

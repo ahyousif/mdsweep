@@ -131,6 +131,9 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             result.Problems,
             problem => problem.Message.Contains("missing required columns", StringComparison.OrdinalIgnoreCase)
         );
+        var missingColumns = Assert.Single(result.Problems);
+        Assert.Equal("manifest.missingColumns", missingColumns.Code);
+        Assert.Contains("Medicaid Number", missingColumns.Parameters!["columns"]);
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Empty(await db.Trips.IgnoreQueryFilters().ToListAsync());
@@ -173,5 +176,12 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         List<TripImportProblem> Problems
     );
 
-    private sealed record TripImportProblem(int? RowNumber, string? TripNumber, string? Field, string Message);
+    private sealed record TripImportProblem(
+        int? RowNumber,
+        string? TripNumber,
+        string? Field,
+        string Message,
+        string Code,
+        Dictionary<string, string>? Parameters
+    );
 }

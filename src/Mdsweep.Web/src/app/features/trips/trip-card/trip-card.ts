@@ -1,4 +1,7 @@
-import { Component, computed, input, output } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+import { LanguageService } from '@app/core/i18n/language.service';
+import { TranslatePipe } from '@ngx-translate/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCalendarClock, lucideChevronRight, lucideMapPin } from '@ng-icons/lucide';
@@ -7,15 +10,9 @@ import { HlmCard } from '@spartan-ng/helm/card';
 
 import { Trip } from '../trips-types';
 
-const timeFormatter = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-});
-
 @Component({
   selector: 'app-trip-card',
-  imports: [NgIcon, HlmCard, ...HlmBadgeImports],
+  imports: [TranslatePipe, NgIcon, HlmCard, ...HlmBadgeImports],
   providers: [
     provideIcons({
       lucideCalendarClock,
@@ -29,6 +26,8 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
   templateUrl: './trip-card.html',
 })
 export default class TripCard {
+  readonly language = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
   readonly trip = input.required<Trip>();
   readonly selected = input(false);
 
@@ -38,7 +37,9 @@ export default class TripCard {
     () => `${this.trip().passengerFirstName} ${this.trip().passengerLastName}`,
   );
 
-  readonly pickupTime = computed(() => formatTime(this.trip().scheduledPickupTime, 'Not set'));
+  readonly pickupTime = computed(() =>
+    this.language.formatTime(this.trip().scheduledPickupTime, 'common.notSet'),
+  );
 
   readonly brokerStatusLabel = computed(() => {
     const status = this.trip().brokerStatus;
@@ -47,43 +48,28 @@ export default class TripCard {
       return null;
     }
 
-    const label = status
-      .replaceAll('_', ' ')
-      .toLowerCase()
-      .replace(/^\w/, (value) => value.toUpperCase());
-
-    return `Broker: ${label}`;
+    return this.translate.instant('trips.brokerLabel', { status });
   });
 
   readonly timingLabel = computed(() => {
     const trip = this.trip();
 
     if (trip.direction === 'To') {
-      return trip.appointmentTime
-        ? `Appt: ${formatTime(trip.appointmentTime)}`
-        : 'Appt: Not supplied';
+      return this.translate.instant('trips.appointmentTime', {
+        time: this.language.formatTime(trip.appointmentTime),
+      });
     }
 
     if (trip.isWillCall) {
-      return 'Will call';
+      return this.translate.instant('trips.willCall');
     }
 
-    return trip.returnPickupTime
-      ? `Return: ${formatTime(trip.returnPickupTime)}`
-      : 'Return: Not supplied';
+    return this.translate.instant('trips.returnTime', {
+      time: this.language.formatTime(trip.returnPickupTime),
+    });
   });
 
   select(): void {
     this.tripSelected.emit(this.trip());
   }
-}
-
-function formatTime(value: string | null, fallback = 'Not supplied'): string {
-  if (!value) {
-    return fallback;
-  }
-
-  const [hours, minutes] = value.split(':').map(Number);
-
-  return timeFormatter.format(new Date(2000, 0, 1, hours, minutes));
 }

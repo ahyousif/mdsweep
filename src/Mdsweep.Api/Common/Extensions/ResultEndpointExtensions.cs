@@ -8,7 +8,7 @@ internal static class ResultEndpointExtensions
             ResultStatus.Ok => Results.NoContent(),
             ResultStatus.NotFound => Results.NotFound(),
             ResultStatus.Conflict => Results.Conflict(),
-            ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
+            ResultStatus.Invalid => ValidationProblem(result.ValidationErrors),
             ResultStatus.Unauthorized => Results.Unauthorized(),
             ResultStatus.Forbidden => Results.Forbid(),
             _ => Results.BadRequest(),
@@ -23,7 +23,7 @@ internal static class ResultEndpointExtensions
             ResultStatus.Ok => Results.Ok(map(result.Value)),
             ResultStatus.NotFound => Results.NotFound(),
             ResultStatus.Conflict => Results.Conflict(),
-            ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
+            ResultStatus.Invalid => ValidationProblem(result.ValidationErrors),
             ResultStatus.Unauthorized => Results.Unauthorized(),
             ResultStatus.Forbidden => Results.Forbid(),
             _ => Results.BadRequest(),
@@ -35,7 +35,7 @@ internal static class ResultEndpointExtensions
             ResultStatus.Ok => ok(result.Value),
             ResultStatus.NotFound => Results.NotFound(),
             ResultStatus.Conflict => Results.Conflict(),
-            ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
+            ResultStatus.Invalid => ValidationProblem(result.ValidationErrors),
             ResultStatus.Unauthorized => Results.Unauthorized(),
             ResultStatus.Forbidden => Results.Forbid(),
             _ => Results.BadRequest(),
@@ -50,7 +50,7 @@ internal static class ResultEndpointExtensions
             ResultStatus.Ok => await ok(result.Value),
             ResultStatus.NotFound => Results.NotFound(),
             ResultStatus.Conflict => Results.Conflict(),
-            ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
+            ResultStatus.Invalid => ValidationProblem(result.ValidationErrors),
             ResultStatus.Unauthorized => Results.Unauthorized(),
             ResultStatus.Forbidden => Results.Forbid(),
             _ => Results.BadRequest(),
@@ -76,11 +76,29 @@ internal static class ResultEndpointExtensions
 
             ResultStatus.NotFound => Results.NotFound(),
             ResultStatus.Conflict => Results.Conflict(),
-            ResultStatus.Invalid => Results.ValidationProblem(ToValidationDictionary(result.ValidationErrors)),
+            ResultStatus.Invalid => ValidationProblem(result.ValidationErrors),
             ResultStatus.Unauthorized => Results.Unauthorized(),
             ResultStatus.Forbidden => Results.Forbid(),
             _ => Results.BadRequest(),
         };
+
+    private static IResult ValidationProblem(IEnumerable<ValidationError> failures)
+    {
+        var errors = failures.ToArray();
+        return Results.ValidationProblem(
+            ToValidationDictionary(errors),
+            extensions: new Dictionary<string, object?>
+            {
+                ["localizedErrors"] = errors
+                    .Select(error => new
+                    {
+                        field = error.Identifier,
+                        code = string.IsNullOrWhiteSpace(error.ErrorCode) ? "validation" : error.ErrorCode,
+                    })
+                    .ToArray(),
+            }
+        );
+    }
 
     private static Dictionary<string, string[]> ToValidationDictionary(IEnumerable<ValidationError> errors) =>
         errors
