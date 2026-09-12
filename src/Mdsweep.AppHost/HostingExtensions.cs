@@ -1,11 +1,21 @@
 ﻿using Aspire.Hosting.Azure;
 using Aspire.Hosting.JavaScript;
 using Azure.Provisioning.AppContainers;
+using Azure.Provisioning.Resources;
 
 namespace Mdsweep.AppHost;
 
 public static class HostingExtensions
 {
+    public sealed record MdsweepCommunicationResources(
+        IResourceBuilder<MailPitContainerResource>? Mailpit,
+        IResourceBuilder<ParameterResource>? WebBaseUrl,
+        IResourceBuilder<IResourceWithConnectionString>? SmtpConnection,
+        IResourceBuilder<ParameterResource>? SmtpUsername,
+        IResourceBuilder<ParameterResource>? SmtpPassword,
+        IResourceBuilder<ParameterResource>? SmtpFrom
+    );
+
     public static IResourceBuilder<AzurePostgresFlexibleServerResource> AddMdsweepPostgres(
         this IDistributedApplicationBuilder builder
     )
@@ -82,7 +92,7 @@ public static class HostingExtensions
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database,
         IResourceBuilder<ContainerResource> keycloak,
-        IResourceBuilder<MailPitContainerResource>? mailpit
+        MdsweepCommunicationResources communications
     )
     {
         var oidcClientSecret = builder.ExecutionContext.IsRunMode
@@ -105,55 +115,100 @@ public static class HostingExtensions
             .WaitFor(database)
             .WaitFor(keycloak);
 
-        if (mailpit is not null)
-        {
-            api.WithReference(mailpit).WaitFor(mailpit);
-        }
-        else
-        {
-            ConfigureProductionWebAndEmail(builder, api);
-        }
+        ConfigureWebAndEmail(api, communications);
 
         return api;
     }
 
     public static IResourceBuilder<ProjectResource> AddMdsweepUtility(
         this IDistributedApplicationBuilder builder,
-        IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database
+        IResourceBuilder<AzurePostgresFlexibleServerResource> postgres,
+        IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database,
+        MdsweepCommunicationResources communications
     )
     {
-        return builder
+        var utility = builder
             .AddProject<Projects.Mdsweep_Utility>("utility")
             .WithReference(database)
             .WaitFor(database)
-            .WithExplicitStart()
-            .PublishAsAzureContainerAppJob(
-                (_, job) =>
+            .WithExplicitStart();
+
+        ConfigureWebAndEmail(utility, communications);
+
+        if (!builder.ExecutionContext.IsRunMode)
+        {
+            utility
+                .WithEnvironment(
+                    "Azure__SubscriptionId",
+                    builder.Configuration["Azure:SubscriptionId"]
+                        ?? throw new InvalidOperationException("Azure subscription is not configured.")
+                )
+                .WithEnvironment(
+                    "Azure__ResourceGroup",
+                    builder.Configuration["Azure:ResourceGroup"]
+                        ?? throw new InvalidOperationException("Azure resource group is not configured.")
+                )
+                .WithEnvironment("Azure__PostgresServerName", postgres.Resource.NameOutputReference);
+        }
+
+        return utility.PublishAsAzureContainerAppJob(
+            (_, job) =>
+            {
+                job.Identity = new ManagedServiceIdentity
                 {
-                    job.Configuration.TriggerType = ContainerAppJobTriggerType.Manual;
-                    job.Configuration.ReplicaRetryLimit = 0;
-                    job.Configuration.ReplicaTimeout = 600;
-                }
-            );
+                    ManagedServiceIdentityType = ManagedServiceIdentityType.SystemAssigned,
+                };
+                job.Configuration.TriggerType = ContainerAppJobTriggerType.Manual;
+                job.Configuration.ReplicaRetryLimit = 0;
+                job.Configuration.ReplicaTimeout = 600;
+            }
+        );
     }
 
-    private static void ConfigureProductionWebAndEmail(
-        IDistributedApplicationBuilder builder,
-        IResourceBuilder<ProjectResource> api
+    public static MdsweepCommunicationResources AddMdsweepCommunications(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<MailPitContainerResource>? mailpit
     )
     {
+        if (mailpit is not null)
+        {
+            return new MdsweepCommunicationResources(mailpit, null, null, null, null, null);
+        }
+
         var webBaseUrl = builder.AddParameter("web-base-url");
         var smtpConnection = builder.AddConnectionString("smtp");
         var smtpUsername = builder.AddParameter("smtp-username", secret: true);
         var smtpPassword = builder.AddParameter("smtp-password", secret: true);
         var smtpFrom = builder.AddParameter("smtp-from");
 
-        api.WithEnvironment("Web__BaseUrl", webBaseUrl)
-            .WithReference(smtpConnection)
+        return new MdsweepCommunicationResources(
+            null,
+            webBaseUrl,
+            smtpConnection,
+            smtpUsername,
+            smtpPassword,
+            smtpFrom
+        );
+    }
+
+    private static void ConfigureWebAndEmail(
+        IResourceBuilder<ProjectResource> resource,
+        MdsweepCommunicationResources communications
+    )
+    {
+        if (communications.Mailpit is not null)
+        {
+            resource.WithReference(communications.Mailpit).WaitFor(communications.Mailpit);
+            return;
+        }
+
+        resource
+            .WithEnvironment("Web__BaseUrl", communications.WebBaseUrl!)
+            .WithReference(communications.SmtpConnection!)
             .WithEnvironment("Email__ConnectionStringName", "smtp")
-            .WithEnvironment("Email__Username", smtpUsername)
-            .WithEnvironment("Email__Password", smtpPassword)
-            .WithEnvironment("Email__From", smtpFrom)
+            .WithEnvironment("Email__Username", communications.SmtpUsername!)
+            .WithEnvironment("Email__Password", communications.SmtpPassword!)
+            .WithEnvironment("Email__From", communications.SmtpFrom!)
             .WithEnvironment("Email__UseStartTls", "true");
     }
 

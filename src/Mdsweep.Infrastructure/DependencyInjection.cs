@@ -49,12 +49,15 @@ public static class DependencyInjection
         services.AddScoped<IMtmManifestReader, MtmManifestReader>();
 
         services.AddGoogleMaps(configuration);
-        services.AddEmailSender(configuration);
+        services.AddMdsweepEmail(configuration);
 
         return services;
     }
 
-    private static void AddEmailSender(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddMdsweepEmail(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         // TODO: consider using options monitoring across the board for all options
         services.AddOptions<EmailOptions>().Bind(configuration.GetSection(EmailOptions.SectionName));
@@ -78,6 +81,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IEmailSender, EmailSender>();
+        return services;
     }
 
     private static (string Host, int Port) ParseSmtpEndpoint(string connectionString, string connectionStringName)

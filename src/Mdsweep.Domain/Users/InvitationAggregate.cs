@@ -15,6 +15,7 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         string email,
         string firstName,
         string lastName,
+        string? displayName,
         string[] roles,
         string tokenHash,
         InvitationStatus status,
@@ -27,6 +28,7 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         Email = email;
         FirstName = firstName;
         LastName = lastName;
+        DisplayName = displayName;
         Roles = roles;
         TokenHash = tokenHash;
         Status = status;
@@ -38,6 +40,7 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
     public string Email { get; private set; } = null!;
     public string FirstName { get; private set; } = null!;
     public string LastName { get; private set; } = null!;
+    public string? DisplayName { get; private set; }
     public string[] Roles { get; private set; } = null!;
     public string TokenHash { get; private set; } = null!;
     public InvitationStatus Status { get; private set; }
@@ -52,7 +55,8 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
         string[] roles,
         string token,
         string tokenHash,
-        Instant expiresAt
+        Instant expiresAt,
+        string? displayName = null
     )
     {
         var invitation = new InvitationAggregate(
@@ -61,6 +65,7 @@ public sealed class InvitationAggregate : AggregateRoot<Guid>
             Guard.Against.NullOrWhiteSpace(email),
             Guard.Against.NullOrWhiteSpace(firstName),
             Guard.Against.NullOrWhiteSpace(lastName),
+            string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim(),
             roles,
             Guard.Against.NullOrWhiteSpace(tokenHash),
             status: InvitationStatus.Pending,

@@ -10,8 +10,10 @@ public static class DatabaseInitializationExtensions
 
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        // TODO: migrations should be applied in a separate step, not on app startup. This is a temporary measure to avoid having to run migrations manually during development.
-        await db.Database.MigrateAsync();
+        if (host.Services.GetRequiredService<IHostEnvironment>().IsDevelopment())
+        {
+            await db.Database.MigrateAsync();
+        }
 
         // Managed conjoined tenancy persists its tenant registry in Wolverine storage.
         // Provision registered Wolverine resources before registering application tenants.

@@ -90,7 +90,7 @@ public sealed class AcceptInvitationHandler(
         membership = TenantMembership.Create(
             invitation.TenantId,
             user.Id,
-            $"{invitation.FirstName} {invitation.LastName}",
+            invitation.DisplayName ?? $"{invitation.FirstName} {invitation.LastName}",
             invitation.Roles
         );
 

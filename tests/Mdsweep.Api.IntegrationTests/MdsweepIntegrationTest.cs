@@ -15,6 +15,14 @@ public abstract class MdsweepIntegrationTest : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await database.StartAsync();
+        var databaseOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .ConfigureForMdsweep(database.GetConnectionString())
+            .Options;
+        await using (var migrationContext = new ApplicationDbContext(databaseOptions))
+        {
+            await migrationContext.Database.MigrateAsync();
+        }
+
         Application = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");

@@ -63,7 +63,8 @@ public sealed class InviteUserHandler(IRepository repository, ITokenService toke
             command.Roles,
             token.Value,
             token.Hash,
-            now + Duration.FromDays(7)
+            now + Duration.FromDays(7),
+            command.DisplayName
         );
 
         await repository.AddAsync(invitation, ct);

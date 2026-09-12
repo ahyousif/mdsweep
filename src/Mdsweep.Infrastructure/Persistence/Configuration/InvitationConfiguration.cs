@@ -15,6 +15,7 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
         builder.Property(x => x.Email).HasMaxLength(100);
         builder.Property(x => x.FirstName).HasMaxLength(100);
         builder.Property(x => x.LastName).HasMaxLength(100);
+        builder.Property(x => x.DisplayName).HasMaxLength(100);
         builder.Property(x => x.Roles).HasColumnType("text[]");
         builder.Property(x => x.TokenHash).HasMaxLength(64);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
