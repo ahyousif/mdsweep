@@ -165,10 +165,8 @@ public static class HostingExtensions
         return utility.PublishAsAzureContainerAppJob(
             (_, job) =>
             {
-                job.Identity = new ManagedServiceIdentity
-                {
-                    ManagedServiceIdentityType = ManagedServiceIdentityType.SystemAssigned,
-                };
+                job.Identity.ManagedServiceIdentityType = ManagedServiceIdentityType.SystemAssignedUserAssigned;
+
                 job.Configuration.TriggerType = ContainerAppJobTriggerType.Manual;
                 job.Configuration.ReplicaRetryLimit = 0;
                 job.Configuration.ReplicaTimeout = 600;
