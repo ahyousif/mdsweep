@@ -58,7 +58,7 @@ A feature is complete when its acceptance criteria pass through its public inter
 ## Angular frontend guidance
 
 - Ship new and changed UI text in both English and Arabic: update matching keys and parameters in `public/i18n/en.json` and `ar.json`, including validation, notifications, and accessibility labels. Use the existing translation services and glossary; keep English as the default.
-- Preserve live language switching, RTL layout, Gregorian dates, and western digits. Keep feedback as message keys and parameters until display; expose stable codes for new API errors while preserving English diagnostic messages. Check affected workflows in both languages and run the catalog compiler through the normal build/test scripts. See [docs/localization.md](./docs/localization.md).
+- Preserve live language switching, RTL layout, Gregorian dates, and western digits. Keep feedback as message keys and parameters until display; expose stable codes only for server-authoritative business conditions needing distinct UI feedback, while preserving English diagnostic messages; ordinary input validation uses standard ProblemDetails. Check affected workflows in both languages and run the catalog compiler through the normal build/test scripts. See [docs/localization.md](./docs/localization.md).
 - Keep large component templates in separate `.html` files referenced by `templateUrl`; reserve inline templates for small components.
 
 - Use inline Tailwind utilities and semantic application tokens in feature templates; do not use literal palette utilities. Spartan primitives belong in `src/Mdsweep.Web/src/app/ui`.

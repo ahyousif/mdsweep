@@ -47,9 +47,9 @@ describe('InvitationWelcome', () => {
 
   it('shows account-switch recovery for a rejected email mismatch', async () => {
     accept.mockRejectedValue(
-      new ApplicationError('Sign in with the invited email.', 400, undefined, {
-        invitationEmailMismatch: ['Sign in with the invited email.'],
-      }),
+      new ApplicationError('Sign in with the invited email.', 400, undefined, {}, [
+        { field: 'invitationEmailMismatch', code: 'invitationEmailMismatch' },
+      ]),
     );
 
     const acceptButton = Array.from(
@@ -68,9 +68,9 @@ describe('InvitationWelcome', () => {
 
   it('preserves the invitation URL when continuing with another account', async () => {
     accept.mockRejectedValue(
-      new ApplicationError('Sign in with the invited email.', 400, undefined, {
-        invitationEmailMismatch: ['Sign in with the invited email.'],
-      }),
+      new ApplicationError('Sign in with the invited email.', 400, undefined, {}, [
+        { field: 'invitationEmailMismatch', code: 'invitationEmailMismatch' },
+      ]),
     );
     const buttons = () =>
       Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>);

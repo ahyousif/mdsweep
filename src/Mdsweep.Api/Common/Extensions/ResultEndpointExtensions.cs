@@ -85,18 +85,13 @@ internal static class ResultEndpointExtensions
     private static IResult ValidationProblem(IEnumerable<ValidationError> failures)
     {
         var errors = failures.ToArray();
+        var issues = errors
+            .Where(error => !string.IsNullOrWhiteSpace(error.ErrorCode))
+            .Select(error => new { field = error.Identifier, code = error.ErrorCode })
+            .ToArray();
         return Results.ValidationProblem(
             ToValidationDictionary(errors),
-            extensions: new Dictionary<string, object?>
-            {
-                ["localizedErrors"] = errors
-                    .Select(error => new
-                    {
-                        field = error.Identifier,
-                        code = string.IsNullOrWhiteSpace(error.ErrorCode) ? "validation" : error.ErrorCode,
-                    })
-                    .ToArray(),
-            }
+            extensions: issues.Length == 0 ? null : new Dictionary<string, object?> { ["issues"] = issues }
         );
     }
 

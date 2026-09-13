@@ -53,11 +53,8 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
             "already belongs to this Tenant",
             problem.RootElement.GetProperty("errors").GetProperty("email")[0].GetString()
         );
-        Assert.Equal(
-            "membershipExists",
-            problem.RootElement.GetProperty("localizedErrors")[0].GetProperty("code").GetString()
-        );
-        Assert.Equal("email", problem.RootElement.GetProperty("localizedErrors")[0].GetProperty("field").GetString());
+        Assert.Equal("membershipExists", problem.RootElement.GetProperty("issues")[0].GetProperty("code").GetString());
+        Assert.Equal("email", problem.RootElement.GetProperty("issues")[0].GetProperty("field").GetString());
 
         await using var verificationScope = Application.Services.CreateAsyncScope();
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -65,7 +62,7 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Invalid_invitation_fields_return_codes_with_field_names()
+    public async Task Invalid_invitation_fields_return_standard_validation_details()
     {
         await using (var scope = Application.Services.CreateAsyncScope())
         {
@@ -87,16 +84,11 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
         );
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
-        var errors = problem.RootElement.GetProperty("localizedErrors").EnumerateArray().ToArray();
-        Assert.Contains(
-            errors,
-            error =>
-                error.GetProperty("code").GetString() == "emailInvalid"
-                && error.GetProperty("field").GetString() == "Email"
-        );
-        Assert.Contains(errors, error => error.GetProperty("code").GetString() == "firstNameRequired");
-        Assert.Contains(errors, error => error.GetProperty("code").GetString() == "rolesInvalid");
-        Assert.True(problem.RootElement.TryGetProperty("errors", out _));
+        var errors = problem.RootElement.GetProperty("errors");
+        Assert.NotEmpty(errors.GetProperty("Email").EnumerateArray());
+        Assert.NotEmpty(errors.GetProperty("FirstName").EnumerateArray());
+        Assert.NotEmpty(errors.GetProperty("Roles[0]").EnumerateArray());
+        Assert.False(problem.RootElement.TryGetProperty("issues", out _));
     }
 
     [Fact]

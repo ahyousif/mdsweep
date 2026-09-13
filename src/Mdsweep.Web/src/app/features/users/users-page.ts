@@ -1,4 +1,4 @@
-import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
+import { UiMessagePipe, type UiFeedback } from '@app/core/i18n/ui-message';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, signal } from '@angular/core';
 
@@ -53,8 +53,8 @@ export default class UsersPage {
   readonly selectedUserKey = signal<string | null>(null);
   readonly inviting = signal(false);
   readonly editing = signal(false);
-  readonly message = signal<UiMessage | null>(null);
-  readonly error = signal<UiMessage | null>(null);
+  readonly message = signal<UiFeedback | null>(null);
+  readonly error = signal<UiFeedback | null>(null);
 
   readonly statusCounts = computed<UserStatusCounts>(() => {
     const users = this.listing.data() ?? [];
@@ -126,7 +126,7 @@ export default class UsersPage {
     },
   }));
 
-  loadError(): UiMessage {
+  loadError(): UiFeedback {
     return httpErrorMessage(this.listing.error(), 'errors.loadUsers');
   }
 

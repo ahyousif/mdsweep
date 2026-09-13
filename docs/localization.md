@@ -10,9 +10,19 @@ Edit `src/Mdsweep.Web/public/i18n/en.json` and `ar.json`. Both catalogs use the 
 
 `npm run i18n:compile` validates matching keys and parameters and compiles ICU messages into ignored modules under `src/app/core/i18n/generated`. The normal start, build, test, and watch scripts run this step automatically. When editing catalogs during an already-running dev session, run `npm run i18n:compile` again. Compile before invoking `ng` directly. Do not edit generated modules.
 
-Both compiled catalogs ship with the application. This makes switching synchronous, including offline, and avoids shipping the MessageFormat compiler to browsers. The service worker also prefetches the JSON sources. `LanguageService` restores preferences and synchronizes document/CDK direction. Calendar localization stays in the lazy Trips feature so calendar dependencies are not pulled into bootstrap.
+Both compiled catalogs ship with the application. This makes switching synchronous, including offline, and avoids shipping the MessageFormat compiler to browsers. The service worker caches the application JavaScript; the source JSON files are not loaded or separately cached at runtime. `LanguageService` restores preferences and synchronizes document/CDK direction. Calendar localization stays in the lazy Trips feature so calendar dependencies are not pulled into bootstrap.
 
-UI feedback retains message keys and parameters until display. API validation responses preserve the existing `errors` dictionary and add `localizedErrors` with stable `field` and `code` values. Import problems retain row/Trip/field information and their original message, with added `code` and optional `parameters`. Angular translates codes and uses a localized recovery message for unknown failures; it never matches English sentences to translation keys.
+## API and UI boundary
+
+Translation is a frontend concern. API responses retain English diagnostic messages. Generic HTTP failures and ordinary input validation do not require application error codes. Add a stable code only for a server-authoritative business condition when Angular needs a distinct localized message or behavior that cannot be inferred from HTTP status alone. Keep codes beside the conditions that produce them; extract constants only when real repetition justifies it.
+
+FluentValidation continues enforcing all request rules on the server and returns Wolverine's standard validation ProblemDetails. Angular validates form inputs locally and displays translated messages. Unexpected server validation failures use localized guidance to check the entered values; the English field diagnostics remain available in the response. Client validation does not replace server validation.
+
+Business validation responses preserve the existing `errors` dictionary and optionally add `issues` with `field` and `code` values (for example, `membershipExists` or `invitationEmailMismatch`). Uncoded validation results do not acquire a generic business code. Import problems retain row/Trip/field information and their original message, plus feature-local `manifest.*` codes and optional parameters, because the parser alone knows those failures.
+
+`ApplicationError` contains transport data: status, English diagnostics, validation errors, and `ApiIssue` records. `httpErrorMessage()` converts issues to frontend `{ key, params }` descriptors by convention (`membershipExists` becomes `errors.membershipExists`), maps generic HTTP failures, and otherwise uses the caller's recovery message. Unknown translation keys display a localized generic failure; never match English sentences to keys.
+
+UI feedback retains these descriptors until display so an already-visible error changes language without rerunning the request. Multiple business issues use a flat list of messages, not a recursive error tree. Read `issue.code` when a business condition requires distinct behavior, such as offering an account switch for an invitation email mismatch.
 
 ## Arabic glossary for review
 

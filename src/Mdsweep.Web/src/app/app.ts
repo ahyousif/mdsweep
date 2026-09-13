@@ -1,5 +1,5 @@
 import { httpErrorMessage } from './core/api/http-error-message';
-import { UiMessagePipe, type UiMessage } from './core/i18n/ui-message';
+import { UiMessagePipe, type UiFeedback } from './core/i18n/ui-message';
 import { LanguagePicker } from './core/i18n/language-picker';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DOCUMENT } from '@angular/common';
@@ -59,7 +59,7 @@ export class App {
     );
   });
 
-  sessionError(): UiMessage | null {
+  sessionError(): UiFeedback | null {
     const error = this.sessionQuery.error();
 
     if (error instanceof ApplicationError && error.status === 401) {

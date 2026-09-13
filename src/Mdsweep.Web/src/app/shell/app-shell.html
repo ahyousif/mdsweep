@@ -106,7 +106,9 @@
     <span hlmDropdownMenuLabel
       ><bdi>{{ session().displayName }}</bdi></span
     >
-    <span hlmDropdownMenuLabel>{{ session().tenantName || session().tenantId }}</span>
+    <span hlmDropdownMenuLabel
+      ><bdi>{{ session().tenantName || session().tenantId }}</bdi></span
+    >
     <button hlmDropdownMenuItem type="button" (triggered)="manageAccess.emit()">
       {{ 'access.title' | translate }}
     </button>

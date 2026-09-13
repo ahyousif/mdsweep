@@ -12,10 +12,6 @@ builder.AddServiceDefaults();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.AddApi();
 builder.AddMessaging();
-builder.Services.AddSingleton(
-    typeof(IProblemDetailSource<>),
-    typeof(Mdsweep.Api.Common.Extensions.LocalizedValidationProblemSource<>)
-);
 
 var app = builder.Build();
 

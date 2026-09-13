@@ -1,4 +1,4 @@
-import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
+import { UiMessagePipe, type UiFeedback } from '@app/core/i18n/ui-message';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DOCUMENT } from '@angular/common';
 import { Component, inject, input, output, signal } from '@angular/core';
@@ -36,7 +36,7 @@ export default class InvitationWelcome {
   readonly currentEmail = input<string | null>(null);
   readonly closed = output();
   readonly accepted = output();
-  readonly error = signal<UiMessage | null>(null);
+  readonly error = signal<UiFeedback | null>(null);
   readonly accountMismatch = signal(false);
   readonly acceptanceComplete = signal(false);
   readonly sessions = injectQuery(() => ({
@@ -71,7 +71,7 @@ export default class InvitationWelcome {
     onError: (error: unknown) => {
       if (
         error instanceof ApplicationError &&
-        error.validationErrors['invitationEmailMismatch'] !== undefined
+        error.issues.some((issue) => issue.code === 'invitationEmailMismatch')
       ) {
         this.accountMismatch.set(true);
         this.error.set(null);

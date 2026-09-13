@@ -120,15 +120,17 @@ test('retains unfinished forms and translates an already-visible server error', 
       ],
     }),
   );
-  await page.route('**/api/users/synthetic-user', (route) =>
-    route.fulfill({
+  let saveRequests = 0;
+  await page.route('**/api/users/synthetic-user', (route) => {
+    saveRequests++;
+    return route.fulfill({
       status: 400,
       json: {
         errors: { user: ['Cannot remove own access'] },
-        localizedErrors: [{ field: 'user', code: 'protectOwnAccess' }],
+        issues: [{ field: 'user', code: 'protectOwnAccess' }],
       },
-    }),
-  );
+    });
+  });
   await page.goto('/users');
   await page.getByRole('row').filter({ hasText: 'synthetic@example.test' }).click();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
@@ -145,6 +147,7 @@ test('retains unfinished forms and translates an already-visible server error', 
     'Unfinished synthetic name',
   );
   await expect(page.getByRole('alert')).toContainText('You cannot deactivate yourself');
+  expect(saveRequests).toBe(1);
 });
 
 test('Arabic import feedback preserves the filename and required broker column names', async ({
@@ -201,6 +204,110 @@ test('mobile navigation has an accessible English title and restores focus after
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(trigger).toBeFocused();
 });
+
+for (const language of ['en', 'ar'] as const) {
+  test(`form validation stays local and handles uncoded server rejection in ${language}`, async ({
+    page,
+  }) => {
+    await mockApplication(page);
+    let requests = 0;
+    await page.route('**/api/users/invitations', (route) => {
+      requests++;
+      return route.fulfill({
+        status: 400,
+        json: {
+          errors: { Email: ['Email did not pass server validation.'] },
+        },
+      });
+    });
+    await page.goto('/users');
+    if (language === 'ar') await switchLanguage(page, 'ar');
+    await page
+      .getByRole('button', { name: language === 'en' ? 'Invite user' : 'دعوة مستخدم', exact: true })
+      .click();
+    const dialog = page.getByRole('dialog');
+    const submit = dialog.getByRole('button', {
+      name: language === 'en' ? 'Send invitation' : 'إرسال الدعوة',
+      exact: true,
+    });
+    const email = dialog.getByLabel(language === 'en' ? 'Email' : 'البريد الإلكتروني', {
+      exact: true,
+    });
+    await email.fill('invalid');
+    await submit.click();
+    await expect(
+      dialog.getByText(language === 'en' ? 'Enter a first name.' : 'أدخل الاسم الأول.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByText(
+        language === 'en' ? 'Enter a valid email address.' : 'أدخل عنوان بريد إلكتروني صالحًا.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(requests).toBe(0);
+    await dialog
+      .getByLabel(language === 'en' ? 'First name' : 'الاسم الأول', { exact: true })
+      .fill('Synthetic');
+    await dialog
+      .getByLabel(language === 'en' ? 'Last name' : 'اسم العائلة', { exact: true })
+      .fill('Example');
+    await email.fill('synthetic@example.test');
+    await submit.click();
+    await expect(dialog.getByRole('alert')).toHaveText(
+      language === 'en'
+        ? 'Check the entered values and try again.'
+        : 'تحقق من القيم المدخلة وحاول مجددًا.',
+    );
+    await expect(email).toHaveValue('synthetic@example.test');
+    expect(requests).toBe(1);
+  });
+
+  for (const state of ['loading', 'recovery', 'access', 'driver'] as const) {
+    test(`${state} layout fits the viewport with the language header in ${language}`, async ({
+      page,
+    }) => {
+      await page.addInitScript(
+        (language) => localStorage.setItem('mdsweep.language', language),
+        language,
+      );
+      await page.route('**/api/auth/session', (route) => {
+        if (state === 'loading') return;
+        if (state === 'recovery') return route.fulfill({ status: 500, json: {} });
+        const tenant = { id: 'synthetic-tenant', name: 'Synthetic Tenant', roles: ['Driver'] };
+        return route.fulfill({
+          json: {
+            userId: 'synthetic-user',
+            displayName: 'Synthetic User',
+            email: 'synthetic@example.test',
+            activeTenant: state === 'driver' ? tenant : null,
+            availableTenants: state === 'driver' ? [tenant] : [],
+          },
+        });
+      });
+      await page.goto('/trips');
+      if (state === 'loading') await expect(page.getByRole('status')).toBeVisible();
+      else await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expect(page.getByRole('combobox')).toBeVisible();
+      await expect(page.locator('html')).toHaveAttribute('lang', language);
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await expect
+          .poll(() =>
+            page.evaluate(() => ({
+              vertical: document.documentElement.scrollHeight <= innerHeight + 1,
+              horizontal: document.documentElement.scrollWidth <= innerWidth + 1,
+            })),
+          )
+          .toEqual({ vertical: true, horizontal: true });
+      }
+    });
+  }
+}
 
 for (const theme of ['light', 'dark']) {
   for (const mobile of [false, true]) {

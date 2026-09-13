@@ -1,4 +1,4 @@
-import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
+import { UiMessagePipe, type UiFeedback } from '@app/core/i18n/ui-message';
 import { LanguageService } from '@app/core/i18n/language.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
@@ -34,7 +34,7 @@ export class AppShell {
   readonly session = input.required<TenantSession>();
   readonly manageAccess = output();
   readonly signOutPending = signal(false);
-  readonly signOutError = signal<UiMessage | null>(null);
+  readonly signOutError = signal<UiFeedback | null>(null);
 
   readonly navigation = computed(() => [
     { label: 'trips.title', route: '/trips', icon: 'lucideRoute' },

@@ -11,15 +11,6 @@ test('installed PWA switches languages offline and restores the preference after
   });
   await page.reload();
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
-  await expect
-    .poll(() =>
-      page.evaluate(async () => {
-        const english = await caches.match('/i18n/en.json');
-        const arabic = await caches.match('/i18n/ar.json');
-        return !!english && !!arabic;
-      }),
-    )
-    .toBe(true);
   await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
   await context.setOffline(true);
   await page.getByRole('button', { name: 'Open user menu' }).click();

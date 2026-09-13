@@ -325,7 +325,7 @@ test('invitation dialog supports keyboard dismissal and preserves failed submiss
         errors: {
           email: ['This user already belongs to this Tenant.'],
         },
-        localizedErrors: [{ field: 'email', code: 'membershipExists' }],
+        issues: [{ field: 'email', code: 'membershipExists' }],
       },
     }),
   );
@@ -403,7 +403,7 @@ test('invitation acceptance shows failed token feedback', async ({ page }, testI
       status: 400,
       json: {
         errors: { token: ['Invalid invitation'] },
-        localizedErrors: [{ field: 'token', code: 'invitationInvalid' }],
+        issues: [{ field: 'token', code: 'invitationInvalid' }],
       },
     }),
   );
