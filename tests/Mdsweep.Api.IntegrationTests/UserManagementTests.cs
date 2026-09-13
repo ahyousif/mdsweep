@@ -12,6 +12,116 @@ public sealed class UserManagementTests : MdsweepIntegrationTest
     private const string ActiveTenantId = "mdsw-eep2-3456";
     private const string OtherTenantId = "tnnt-bbbb-2345";
 
+    [Fact]
+    public async Task Administrator_can_select_all_roles_without_losing_self_access_protection()
+    {
+        Guid userId;
+        await using (var setup = Application.Services.CreateAsyncScope())
+        {
+            var db = setup.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var membership = await db.TenantMemberships.SingleAsync();
+            userId = membership.UserId;
+            membership.SetRoles(["Administrator"]);
+            await db.SaveChangesAsync();
+        }
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        string[] allRoles = ["Administrator", "Dispatcher", "Driver"];
+        using var update = await client.PutAsJsonAsync(
+            $"/api/users/{userId}",
+            new
+            {
+                displayName = "Synthetic Administrator",
+                roles = allRoles,
+                isActive = true,
+            }
+        );
+        Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
+        foreach (var removeAdministrator in new[] { true, false })
+        {
+            using var rejected = await client.PutAsJsonAsync(
+                $"/api/users/{userId}",
+                new
+                {
+                    displayName = "Synthetic Administrator",
+                    roles = removeAdministrator ? new[] { "Dispatcher", "Driver" } : allRoles,
+                    isActive = removeAdministrator,
+                }
+            );
+            Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+            using var problem = JsonDocument.Parse(await rejected.Content.ReadAsStreamAsync());
+            Assert.Equal(
+                "protectOwnAccess",
+                problem.RootElement.GetProperty("issues")[0].GetProperty("code").GetString()
+            );
+        }
+        await using var verification = Application.Services.CreateAsyncScope();
+        var stored = await verification
+            .ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .TenantMemberships.SingleAsync(x => x.UserId == userId);
+        Assert.True(stored.IsActive);
+        Assert.Equal(allRoles.Order(), stored.Roles.Order());
+    }
+
+    [Theory]
+    [InlineData("empty")]
+    [InlineData("duplicate")]
+    [InlineData("unknown")]
+    public async Task Invitation_and_update_reject_invalid_role_selections(string selection)
+    {
+        Guid userId;
+        await using (var setup = Application.Services.CreateAsyncScope())
+        {
+            var db = setup.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var membership = await db.TenantMemberships.SingleAsync();
+            userId = membership.UserId;
+            membership.SetRoles(["Administrator"]);
+            await db.SaveChangesAsync();
+        }
+        string[] roles = selection switch
+        {
+            "empty" => [],
+            "duplicate" => ["Administrator", "Administrator"],
+            _ => ["Administrator", "UnknownRole"],
+        };
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var invitation = await client.PostAsJsonAsync(
+            "/api/users/invitations",
+            new
+            {
+                email = "invalid-roles@example.test",
+                firstName = "Synthetic",
+                lastName = "Invitee",
+                roles,
+            }
+        );
+        using var update = await client.PutAsJsonAsync(
+            $"/api/users/{userId}",
+            new
+            {
+                displayName = "Synthetic Administrator",
+                roles,
+                isActive = true,
+            }
+        );
+        Assert.Equal(HttpStatusCode.BadRequest, invitation.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, update.StatusCode);
+        foreach (var response in new[] { invitation, update })
+        {
+            using var problem = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
+            Assert.Contains(
+                problem.RootElement.GetProperty("errors").EnumerateObject(),
+                error => error.Name.StartsWith("Roles", StringComparison.Ordinal)
+            );
+            Assert.False(problem.RootElement.TryGetProperty("issues", out _));
+        }
+        await using var verification = Application.Services.CreateAsyncScope();
+        var db2 = verification.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Empty(await db2.Invitations.ToListAsync());
+        Assert.Equal(["Administrator"], (await db2.TenantMemberships.SingleAsync(x => x.UserId == userId)).Roles);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

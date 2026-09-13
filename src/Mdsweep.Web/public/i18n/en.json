@@ -74,7 +74,7 @@
     "lastNameRequired": "Enter a last name.",
     "displayNameRequired": "Enter a display name of up to 100 characters.",
     "emailRequired": "Enter a valid email address.",
-    "chooseRoles": "Choose one or two roles.",
+    "chooseRoles": "Choose at least one role.",
     "activeAccess": "Active access",
     "deactivateHelp": "Deactivating blocks access to this Tenant.",
     "sendInvitation": "Send invitation",

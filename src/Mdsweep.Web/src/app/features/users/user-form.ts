@@ -35,13 +35,7 @@ export class UserForm {
     lastName: [''],
     displayName: [''],
     email: [''],
-    roles: inject(NonNullableFormBuilder).control<UserRole[]>(
-      ['Driver'],
-      [
-        (control) =>
-          control.value.length >= 1 && control.value.length <= 2 ? null : { roles: true },
-      ],
-    ),
+    roles: inject(NonNullableFormBuilder).control<UserRole[]>(['Driver'], [Validators.required]),
     isActive: [true],
   });
   constructor() {
@@ -80,7 +74,7 @@ export class UserForm {
     const control = this.form.controls.roles;
     const roles = control.value;
     if (!checked) control.setValue(roles.filter((value) => value !== role));
-    else if (!roles.includes(role) && roles.length < 2) control.setValue([...roles, role]);
+    else if (!roles.includes(role)) control.setValue([...roles, role]);
     control.markAsTouched();
   }
   submit(): void {

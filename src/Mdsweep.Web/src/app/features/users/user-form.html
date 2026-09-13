@@ -100,9 +100,6 @@
               <hlm-checkbox
                 [inputId]="prefix() + '-role-' + role"
                 [checked]="form.controls.roles.value.includes(role)"
-                [disabled]="
-                  form.controls.roles.value.length >= 2 && !form.controls.roles.value.includes(role)
-                "
                 (checkedChange)="setRole(role, $event)"
               />
               <label hlmFieldLabel [for]="prefix() + '-role-' + role">{{

@@ -13,8 +13,6 @@ public sealed class InviteUserValidator : AbstractValidator<InviteUserRequest>
         RuleFor(x => x.Roles)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .Must(roles => roles.Length <= 2)
-            .WithMessage("Select no more than two roles.")
             .Must(roles => roles.Distinct().Count() == roles.Length)
             .WithMessage("Roles must be distinct.");
 

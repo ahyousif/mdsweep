@@ -1,4 +1,6 @@
-﻿using Ardalis.Result;
+﻿using System.Net;
+using System.Net.Http.Json;
+using Ardalis.Result;
 using Mdsweep.Application.Common.Email;
 using Mdsweep.Application.Common.Security;
 using Mdsweep.Application.Users.Invitations.Invite;
@@ -24,6 +26,36 @@ public sealed class InviteUserDomainEventTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task Invitation_endpoint_persists_all_three_roles()
+    {
+        await using (var scope = Application.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            (await db.TenantMemberships.SingleAsync()).SetRoles(["Administrator"]);
+            await db.SaveChangesAsync();
+        }
+        string[] roles = ["Administrator", "Dispatcher", "Driver"];
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var response = await client.PostAsJsonAsync(
+            "/api/users/invitations",
+            new
+            {
+                email = InviteeEmail,
+                firstName = "Synthetic",
+                lastName = "Invitee",
+                roles,
+            }
+        );
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await using var verification = Application.Services.CreateAsyncScope();
+        var invitation = await verification
+            .ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Invitations.SingleAsync(x => x.Email == InviteeEmail);
+        Assert.Equal(roles.Order(), invitation.Roles.Order());
+    }
+
+    [Fact]
     public async Task Inviting_a_user_persists_the_invitation_and_sends_its_email()
     {
         Result? result = null;
@@ -31,12 +63,16 @@ public sealed class InviteUserDomainEventTests : MdsweepIntegrationTest
 
         var tracked = await Application
             .Services.TrackActivity(TimeSpan.FromSeconds(5))
-            .ExecuteAndWaitAsync((Func<IMessageContext, Task>)(async _ =>
-            {
-                await using var scope = Application.Services.CreateAsyncScope();
-                var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-                result = await bus.InvokeForTenantAsync<Result>(TenantId, command);
-            }));
+            .ExecuteAndWaitAsync(
+                (Func<IMessageContext, Task>)(
+                    async _ =>
+                    {
+                        await using var scope = Application.Services.CreateAsyncScope();
+                        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+                        result = await bus.InvokeForTenantAsync<Result>(TenantId, command);
+                    }
+                )
+            );
 
         await using var verificationScope = Application.Services.CreateAsyncScope();
         var invitation = await verificationScope
@@ -111,15 +147,19 @@ public sealed class InviteUserDomainEventTests : MdsweepIntegrationTest
         Result? result = null;
         var tracked = await Application
             .Services.TrackActivity(TimeSpan.FromSeconds(5))
-            .ExecuteAndWaitAsync((Func<IMessageContext, Task>)(async _ =>
-            {
-                await using var scope = Application.Services.CreateAsyncScope();
-                var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-                result = await bus.InvokeForTenantAsync<Result>(
-                    TenantId,
-                    new ResendInvitationCommand(invitationId)
-                );
-            }));
+            .ExecuteAndWaitAsync(
+                (Func<IMessageContext, Task>)(
+                    async _ =>
+                    {
+                        await using var scope = Application.Services.CreateAsyncScope();
+                        var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+                        result = await bus.InvokeForTenantAsync<Result>(
+                            TenantId,
+                            new ResendInvitationCommand(invitationId)
+                        );
+                    }
+                )
+            );
 
         await using var verificationScope = Application.Services.CreateAsyncScope();
         var resent = await verificationScope
@@ -129,9 +169,7 @@ public sealed class InviteUserDomainEventTests : MdsweepIntegrationTest
         Assert.True(result?.IsSuccess == true);
         Assert.NotEqual(originalTokenHash, resent.TokenHash);
         Assert.True(resent.ExpiresAt > originalExpiry);
-        Assert.Single(
-            tracked.FindEnvelopesWithMessageType<InvitationCreatedDomainEvent>(MessageEventType.Sent)
-        );
+        Assert.Single(tracked.FindEnvelopesWithMessageType<InvitationCreatedDomainEvent>(MessageEventType.Sent));
         Assert.Equal(1, emailSender.CallCount);
     }
 
