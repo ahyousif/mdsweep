@@ -81,6 +81,8 @@ jobs:
       Azure__Location: ${{ vars.AZURE_LOCATION }}
       Azure__ResourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
 
+      Parameters__custom_domain: ${{ vars.CUSTOM_DOMAIN }}
+      Parameters__certificate_name: ${{ vars.CUSTOM_DOMAIN_CERTIFICATE_NAME }}
       Parameters__postgres_username: ${{ secrets.POSTGRES_USERNAME }}
       Parameters__postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
       Parameters__oidc_client_secret: ${{ secrets.OIDC_CLIENT_SECRET }}

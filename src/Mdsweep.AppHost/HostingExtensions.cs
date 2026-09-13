@@ -16,7 +16,7 @@ public static class HostingExtensions
         IResourceBuilder<ParameterResource>? SmtpFrom
     );
 
-    public static IResourceBuilder<AzurePostgresFlexibleServerResource> AddMdsweepPostgres(
+    public static IResourceBuilder<AzurePostgresFlexibleServerResource> AddPostgres(
         this IDistributedApplicationBuilder builder
     )
     {
@@ -30,7 +30,7 @@ public static class HostingExtensions
         return postgres;
     }
 
-    public static IResourceBuilder<ContainerResource> AddMdsweepKeycloak(
+    public static IResourceBuilder<ContainerResource> AddKeycloak(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzurePostgresFlexibleServerResource> postgres,
         IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> keycloakDatabase
@@ -72,9 +72,7 @@ public static class HostingExtensions
         return keycloak;
     }
 
-    public static IResourceBuilder<MailPitContainerResource> AddMdsweepMailpit(
-        this IDistributedApplicationBuilder builder
-    )
+    public static IResourceBuilder<MailPitContainerResource> AddMailpit(this IDistributedApplicationBuilder builder)
     {
         return builder
             .AddMailPit("mailpit")
@@ -88,7 +86,7 @@ public static class HostingExtensions
             );
     }
 
-    public static IResourceBuilder<ProjectResource> AddMdsweepApi(
+    public static IResourceBuilder<ProjectResource> AddApi(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database,
         IResourceBuilder<ContainerResource> keycloak,
@@ -114,6 +112,19 @@ public static class HostingExtensions
             .WithEnvironment("GoogleRoutes__ApiKey", googleRoutesApiKey)
             .WaitFor(database)
             .WaitFor(keycloak);
+
+        if (!builder.ExecutionContext.IsRunMode)
+        {
+            var customDomain = builder.AddParameter("custom-domain");
+            var certificateName = builder.AddParameter("certificate-name");
+
+            api.PublishAsAzureContainerApp(
+                (_, app) =>
+                {
+                    app.ConfigureCustomDomain(customDomain, certificateName);
+                }
+            );
+        }
 
         ConfigureWebAndEmail(api, communications);
 
@@ -165,7 +176,7 @@ public static class HostingExtensions
         );
     }
 
-    public static MdsweepCommunicationResources AddMdsweepCommunications(
+    public static MdsweepCommunicationResources AddCommunications(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<MailPitContainerResource>? mailpit
     )
@@ -212,7 +223,7 @@ public static class HostingExtensions
             .WithEnvironment("Email__UseStartTls", "true");
     }
 
-    public static IResourceBuilder<ViteAppResource> AddMdsweepWeb(
+    public static IResourceBuilder<ViteAppResource> AddWeb(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<ProjectResource> api
     )
