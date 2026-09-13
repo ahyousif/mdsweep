@@ -32,6 +32,10 @@ export default class UserDetail {
   readonly user = input.required<UserListItem>();
   readonly editing = input(false);
   readonly busy = input(false);
+  readonly expiresAt = computed(() => {
+    const timestamp = this.user().expiresAt;
+    return timestamp ? new Date(timestamp) : null;
+  });
 
   readonly closed = output<void>();
   readonly editClicked = output<void>();

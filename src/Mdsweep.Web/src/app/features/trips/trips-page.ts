@@ -1,4 +1,4 @@
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { UiMessagePipe } from '@app/core/i18n/ui-message';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -28,6 +28,7 @@ import { tripsQueryOptions } from './trips.queries';
 export default class TripsPage {
   readonly #api = inject(TripsApi);
   readonly #dialog = inject(HlmDialogService);
+  readonly #translate = inject(TranslateService);
 
   readonly currentDate = signal(new Date());
   readonly search = signal('');
@@ -114,6 +115,7 @@ export default class TripsPage {
     this.#dialog.open(TripImportDialog, {
       contentClass: 'w-[calc(100vw-2rem)] sm:w-[36rem] sm:max-w-[36rem]',
       showCloseButton: true,
+      closeLabel: this.#translate.instant('common.close'),
     });
   }
 

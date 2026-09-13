@@ -176,6 +176,7 @@ test('Arabic import feedback preserves the filename and required broker column n
   await switchLanguage(page, 'ar');
   await page.getByRole('button', { name: 'استيراد الرحلات', exact: true }).click();
   const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'إغلاق', exact: true })).toBeVisible();
   await dialog.locator('input[type=file]').setInputFiles({
     name: 'synthetic-manifest.csv',
     mimeType: 'text/csv',
@@ -188,6 +189,47 @@ test('Arabic import feedback preserves the filename and required broker column n
     'Medicaid Number',
   );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test.describe('invitation timestamp presentation', () => {
+  test.use({ timezoneId: 'America/Phoenix' });
+
+  test('keeps the local expiry day when switching languages and labels the import close button', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await mockApplication(page);
+    await page.route('**/api/users', (route) =>
+      route.fulfill({
+        json: [
+          {
+            id: 'synthetic-invitation',
+            type: 'Invitation',
+            firstName: 'Synthetic',
+            lastName: 'Expiry',
+            displayName: 'Synthetic Expiry',
+            email: 'expiry@example.test',
+            roles: ['Driver'],
+            status: 'Invited',
+            expiresAt: '2026-09-12T00:30:00Z',
+          },
+        ],
+      }),
+    );
+    await page.goto('/users');
+    await page.getByRole('row').filter({ hasText: 'expiry@example.test' }).click();
+    const expiry = page.locator('app-user-detail dd').filter({ hasText: '2026' });
+    await expect(expiry).toHaveText('Sep 11, 2026');
+    await switchLanguage(page, 'ar');
+    await expect(expiry).toHaveText('11 سبتمبر 2026');
+    await switchLanguage(page, 'en');
+    await expect(expiry).toHaveText('Sep 11, 2026');
+
+    await page.goto('/trips');
+    await page.getByRole('button', { name: 'Import trips', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'close', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
 });
 
 test('mobile navigation has an accessible English title and restores focus after dismissal', async ({
@@ -226,6 +268,9 @@ for (const language of ['en', 'ar'] as const) {
       .getByRole('button', { name: language === 'en' ? 'Invite user' : 'دعوة مستخدم', exact: true })
       .click();
     const dialog = page.getByRole('dialog');
+    await expect(
+      dialog.getByRole('button', { name: language === 'en' ? 'close' : 'إغلاق', exact: true }),
+    ).toBeVisible();
     const submit = dialog.getByRole('button', {
       name: language === 'en' ? 'Send invitation' : 'إرسال الدعوة',
       exact: true,

@@ -1,4 +1,3 @@
-import { TranslatePipe } from '@ngx-translate/core';
 import type { BooleanInput } from '@angular/cdk/coercion';
 import {
   booleanAttribute,
@@ -21,7 +20,7 @@ import { HlmSheetClose } from './hlm-sheet-close';
 
 @Component({
   selector: 'hlm-sheet-content',
-  imports: [TranslatePipe, HlmButton, HlmSheetClose, NgIcon],
+  imports: [HlmButton, HlmSheetClose, NgIcon],
   providers: [provideIcons({ lucideX })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -34,7 +33,7 @@ import { HlmSheetClose } from './hlm-sheet-close';
 
     @if (showCloseButton()) {
       <button hlmBtn variant="ghost" size="icon-sm" class="absolute end-4 top-4" hlmSheetClose>
-        <span class="sr-only">{{ 'common.close' | translate }}</span>
+        <span class="sr-only">{{ closeLabel() }}</span>
         <ng-icon name="lucideX" />
       </button>
     }
@@ -50,6 +49,7 @@ export class HlmSheetContent {
   public readonly showCloseButton = input<boolean, BooleanInput>(true, {
     transform: booleanAttribute,
   });
+  public readonly closeLabel = input('Close');
 
   constructor() {
     classes(() => [

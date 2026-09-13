@@ -53,6 +53,22 @@ describe('Language preference', () => {
     expect(document.documentElement.dir).toBe('rtl');
   });
 
+  for (const locale of ['en', 'ar'] as const) {
+    it(`preserves calendar fields and formats timestamp offsets explicitly in ${locale}`, () => {
+      const language = TestBed.inject(LanguageService);
+      language.setLanguage(locale);
+      const calendarDate = new Date(2026, 8, 12);
+      expect(language.formatDate(calendarDate, { day: 'numeric' })).toBe('12');
+      expect(language.formatDate(calendarDate, { year: 'numeric' })).toBe('2026');
+
+      const timestamp = new Date('2026-09-12T00:30:00Z');
+      expect(language.formatDate(timestamp, { day: 'numeric', timeZone: 'America/Phoenix' })).toBe(
+        '11',
+      );
+      expect(language.formatDate(timestamp, { day: 'numeric', timeZone: 'UTC' })).toBe('12');
+    });
+  }
+
   it('renders Arabic plural forms with western digits and updates retained feedback', async () => {
     const language = TestBed.inject(LanguageService);
     const translate = TestBed.inject(TranslateService);

@@ -109,7 +109,7 @@
           @if (user().type === 'Invitation' && user().expiresAt) {
             <div class="grid grid-cols-[5rem_1fr] items-center gap-3">
               <dt class="text-muted-foreground">{{ 'users.expires' | translate }}</dt>
-              <dd>{{ language.formatDate(user().expiresAt!) }}</dd>
+              <dd>{{ language.formatDate(expiresAt()!) }}</dd>
             </div>
           }
         </dl>

@@ -1,4 +1,3 @@
-import { TranslatePipe } from '@ngx-translate/core';
 import type { BooleanInput } from '@angular/cdk/coercion';
 import type { ComponentType } from '@angular/cdk/portal';
 import { NgComponentOutlet } from '@angular/common';
@@ -22,11 +21,12 @@ type HlmDialogContentContext = {
   $component?: ComponentType<unknown>;
   $dynamicComponentClass?: string;
   $showCloseButton?: boolean;
+  $closeLabel?: string;
 };
 
 @Component({
   selector: 'hlm-dialog-content',
-  imports: [TranslatePipe, NgComponentOutlet, HlmButton, HlmDialogClose, NgIcon],
+  imports: [NgComponentOutlet, HlmButton, HlmDialogClose, NgIcon],
   providers: [provideIcons({ lucideX })],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -42,7 +42,7 @@ type HlmDialogContentContext = {
 
     @if (showCloseButton()) {
       <button hlmBtn variant="ghost" size="icon-sm" class="absolute end-4 top-4" hlmDialogClose>
-        <span class="sr-only">{{ 'common.close' | translate }}</span>
+        <span class="sr-only">{{ closeLabel() }}</span>
         <ng-icon name="lucideX" />
       </button>
     }
@@ -62,6 +62,7 @@ export class HlmDialogContent {
   );
 
   public readonly state = computed(() => this._dialogRef?.state() ?? 'closed');
+  public readonly closeLabel = input(this._dialogContext?.$closeLabel ?? 'Close');
 
   public readonly component = this._dialogContext?.$component;
   private readonly _dynamicComponentClass = this._dialogContext?.$dynamicComponentClass;

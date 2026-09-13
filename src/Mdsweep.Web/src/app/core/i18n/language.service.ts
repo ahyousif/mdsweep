@@ -56,12 +56,10 @@ export class LanguageService {
   }
 
   formatDate(
-    value: Date | string,
+    value: Date,
     options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' },
   ): string {
-    return new Intl.DateTimeFormat(this.locale(), options).format(
-      typeof value === 'string' ? new Date(value) : value,
-    );
+    return new Intl.DateTimeFormat(this.locale(), options).format(value);
   }
 
   formatTime(value: string | null, fallbackKey = 'common.notSupplied'): string {

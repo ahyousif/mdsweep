@@ -14,6 +14,10 @@ Both compiled catalogs ship with the application. This makes switching synchrono
 
 ## API and UI boundary
 
+UI primitives under `src/app/ui` do not import application translation services or reference catalog keys. Pass translated accessible labels from application components through plain inputs such as `closeLabel`; dialog/sheet close labels default to English `Close`. Programmatic dialogs accept the label through their options.
+
+`LanguageService.formatDate` accepts `Date` values only. Convert known API timestamps explicitly at their consuming component. Calendar dates such as `yyyy-MM-dd` must be constructed from calendar fields, never parsed with `new Date(string)`, which interprets date-only strings as UTC and can shift the displayed day.
+
 Translation is a frontend concern. API responses retain English diagnostic messages. Generic HTTP failures and ordinary input validation do not require application error codes. Add a stable code only for a server-authoritative business condition when Angular needs a distinct localized message or behavior that cannot be inferred from HTTP status alone. Keep codes beside the conditions that produce them; extract constants only when real repetition justifies it.
 
 FluentValidation continues enforcing all request rules on the server and returns Wolverine's standard validation ProblemDetails. Angular validates form inputs locally and displays translated messages. Unexpected server validation failures use localized guidance to check the entered values; the English field diagnostics remain available in the response. Client validation does not replace server validation.
