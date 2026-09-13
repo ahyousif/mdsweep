@@ -33,6 +33,9 @@ public sealed class UpdateUserHandler(IRepository repository, ICurrentIdentity c
         {
             return Result.Invalid(
                 new ValidationError("user", "You cannot deactivate yourself or remove your own Administrator role.")
+                {
+                    ErrorCode = "protectOwnAccess",
+                }
             );
         }
 

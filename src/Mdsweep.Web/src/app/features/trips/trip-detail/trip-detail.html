@@ -4,15 +4,17 @@
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h2 class="truncate text-2xl font-semibold tracking-tight">
-          {{ passengerName() }}
+          <bdi>{{ passengerName() }}</bdi>
         </h2>
 
-        <p class="text-muted-foreground mt-0.5 text-sm">MTM {{ trip().brokerTripNumber }}</p>
+        <p class="text-muted-foreground mt-0.5 text-sm">
+          MTM <bdi>{{ trip().brokerTripNumber }}</bdi>
+        </p>
 
         <div class="mt-2 flex items-center gap-2 text-sm">
           <ng-icon name="lucidePhone" class="text-muted-foreground size-4" aria-hidden="true" />
 
-          <span>(602) 555-0198</span>
+          <bdi dir="ltr">(602) 555-0198</bdi>
         </div>
       </div>
 
@@ -22,7 +24,7 @@
           variant="ghost"
           size="icon"
           type="button"
-          aria-label="Close trip details"
+          [attr.aria-label]="'trips.closeDetails' | translate"
           (click)="closed.emit()"
         >
           <ng-icon name="lucideX" class="size-5" aria-hidden="true" />
@@ -32,12 +34,16 @@
 
     <nav class="mt-4 flex gap-6">
       <button type="button" class="text-primary border-primary border-b-2 px-2 pb-2.5 font-medium">
-        Overview
+        {{ 'trips.overview' | translate }}
       </button>
 
-      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">Notes</button>
+      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">
+        {{ 'trips.notes' | translate }}
+      </button>
 
-      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">History</button>
+      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">
+        {{ 'trips.history' | translate }}
+      </button>
     </nav>
   </header>
 
@@ -46,11 +52,11 @@
     <!-- Timing -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold">Timing</h3>
+        <h3 class="font-semibold">{{ 'trips.timing' | translate }}</h3>
 
         <button hlmBtn variant="outline" size="sm" type="button">
           <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
-          Edit
+          {{ 'common.edit' | translate }}
         </button>
       </div>
 
@@ -82,7 +88,7 @@
             />
 
             <div>
-              <p class="text-muted-foreground text-sm">Estimated drive</p>
+              <p class="text-muted-foreground text-sm">{{ 'trips.estimatedDrive' | translate }}</p>
 
               <p class="font-semibold leading-tight">
                 {{ driveEstimate() }}
@@ -99,7 +105,9 @@
 
             <div>
               <div class="flex items-center gap-1">
-                <p class="text-muted-foreground text-sm">Calculated pickup</p>
+                <p class="text-muted-foreground text-sm">
+                  {{ 'trips.calculatedPickup' | translate }}
+                </p>
 
                 <ng-icon
                   name="lucideCircleHelp"
@@ -116,7 +124,7 @@
         </div>
 
         <div class="bg-muted/30 rounded-lg p-4">
-          <p class="text-muted-foreground text-sm">Scheduled pickup</p>
+          <p class="text-muted-foreground text-sm">{{ 'trips.scheduledPickup' | translate }}</p>
 
           <p class="mt-0.5 font-semibold">
             {{ formatTime(trip().scheduledPickupTime) }}
@@ -128,7 +136,9 @@
             </p>
           }
 
-          <button hlmBtn variant="outline" size="sm" type="button" class="mt-2">Change</button>
+          <button hlmBtn variant="outline" size="sm" type="button" class="mt-2">
+            {{ 'common.change' | translate }}
+          </button>
         </div>
       </div>
     </section>
@@ -136,11 +146,11 @@
     <!-- Route -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold">Route</h3>
+        <h3 class="font-semibold">{{ 'trips.route' | translate }}</h3>
 
         <button hlmBtn variant="outline" size="sm" type="button">
           <ng-icon name="lucideMapPin" class="size-4" aria-hidden="true" />
-          View on map
+          {{ 'trips.viewMap' | translate }}
         </button>
       </div>
 
@@ -153,14 +163,14 @@
           </div>
 
           <div class="pb-2">
-            <p class="text-muted-foreground text-sm">Pickup address</p>
+            <p class="text-muted-foreground text-sm">{{ 'trips.pickupAddress' | translate }}</p>
 
             <p class="mt-0.5 font-medium leading-tight">
-              {{ trip().pickup.address }}
+              <bdi>{{ trip().pickup.address }}</bdi>
             </p>
 
             <p class="text-muted-foreground mt-0.5 text-sm">
-              {{ formatAddress(trip().pickup) }}
+              <bdi>{{ formatAddress(trip().pickup) }}</bdi>
             </p>
           </div>
         </div>
@@ -171,14 +181,14 @@
           </div>
 
           <div>
-            <p class="text-muted-foreground text-sm">Dropoff address</p>
+            <p class="text-muted-foreground text-sm">{{ 'trips.dropoffAddress' | translate }}</p>
 
             <p class="mt-0.5 font-medium leading-tight">
-              {{ trip().dropoff.address }}
+              <bdi>{{ trip().dropoff.address }}</bdi>
             </p>
 
             <p class="text-muted-foreground mt-0.5 text-sm">
-              {{ formatAddress(trip().dropoff) }}
+              <bdi>{{ formatAddress(trip().dropoff) }}</bdi>
             </p>
           </div>
         </div>
@@ -188,11 +198,11 @@
     <!-- Assignment -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold">Assignment</h3>
+        <h3 class="font-semibold">{{ 'trips.assignment' | translate }}</h3>
 
         <button hlmBtn variant="outline" size="sm" type="button">
           <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
-          Edit
+          {{ 'common.edit' | translate }}
         </button>
       </div>
 
@@ -201,9 +211,9 @@
           <ng-icon name="lucideUserRound" class="text-muted-foreground size-4" aria-hidden="true" />
 
           <div>
-            <p class="text-muted-foreground text-sm">Driver</p>
+            <p class="text-muted-foreground text-sm">{{ 'roles.Driver' | translate }}</p>
 
-            <p class="font-medium">Driver 3</p>
+            <p class="font-medium">{{ 'trips.placeholderDriver' | translate }}</p>
           </div>
         </div>
 
@@ -211,9 +221,9 @@
           <ng-icon name="lucideCarFront" class="text-muted-foreground size-4" aria-hidden="true" />
 
           <div>
-            <p class="text-muted-foreground text-sm">Vehicle</p>
+            <p class="text-muted-foreground text-sm">{{ 'trips.vehicle' | translate }}</p>
 
-            <p class="font-medium">Van 2</p>
+            <p class="font-medium">{{ 'trips.placeholderVehicle' | translate }}</p>
           </div>
         </div>
       </div>
@@ -221,11 +231,11 @@
 
     <!-- Trip details -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
-      <h3 class="font-semibold">Trip details</h3>
+      <h3 class="font-semibold">{{ 'trips.details' | translate }}</h3>
 
       <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
         <div>
-          <dt class="text-muted-foreground text-sm">Broker status</dt>
+          <dt class="text-muted-foreground text-sm">{{ 'trips.brokerStatus' | translate }}</dt>
 
           <dd class="text-primary mt-0.5 font-medium">
             {{ brokerStatusLabel() }}
@@ -233,24 +243,24 @@
         </div>
 
         <div>
-          <dt class="text-muted-foreground text-sm">Passenger type</dt>
+          <dt class="text-muted-foreground text-sm">{{ 'trips.passengerType' | translate }}</dt>
 
           <dd class="mt-0.5">
-            {{ trip().passengerType || 'Not supplied' }}
+            <bdi>{{ trip().passengerType || ('common.notSupplied' | translate) }}</bdi>
           </dd>
         </div>
 
         <div>
-          <dt class="text-muted-foreground text-sm">Trip type</dt>
+          <dt class="text-muted-foreground text-sm">{{ 'trips.tripType' | translate }}</dt>
 
-          <dd class="mt-0.5">Regular</dd>
+          <dd class="mt-0.5">{{ 'trips.regular' | translate }}</dd>
         </div>
 
         <div>
-          <dt class="text-muted-foreground text-sm">Special needs</dt>
+          <dt class="text-muted-foreground text-sm">{{ 'trips.specialNeeds' | translate }}</dt>
 
           <dd class="mt-0.5">
-            {{ trip().specialNeeds || '—' }}
+            <bdi>{{ trip().specialNeeds || '—' }}</bdi>
           </dd>
         </div>
       </dl>
@@ -259,16 +269,16 @@
     <!-- Notes -->
     <section hlmCard class="rounded-lg p-4 shadow-none">
       <div class="flex items-center justify-between">
-        <h3 class="font-semibold">Notes</h3>
+        <h3 class="font-semibold">{{ 'trips.notes' | translate }}</h3>
 
         <button hlmBtn variant="outline" size="sm" type="button">
           <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
 
-          Edit
+          {{ 'common.edit' | translate }}
         </button>
       </div>
 
-      <p class="text-muted-foreground mt-1 text-sm">No notes</p>
+      <p class="text-muted-foreground mt-1 text-sm">{{ 'trips.noNotes' | translate }}</p>
     </section>
   </div>
 
@@ -277,17 +287,17 @@
     <div class="flex gap-2">
       <button hlmBtn type="button" class="flex-1">
         <ng-icon name="lucidePlay" class="size-4" aria-hidden="true" />
-        Mark ready
+        {{ 'trips.markReady' | translate }}
       </button>
 
       <button hlmBtn variant="outline" type="button" class="flex-1">
         <ng-icon name="lucideUserRound" class="size-4" aria-hidden="true" />
-        Assign driver
+        {{ 'trips.assignDriver' | translate }}
       </button>
 
       <button hlmBtn variant="outline" type="button">
         <ng-icon name="lucideEllipsis" class="size-4" aria-hidden="true" />
-        More
+        {{ 'trips.more' | translate }}
       </button>
     </div>
   </footer>

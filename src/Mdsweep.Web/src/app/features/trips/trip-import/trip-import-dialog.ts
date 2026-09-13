@@ -1,3 +1,5 @@
+import { TranslatePipe } from '@ngx-translate/core';
+import { UiMessagePipe, type UiMessage } from '@app/core/i18n/ui-message';
 import { Component, computed, inject, signal } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -29,6 +31,8 @@ type ImportStep = 'upload' | 'complete';
 @Component({
   selector: 'app-trip-import-dialog',
   imports: [
+    TranslatePipe,
+    UiMessagePipe,
     NgIcon,
     HlmButton,
     HlmSpinner,
@@ -59,7 +63,7 @@ export default class TripImportDialog {
   readonly file = signal<File | null>(null);
   readonly result = signal<TripImportResult | null>(null);
   readonly dragging = signal(false);
-  readonly fileError = signal('');
+  readonly fileError = signal<UiMessage | null>(null);
 
   readonly importMutation = injectMutation(() => ({
     mutationFn: (file: File) => this.#api.import(file),
@@ -80,9 +84,7 @@ export default class TripImportDialog {
   readonly importError = computed(() => {
     const error = this.importMutation.error();
 
-    return error
-      ? httpErrorMessage(error, 'Trips could not be imported. Check the file and try again.')
-      : '';
+    return error ? httpErrorMessage(error, 'errors.importTrips') : null;
   });
 
   readonly error = computed(() => this.fileError() || this.importError());
@@ -94,7 +96,7 @@ export default class TripImportDialog {
       return '';
     }
 
-    return file.name.toLowerCase().endsWith('.csv') ? 'CSV file' : 'Excel file';
+    return file.name.toLowerCase().endsWith('.csv') ? 'tripImport.csv' : 'tripImport.excel';
   });
 
   onFileSelected(event: Event): void {
@@ -142,7 +144,7 @@ export default class TripImportDialog {
     }
 
     this.file.set(null);
-    this.fileError.set('');
+    this.fileError.set(null);
     this.importMutation.reset();
   }
 
@@ -170,11 +172,11 @@ export default class TripImportDialog {
 
   #selectFile(file: File): void {
     if (!isSupportedFile(file)) {
-      this.fileError.set('Choose a CSV or Excel (.xlsx) file.');
+      this.fileError.set({ key: 'tripImport.fileTypeError' });
       return;
     }
 
-    this.fileError.set('');
+    this.fileError.set(null);
     this.importMutation.reset();
     this.file.set(file);
   }

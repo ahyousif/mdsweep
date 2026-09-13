@@ -1,3 +1,4 @@
+import { provideLocalization } from '@app/core/i18n/localization.providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AuthSessionService } from '@app/core/auth/auth-session.service';
 import { ApplicationError } from '@app/core/errors/application-error';
@@ -21,6 +22,7 @@ describe('InvitationWelcome', () => {
     toTenantSession.mockReturnValue({ tenantId: 'mdsw-eep2-3456' });
     TestBed.configureTestingModule({
       providers: [
+        provideLocalization(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
         {
           provide: AuthSessionService,
@@ -45,9 +47,9 @@ describe('InvitationWelcome', () => {
 
   it('shows account-switch recovery for a rejected email mismatch', async () => {
     accept.mockRejectedValue(
-      new ApplicationError('Sign in with the invited email.', 400, undefined, {
-        invitationEmailMismatch: ['Sign in with the invited email.'],
-      }),
+      new ApplicationError('Sign in with the invited email.', 400, undefined, {}, [
+        { field: 'invitationEmailMismatch', code: 'invitationEmailMismatch' },
+      ]),
     );
 
     const acceptButton = Array.from(
@@ -66,9 +68,9 @@ describe('InvitationWelcome', () => {
 
   it('preserves the invitation URL when continuing with another account', async () => {
     accept.mockRejectedValue(
-      new ApplicationError('Sign in with the invited email.', 400, undefined, {
-        invitationEmailMismatch: ['Sign in with the invited email.'],
-      }),
+      new ApplicationError('Sign in with the invited email.', 400, undefined, {}, [
+        { field: 'invitationEmailMismatch', code: 'invitationEmailMismatch' },
+      ]),
     );
     const buttons = () =>
       Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>);

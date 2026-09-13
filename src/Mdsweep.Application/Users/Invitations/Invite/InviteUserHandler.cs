@@ -33,6 +33,9 @@ public sealed class InviteUserHandler(IRepository repository, ITokenService toke
                             "email",
                             "This user already belongs to this Tenant. Edit or re-enable their access instead."
                         )
+                        {
+                            ErrorCode = "membershipExists",
+                        }
                     ),
                     new OutgoingMessages()
                 );

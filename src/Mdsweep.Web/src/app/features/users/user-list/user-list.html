@@ -3,11 +3,11 @@
     <table hlmTable>
       <thead hlmTHead class="bg-muted/40">
         <tr hlmTr>
-          <th hlmTh scope="col" class="h-12 px-4">User</th>
-          <th hlmTh scope="col" class="h-12 px-4">Roles</th>
-          <th hlmTh scope="col" class="h-12 px-4">Status</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'users.user' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'common.roles' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'common.status' | translate }}</th>
           <th hlmTh scope="col" class="h-12 w-12 px-4">
-            <span class="sr-only">Open details</span>
+            <span class="sr-only">{{ 'users.openDetails' | translate }}</span>
           </th>
         </tr>
       </thead>
@@ -15,8 +15,7 @@
         @for (user of users(); track key(user)) {
           <tr
             hlmTr
-            class="group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring
-              focus-visible:ring-inset"
+            class="group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             [attr.data-state]="key(user) === selectedUserKey() ? 'selected' : null"
             [attr.aria-selected]="key(user) === selectedUserKey()"
             tabindex="0"
@@ -27,22 +26,25 @@
             <td hlmTd class="px-4 py-4">
               <div class="flex items-center gap-3">
                 <span
-                  class="bg-secondary text-secondary-foreground grid size-10 shrink-0
-                    place-items-center rounded-full text-sm font-semibold"
+                  class="bg-secondary text-secondary-foreground grid size-10 shrink-0 place-items-center rounded-full text-sm font-semibold"
                   aria-hidden="true"
                 >
                   {{ initials(user) }}
                 </span>
                 <span class="min-w-0">
-                  <span class="block truncate font-medium">{{ user.displayName }}</span>
-                  <span class="text-muted-foreground block truncate text-sm">{{ user.email }}</span>
+                  <span class="block truncate font-medium"
+                    ><bdi>{{ user.displayName }}</bdi></span
+                  >
+                  <span class="text-muted-foreground block truncate text-sm"
+                    ><bdi>{{ user.email }}</bdi></span
+                  >
                 </span>
               </div>
             </td>
             <td hlmTd class="px-4 py-4">
               <div class="flex flex-wrap gap-1.5">
                 @for (role of user.roles; track role) {
-                  <span hlmBadge variant="secondary">{{ role }}</span>
+                  <span hlmBadge variant="secondary">{{ 'roles.' + role | translate }}</span>
                 }
               </div>
             </td>
@@ -57,13 +59,13 @@
                       : 'outline'
                 "
               >
-                {{ statusLabel(user) }}
+                {{ 'users.status.' + statusLabel(user) | translate }}
               </span>
             </td>
-            <td hlmTd class="px-4 py-4 text-right">
+            <td hlmTd class="px-4 py-4 text-end">
               <ng-icon
                 name="lucideChevronRight"
-                class="text-muted-foreground size-5 group-hover:translate-x-0.5"
+                class="rtl:rotate-180 text-muted-foreground size-5 group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </td>
@@ -73,8 +75,8 @@
             <td hlmTd colspan="4" class="py-10 whitespace-normal">
               <hlm-empty>
                 <hlm-empty-header>
-                  <h2 hlmEmptyTitle>No users match.</h2>
-                  <p hlmEmptyDescription>Try a different name, email, or status.</p>
+                  <h2 hlmEmptyTitle>{{ 'users.empty' | translate }}</h2>
+                  <p hlmEmptyDescription>{{ 'users.emptyHelp' | translate }}</p>
                 </hlm-empty-header>
               </hlm-empty>
             </td>

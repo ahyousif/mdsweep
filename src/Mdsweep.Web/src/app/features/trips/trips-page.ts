@@ -1,3 +1,7 @@
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { UiMessagePipe } from '@app/core/i18n/ui-message';
+import { httpErrorMessage } from '@app/core/api/http-error-message';
+import { HlmButton } from '@spartan-ng/helm/button';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
@@ -15,7 +19,7 @@ import { tripsQueryOptions } from './trips.queries';
 
 @Component({
   selector: 'app-trips-page',
-  imports: [TripToolbar, TripList, TripDetail],
+  imports: [TranslatePipe, UiMessagePipe, HlmButton, TripToolbar, TripList, TripDetail],
   templateUrl: './trips-page.html',
   host: {
     class: 'block h-full min-h-0',
@@ -24,6 +28,7 @@ import { tripsQueryOptions } from './trips.queries';
 export default class TripsPage {
   readonly #api = inject(TripsApi);
   readonly #dialog = inject(HlmDialogService);
+  readonly #translate = inject(TranslateService);
 
   readonly currentDate = signal(new Date());
   readonly search = signal('');
@@ -53,6 +58,10 @@ export default class TripsPage {
   });
 
   readonly tripsQuery = injectQuery(() => tripsQueryOptions(this.#api, this.query()));
+
+  readonly loadError = computed(() =>
+    httpErrorMessage(this.tripsQuery.error(), 'errors.loadTrips'),
+  );
 
   readonly trips = computed(() => this.tripsQuery.data()?.items ?? []);
 
@@ -106,6 +115,7 @@ export default class TripsPage {
     this.#dialog.open(TripImportDialog, {
       contentClass: 'w-[calc(100vw-2rem)] sm:w-[36rem] sm:max-w-[36rem]',
       showCloseButton: true,
+      closeLabel: this.#translate.instant('common.close'),
     });
   }
 

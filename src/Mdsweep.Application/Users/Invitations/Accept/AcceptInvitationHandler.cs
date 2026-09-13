@@ -1,4 +1,4 @@
-﻿using Mdsweep.Application.Common.Abstractions;
+using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Common.Security;
 using Mdsweep.Application.Users.Specifications;
 using Mdsweep.Domain.Tenants;
@@ -25,6 +25,9 @@ public sealed class AcceptInvitationHandler(
         {
             return Result.Invalid(
                 new ValidationError("identity", "Your account does not provide an email address.")
+                {
+                    ErrorCode = "identityEmailMissing",
+                }
             );
         }
 
@@ -40,6 +43,9 @@ public sealed class AcceptInvitationHandler(
         {
             return Result.Invalid(
                 new ValidationError("token", "This invitation is invalid, expired, cancelled, or already used.")
+                {
+                    ErrorCode = "invitationInvalid",
+                }
             );
         }
 
@@ -50,6 +56,9 @@ public sealed class AcceptInvitationHandler(
                     "invitationEmailMismatch",
                     "Sign in with the email address this invitation was sent to."
                 )
+                {
+                    ErrorCode = "invitationEmailMismatch",
+                }
             );
         }
 
@@ -82,6 +91,9 @@ public sealed class AcceptInvitationHandler(
                     "membership",
                     "This user already belongs to this Tenant. Edit or re-enable their access instead."
                 )
+                {
+                    ErrorCode = "membershipExists",
+                }
             );
         }
 

@@ -1,3 +1,4 @@
+import { provideLocalization } from './core/i18n/localization.providers';
 import {
   provideHttpClient,
   withInterceptors,
@@ -27,6 +28,7 @@ import { GlobalErrorHandler } from './core/errors/global-error.handler';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideLocalization(),
     provideSpartanHlm(),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),

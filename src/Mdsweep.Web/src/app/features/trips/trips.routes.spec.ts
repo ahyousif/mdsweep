@@ -1,3 +1,4 @@
+import { provideLocalization } from '@app/core/i18n/localization.providers';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -13,6 +14,7 @@ describe('Trips routes', () => {
   it('loads the trips page', async () => {
     TestBed.configureTestingModule({
       providers: [
+        provideLocalization(),
         provideRouter(routes),
         provideTanStackQuery(
           new QueryClient({

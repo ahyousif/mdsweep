@@ -8,9 +8,7 @@ public sealed class UpdateUserValidator : AbstractValidator<UpdateUserRequest>
 
         RuleFor(x => x.Roles)
             .NotEmpty()
-            .Must(roles =>
-                roles.Length <= 2 && roles.Distinct().Count() == roles.Length && roles.All(TenantRoles.All.Contains)
-            )
-            .WithMessage("Select one or two distinct valid roles.");
+            .Must(roles => roles.Distinct().Count() == roles.Length && roles.All(TenantRoles.All.Contains))
+            .WithMessage("Select at least one role. Roles must be distinct and valid.");
     }
 }

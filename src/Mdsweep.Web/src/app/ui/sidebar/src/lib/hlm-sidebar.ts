@@ -27,6 +27,7 @@ import { injectHlmSidebarConfig } from './hlm-sidebar.token';
 		} @else if (_sidebarService.isMobile()) {
 			<hlm-sheet
 				[side]="side()"
+				[aria-describedby]="null"
 				[state]="_sidebarService.openMobile() ? 'open' : 'closed'"
 				(stateChanged)="_sidebarService.setOpenMobile($event === 'open')"
 			>
@@ -38,6 +39,7 @@ import { injectHlmSidebarConfig } from './hlm-sidebar.token';
 					class="bg-sidebar text-sidebar-foreground h-svh w-(--sidebar-width) p-0 [&>button]:hidden"
 					[style.--sidebar-width]="sidebarWidthMobile()"
 				>
+					<h2 hlmSheetTitle class="sr-only">{{ mobileTitle() }}</h2>
 					<div class="flex h-full w-full flex-col">
 						<ng-container *ngTemplateOutlet="contentContainer" />
 					</div>
@@ -58,6 +60,7 @@ export class HlmSidebar {
 	protected readonly _sidebarService = inject(HlmSidebarService);
 	private readonly _config = injectHlmSidebarConfig();
 	public readonly sidebarWidthMobile = input<string>(this._config.sidebarWidthMobile);
+	public readonly mobileTitle = input.required<string>();
 
 	public readonly side = input<'left' | 'right'>('left');
 	public readonly variant = input<SidebarVariant>(this._sidebarService.variant());

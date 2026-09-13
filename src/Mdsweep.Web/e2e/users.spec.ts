@@ -187,7 +187,9 @@ test('manages active, invited, and disabled users in one selectable list', async
   await expect(detailPanel.getByRole('heading', { name: 'Details', exact: true })).toBeVisible();
   await expect(detailPanel.getByText('Roles', { exact: true })).toBeVisible();
   await expect(detailPanel.getByText('Status', { exact: true })).toBeVisible();
-  await expect(detailPanel.getByText('Prevent this user from accessing this tenant.')).toBeVisible();
+  await expect(
+    detailPanel.getByText('Prevent this user from accessing this tenant.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Disable user' })).toBeVisible();
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
@@ -211,7 +213,7 @@ test('manages active, invited, and disabled users in one selectable list', async
   await page.getByLabel('Email', { exact: true }).fill('jordan@example.test');
   await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: 'Dispatcher', exact: true })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: 'Administrator', exact: true })).toBeDisabled();
+  await expect(page.getByRole('checkbox', { name: 'Administrator', exact: true })).toBeEnabled();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -235,37 +237,113 @@ test('manages active, invited, and disabled users in one selectable list', async
   await page.screenshot({ path: testInfo.outputPath('users.png'), fullPage: true });
 });
 
-for (const role of ['Administrator']) {
-  test(`${role} can clear and reselect invitation roles`, async ({ page }) => {
-    await session(page, role);
-    await page.route('**/api/users', (route) =>
-      route.fulfill({
-        json: [],
-      }),
+for (const language of ['en', 'ar'] as const) {
+  const labels =
+    language === 'en'
+      ? {
+          invite: 'Invite user',
+          first: 'First name',
+          last: 'Last name',
+          email: 'Email',
+          send: 'Send invitation',
+          edit: 'Edit',
+          save: 'Save changes',
+          driver: 'Driver',
+          dispatcher: 'Dispatcher',
+          admin: 'Administrator',
+          required: 'Choose at least one role.',
+        }
+      : {
+          invite: 'دعوة مستخدم',
+          first: 'الاسم الأول',
+          last: 'اسم العائلة',
+          email: 'البريد الإلكتروني',
+          send: 'إرسال الدعوة',
+          edit: 'تعديل',
+          save: 'حفظ التغييرات',
+          driver: 'سائق',
+          dispatcher: 'منسق الرحلات',
+          admin: 'مسؤول النظام',
+          required: 'اختر دورًا واحدًا على الأقل.',
+        };
+
+  test(`Administrator can clear and select all invitation roles in ${language}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (language) => localStorage.setItem('mdsweep.language', language),
+      language,
     );
+    await session(page);
+    await page.route('**/api/users', (route) => route.fulfill({ json: [] }));
+    let submittedRoles: string[] = [];
+    await page.route('**/api/users/invitations', (route) => {
+      submittedRoles = route.request().postDataJSON().roles;
+      return route.fulfill({ status: 204 });
+    });
     await page.goto('/users');
-    await page.getByRole('button', { name: 'Invite user', exact: true }).click();
-    const driver = page.getByRole('checkbox', { name: 'Driver', exact: true });
-    const roles = page.getByRole('checkbox');
-    const error = page.getByRole('alert').filter({ hasText: 'Choose one or two roles.' });
+    await page.getByRole('button', { name: labels.invite, exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    const driver = dialog.getByRole('checkbox', { name: labels.driver, exact: true });
+    const error = dialog.getByRole('alert').filter({ hasText: labels.required });
     await expect(driver).toBeChecked();
-    await expect(roles).toHaveCount(role === 'Administrator' ? 3 : 1);
     await driver.click();
     await expect(error).toBeVisible();
-    await expect(roles).toHaveCount(role === 'Administrator' ? 3 : 1);
-    for (const checkbox of await roles.all()) {
-      await expect(checkbox).toBeVisible();
+    for (const checkbox of await dialog.getByRole('checkbox').all()) {
       await expect(checkbox).toBeEnabled();
       await expect(checkbox).not.toBeChecked();
+      await checkbox.click();
     }
-    await driver.click();
-    await expect(driver).toBeChecked();
     await expect(error).toHaveCount(0);
-    if (role === 'Administrator') {
-      await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
-      await expect(
-        page.getByRole('checkbox', { name: 'Administrator', exact: true }),
-      ).toBeDisabled();
+    for (const checkbox of await dialog.getByRole('checkbox').all())
+      await expect(checkbox).toBeChecked();
+    await dialog.getByLabel(labels.first, { exact: true }).fill('Synthetic');
+    await dialog.getByLabel(labels.last, { exact: true }).fill('Invitee');
+    await dialog.getByLabel(labels.email, { exact: true }).fill('all-roles@example.test');
+    await dialog.getByRole('button', { name: labels.send, exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(submittedRoles.sort()).toEqual(['Administrator', 'Dispatcher', 'Driver']);
+  });
+
+  test(`Administrator can save and reopen all three User roles in ${language}`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (language) => localStorage.setItem('mdsweep.language', language),
+      language,
+    );
+    await session(page);
+    const user: UserListItemFixture = {
+      id: 'synthetic-user',
+      type: 'User',
+      firstName: 'Synthetic',
+      lastName: 'User',
+      displayName: 'Synthetic User',
+      email: 'all-roles@example.test',
+      roles: ['Driver'],
+      status: 'Active',
+    };
+    await page.route('**/api/users', (route) => route.fulfill({ json: [user] }));
+    let submittedRoles: string[] = [];
+    await page.route('**/api/users/synthetic-user', (route) => {
+      submittedRoles = route.request().postDataJSON().roles;
+      user.roles = submittedRoles;
+      return route.fulfill({ status: 204 });
+    });
+    await page.goto('/users');
+    await page.getByRole('row').filter({ hasText: user.email }).click();
+    await page.getByRole('button', { name: labels.edit, exact: true }).click();
+    await page.getByRole('checkbox', { name: labels.dispatcher, exact: true }).click();
+    await page.getByRole('checkbox', { name: labels.admin, exact: true }).click();
+    await page.getByRole('button', { name: labels.save, exact: true }).click();
+    await expect.poll(() => submittedRoles).toHaveLength(3);
+    expect(submittedRoles.sort()).toEqual(['Administrator', 'Dispatcher', 'Driver']);
+    await expect(page.getByRole('row').filter({ hasText: user.email })).toContainText(labels.admin);
+    await page.reload();
+    await page.getByRole('row').filter({ hasText: user.email }).click();
+    await page.getByRole('button', { name: labels.edit, exact: true }).click();
+    for (const name of [labels.driver, labels.dispatcher, labels.admin]) {
+      await expect(page.getByRole('checkbox', { name, exact: true })).toBeChecked();
     }
   });
 }
@@ -321,8 +399,9 @@ test('invitation dialog supports keyboard dismissal and preserves failed submiss
       status: 400,
       json: {
         errors: {
-          email: ['An invitation already exists for this email. Resend or revoke it first.'],
+          email: ['This user already belongs to this Tenant.'],
         },
+        issues: [{ field: 'email', code: 'membershipExists' }],
       },
     }),
   );
@@ -350,7 +429,7 @@ test('invitation dialog supports keyboard dismissal and preserves failed submiss
   await dialog.getByLabel('Last name', { exact: true }).fill('Example');
   await dialog.getByLabel('Email', { exact: true }).fill('jordan@example.test');
   await dialog.getByRole('button', { name: 'Send invitation', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('An invitation already exists');
+  await expect(dialog.getByRole('alert')).toContainText('already belongs to this Tenant');
   await expect(dialog.getByLabel('Email', { exact: true })).toHaveValue('jordan@example.test');
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('invite-dialog-mobile.png'), fullPage: true });
@@ -387,9 +466,7 @@ test('Users list errors recover to accessible empty results', async ({ page }) =
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
-test('invitation acceptance shows failed token feedback', async ({
-  page,
-}, testInfo) => {
+test('invitation acceptance shows failed token feedback', async ({ page }, testInfo) => {
   await page.route('**/api/auth/**', (route) =>
     route.fulfill({
       json: route.request().url().endsWith('/session')
@@ -398,12 +475,18 @@ test('invitation acceptance shows failed token feedback', async ({
     }),
   );
   await page.route('**/api/users/invitations/accept', (route) =>
-    route.fulfill({ status: 400, json: { detail: 'This invitation token is invalid.' } }),
+    route.fulfill({
+      status: 400,
+      json: {
+        errors: { token: ['Invalid invitation'] },
+        issues: [{ field: 'token', code: 'invitationInvalid' }],
+      },
+    }),
   );
   await page.goto('/invitations/accept?token=invalid-token');
   await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText(
-    'This invitation token is invalid.',
+    'This invitation is invalid, expired, cancelled, or already used.',
   );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.screenshot({ path: testInfo.outputPath('invitation-feedback.png'), fullPage: true });
@@ -510,9 +593,7 @@ test('existing Users can accept another Tenant invitation from its secure link',
       });
     return route.fulfill({ json: { token: 'synthetic-token' } });
   });
-  await page.route('**/api/users', (route) =>
-    route.fulfill({ json: [] }),
-  );
+  await page.route('**/api/users', (route) => route.fulfill({ json: [] }));
   await page.route('**/api/users/invitations/accept', (route) => {
     expect(route.request().postDataJSON()).toEqual({ token: 'second-tenant-token' });
     accepted = true;

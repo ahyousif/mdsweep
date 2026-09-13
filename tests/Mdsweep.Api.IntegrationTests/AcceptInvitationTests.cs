@@ -22,10 +22,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         using var client = CreateInviteeClient(subject, email);
         await AddAntiforgeryToken(client);
 
-        using var response = await client.PostAsJsonAsync(
-            "/api/users/invitations/accept",
-            new { token }
-        );
+        using var response = await client.PostAsJsonAsync("/api/users/invitations/accept", new { token });
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         await AssertAcceptedMembershipExists(email, subject);
@@ -49,10 +46,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         using var client = CreateInviteeClient(subject, email);
         await AddAntiforgeryToken(client);
 
-        using var response = await client.PostAsJsonAsync(
-            "/api/users/invitations/accept",
-            new { token }
-        );
+        using var response = await client.PostAsJsonAsync("/api/users/invitations/accept", new { token });
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         await AssertAcceptedMembershipExists(email, subject);
@@ -65,9 +59,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Acceptance_rejects_an_existing_tenant_membership_without_consuming_the_invitation(
-        bool isActive
-    )
+    public async Task Acceptance_rejects_an_existing_tenant_membership_without_consuming_the_invitation(bool isActive)
     {
         const string token = "existing-membership-token";
         const string subject = "existing-member";
@@ -77,12 +69,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         {
             var setupDb = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var user = UserAggregate.Create("Existing", "Member", subject, email);
-            var membership = TenantMembership.Create(
-                TenantId,
-                user.Id,
-                "Existing Member",
-                ["Driver"]
-            );
+            var membership = TenantMembership.Create(TenantId, user.Id, "Existing Member", ["Driver"]);
             membership.SetActive(isActive);
             setupDb.Users.Add(user);
             setupDb.TenantMemberships.Add(membership);
@@ -93,19 +80,13 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         using var client = CreateInviteeClient(subject, email);
         await AddAntiforgeryToken(client);
 
-        using var response = await client.PostAsJsonAsync(
-            "/api/users/invitations/accept",
-            new { token }
-        );
+        using var response = await client.PostAsJsonAsync("/api/users/invitations/accept", new { token });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         await using var verificationScope = Application.Services.CreateAsyncScope();
         var db = verificationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Assert.Equal(
-            InvitationStatus.Pending,
-            (await db.Invitations.SingleAsync(x => x.Email == email)).Status
-        );
+        Assert.Equal(InvitationStatus.Pending, (await db.Invitations.SingleAsync(x => x.Email == email)).Status);
         var persistedMembership = await db.TenantMemberships.SingleAsync(x =>
             x.TenantId == TenantId && x.UserId == db.Users.Single(user => user.KeycloakUserId == subject).Id
         );
@@ -123,20 +104,14 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         using var client = CreateInviteeClient(subject, "existing-user@example.test");
         await AddAntiforgeryToken(client);
 
-        using var response = await client.PostAsJsonAsync(
-            "/api/users/invitations/accept",
-            new { token }
-        );
+        using var response = await client.PostAsJsonAsync("/api/users/invitations/accept", new { token });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
         Assert.True(problem.RootElement.GetProperty("errors").TryGetProperty("invitationEmailMismatch", out _));
         await using var scope = Application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        Assert.Equal(
-            InvitationStatus.Pending,
-            (await db.Invitations.SingleAsync(x => x.Email == invitedEmail)).Status
-        );
+        Assert.Equal(InvitationStatus.Pending, (await db.Invitations.SingleAsync(x => x.Email == invitedEmail)).Status);
         Assert.DoesNotContain(await db.Users.ToListAsync(), x => x.KeycloakUserId == subject);
         Assert.Single(await db.TenantMemberships.ToListAsync());
     }
@@ -157,10 +132,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         using var client = CreateInviteeClient("invitee", "expired-invitee@example.test");
         await AddAntiforgeryToken(client);
 
-        using var response = await client.PostAsJsonAsync(
-            "/api/users/invitations/accept",
-            new { token }
-        );
+        using var response = await client.PostAsJsonAsync("/api/users/invitations/accept", new { token });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -174,7 +146,33 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
         return client;
     }
 
-    private async Task AddInvitation(string token, string email, Instant expiresAt)
+    [Fact]
+    public async Task Acceptance_preserves_all_three_invited_roles()
+    {
+        const string email = "all-roles@example.test";
+        string[] roles = ["Administrator", "Dispatcher", "Driver"];
+        await AddInvitation(
+            "all-roles-token",
+            email,
+            NodaSystemClock.Instance.GetCurrentInstant() + Duration.FromHours(1),
+            roles
+        );
+        using var client = CreateInviteeClient("all-roles-invitee", email);
+        await AddAntiforgeryToken(client);
+        using var response = await client.PostAsJsonAsync(
+            "/api/users/invitations/accept",
+            new { token = "all-roles-token" }
+        );
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await AssertAcceptedMembershipExists(email, "all-roles-invitee");
+        await using var scope = Application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var user = await db.Users.SingleAsync(x => x.Email == email);
+        var membership = await db.TenantMemberships.SingleAsync(x => x.UserId == user.Id && x.TenantId == TenantId);
+        Assert.Equal(roles.Order(), membership.Roles.Order());
+    }
+
+    private async Task AddInvitation(string token, string email, Instant expiresAt, string[]? roles = null)
     {
         await using var scope = Application.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
@@ -184,7 +182,7 @@ public sealed class AcceptInvitationTests : MdsweepIntegrationTest
             email,
             "Synthetic",
             "Invitee",
-            ["Driver"],
+            roles ?? ["Driver"],
             token,
             tokenService.Hash(token),
             expiresAt

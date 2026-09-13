@@ -46,7 +46,7 @@ The exact file implementation generates the ten-column `.xlsx` Claims Sheet docu
 
 Access owns Users, Tenant Memberships, and role authorization. Keycloak owns external identities, credentials, and sessions. One MDSweep Keycloak realm serves each production environment. MDSweep Tenants are independent of Keycloak and Tenant Memberships determine which Tenants an authenticated User may access.
 
-A User can access multiple Tenants with one or two roles per Tenant Membership. Administrators manage all Users and Invitations in their Tenant; Dispatchers manage operational Driver assignments, not User accounts. The Administrator-only UsersManage endpoint policy authorizes User Management. Wolverine supplies the active `TenantId` to management handlers, which explicitly scope Tenant Membership and Invitation specifications because those records cannot use ambient Tenant filtering: invitation acceptance and identity resolution also run before Tenant selection. `ICurrentIdentity` is used only when a rule needs the authenticated User's external identity, such as preventing an Administrator from removing their own access. PostgreSQL enforces a unique User/Tenant membership pair and a unique pending Invitation per Tenant/email pair. Roles and active status belong to Tenant Memberships; the User identity and profile are shared.
+A User can access multiple Tenants with one or more roles per Tenant Membership. Administrators manage all Users and Invitations in their Tenant; Dispatchers manage operational Driver assignments, not User accounts. The Administrator-only UsersManage endpoint policy authorizes User Management. Wolverine supplies the active `TenantId` to management handlers, which explicitly scope Tenant Membership and Invitation specifications because those records cannot use ambient Tenant filtering: invitation acceptance and identity resolution also run before Tenant selection. `ICurrentIdentity` is used only when a rule needs the authenticated User's external identity, such as preventing an Administrator from removing their own access. PostgreSQL enforces a unique User/Tenant membership pair and a unique pending Invitation per Tenant/email pair. Roles and active status belong to Tenant Memberships; the User identity and profile are shared.
 
 Invitations are committed before the invitation email is sent; delivery failures remain visible and can be retried explicitly. Each invitation stores only a hash of a cryptographically random token. The secure link supplies the raw token to the authenticated acceptance endpoint, so the invitation—not the client—determines the Tenant, email, roles, and expiry. Acceptance checks that the authenticated Keycloak identity supplies the invited email, then atomically creates or reuses the local User and adds the Tenant Membership. It does not require an already selected Tenant or the `email_verified` claim. Resending rotates the token, and expired, cancelled, accepted, or superseded tokens grant no MDSweep access. Deactivation is enforced per membership from the database on every protected request; other Tenant memberships retain their access. The AppHost wires an external SMTP connection and the canonical public web origin in production; User and Invitation auditing remains deferred. See [User management](./user-management.md).
 
@@ -104,6 +104,8 @@ Wolverine's lightweight EF Core transaction middleware calls one `SaveChangesAsy
 
 Angular is organized as a small authenticated shell with lazy Trips routes. Angular code is organized by product capability: Administrator, Dispatcher, and Driver roles authorize routes and actions; they do not define top-level domain feature folders. Trips owns All Trips, My Trips, and Trip Import experiences. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Trip management tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local Trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
 
+The Angular interface supports English and Arabic using ngx-translate, with build-time ICU compilation and both catalogs bundled for instant offline switching. Language preference is browser-local. See [Localization](./localization.md).
+
 The pilot may colocate PostgreSQL with the application on one small Linux host when the chosen BAA-covered environment and backup design permit it. Encrypted off-machine backups and a tested restore are required before real data is used.
 
 ## Suggested source layout
@@ -144,5 +146,5 @@ The pilot acceptance path is: import a representative manifest without spreadshe
 - Any authorized MTM API or browser automation
 - Live mapping provider
 - Managed PostgreSQL migration
-- Arabic and other translations
+- Additional languages and account-synchronized language preferences
 - Automatic assignment and route optimization

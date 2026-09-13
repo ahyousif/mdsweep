@@ -1,11 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
+export interface ApiIssue {
+  field?: string;
+  code: string;
+  parameters?: Record<string, string | number>;
+}
+
 export class ApplicationError extends Error {
   constructor(
     message: string,
     readonly status: number,
     readonly title?: string,
     readonly validationErrors: Readonly<Record<string, readonly string[]>> = {},
+    readonly issues: ApiIssue[] = [],
   ) {
     super(message);
   }
@@ -13,7 +20,7 @@ export class ApplicationError extends Error {
 
 export function toApplicationError(error: unknown): ApplicationError {
   if (!(error instanceof HttpErrorResponse)) {
-    return new ApplicationError('An unexpected error occurred.', 0);
+    return new ApplicationError('An unexpected error occurred.', 500);
   }
 
   const detail = error.error?.detail ?? error.error?.message;
@@ -38,5 +45,15 @@ export function toApplicationError(error: unknown): ApplicationError {
           : error.status === 0
             ? 'Network connection unavailable.'
             : 'The request could not be completed.');
-  return new ApplicationError(message, error.status, error.error?.title, validationErrors);
+  const failures = error.error?.issues;
+  const issues: ApiIssue[] = Array.isArray(failures)
+    ? failures
+        .filter((failure) => failure && typeof failure.code === 'string')
+        .map((failure) => ({
+          field: typeof failure.field === 'string' ? failure.field : undefined,
+          code: failure.code,
+          parameters: failure.parameters,
+        }))
+    : [];
+  return new ApplicationError(message, error.status, error.error?.title, validationErrors, issues);
 }

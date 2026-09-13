@@ -1,3 +1,4 @@
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, effect, inject, input, output } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -10,7 +11,15 @@ import { type UserDetails, type UserRole } from './users.api';
 // TODO: revisit to use signal forms
 @Component({
   selector: 'app-user-form',
-  imports: [ReactiveFormsModule, HlmButton, HlmInput, HlmCheckbox, HlmFieldImports, HlmSpinner],
+  imports: [
+    TranslatePipe,
+    ReactiveFormsModule,
+    HlmButton,
+    HlmInput,
+    HlmCheckbox,
+    HlmFieldImports,
+    HlmSpinner,
+  ],
   templateUrl: './user-form.html',
 })
 export class UserForm {
@@ -26,13 +35,7 @@ export class UserForm {
     lastName: [''],
     displayName: [''],
     email: [''],
-    roles: inject(NonNullableFormBuilder).control<UserRole[]>(
-      ['Driver'],
-      [
-        (control) =>
-          control.value.length >= 1 && control.value.length <= 2 ? null : { roles: true },
-      ],
-    ),
+    roles: inject(NonNullableFormBuilder).control<UserRole[]>(['Driver'], [Validators.required]),
     isActive: [true],
   });
   constructor() {
@@ -50,7 +53,7 @@ export class UserForm {
       for (const field of ['firstName', 'lastName'] as const) {
         this.form.controls[field].setValidators(
           this.inviting()
-            ? [Validators.required, Validators.pattern(/\S/), Validators.maxLength(200)]
+            ? [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]
             : [],
         );
         this.form.controls[field].updateValueAndValidity();
@@ -58,7 +61,7 @@ export class UserForm {
       this.form.controls.displayName.setValidators(
         this.inviting()
           ? []
-          : [Validators.required, Validators.pattern(/\S/), Validators.maxLength(401)],
+          : [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
       );
       this.form.controls.displayName.updateValueAndValidity();
       this.form.controls.email.setValidators(
@@ -71,7 +74,7 @@ export class UserForm {
     const control = this.form.controls.roles;
     const roles = control.value;
     if (!checked) control.setValue(roles.filter((value) => value !== role));
-    else if (!roles.includes(role) && roles.length < 2) control.setValue([...roles, role]);
+    else if (!roles.includes(role)) control.setValue([...roles, role]);
     control.markAsTouched();
   }
   submit(): void {

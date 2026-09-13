@@ -1,5 +1,6 @@
-import { DatePipe } from '@angular/common';
-import { Component, computed, input, output } from '@angular/core';
+import { LanguageService } from '@app/core/i18n/language.service';
+import { TranslatePipe } from '@ngx-translate/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -19,7 +20,7 @@ import { type UserDetails, type UserListItem } from '../users.api';
 
 @Component({
   selector: 'app-user-detail',
-  imports: [DatePipe, NgIcon, HlmBadge, HlmButton, HlmSeparator, UserForm],
+  imports: [TranslatePipe, NgIcon, HlmBadge, HlmButton, HlmSeparator, UserForm],
   providers: [
     provideIcons({ lucideBan, lucidePen, lucideRotateCcw, lucideSend, lucideTrash2, lucideX }),
   ],
@@ -27,9 +28,14 @@ import { type UserDetails, type UserListItem } from '../users.api';
   templateUrl: './user-detail.html',
 })
 export default class UserDetail {
+  readonly language = inject(LanguageService);
   readonly user = input.required<UserListItem>();
   readonly editing = input(false);
   readonly busy = input(false);
+  readonly expiresAt = computed(() => {
+    const timestamp = this.user().expiresAt;
+    return timestamp ? new Date(timestamp) : null;
+  });
 
   readonly closed = output<void>();
   readonly editClicked = output<void>();

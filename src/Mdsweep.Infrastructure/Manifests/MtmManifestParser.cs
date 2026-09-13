@@ -25,7 +25,10 @@ internal static class MtmManifestParser
     {
         if (table.Count == 0)
         {
-            return new MtmManifestReadResult([], [new MtmManifestProblem(null, null, null, "The manifest is empty.")]);
+            return new MtmManifestReadResult(
+                [],
+                [new MtmManifestProblem(null, null, null, "The manifest is empty.", "manifest.empty")]
+            );
         }
 
         var headers = ReadHeaders(table[0]);
@@ -41,7 +44,9 @@ internal static class MtmManifestParser
                         null,
                         null,
                         null,
-                        $"The manifest is missing required columns: {string.Join(", ", missingHeaders)}."
+                        $"The manifest is missing required columns: {string.Join(", ", missingHeaders)}.",
+                        "manifest.missingColumns",
+                        new Dictionary<string, string> { ["columns"] = string.Join(", ", missingHeaders) }
                     ),
                 ]
             );
@@ -105,7 +110,8 @@ internal static class MtmManifestParser
                             rowNumber,
                             tripNumber,
                             "Time",
-                            "Appointment time is required for a trip to the appointment."
+                            "Appointment time is required for a trip to the appointment.",
+                            "manifest.appointmentTimeRequired"
                         )
                     );
                 }
@@ -117,7 +123,8 @@ internal static class MtmManifestParser
                             rowNumber,
                             tripNumber,
                             "Time",
-                            "Pickup time is required for a scheduled return trip."
+                            "Pickup time is required for a scheduled return trip.",
+                            "manifest.returnTimeRequired"
                         )
                     );
                 }
@@ -205,7 +212,7 @@ internal static class MtmManifestParser
             return;
         }
 
-        problems.Add(new MtmManifestProblem(rowNumber, tripNumber, field, message));
+        problems.Add(new MtmManifestProblem(rowNumber, tripNumber, field, message, "manifest.required" + field));
     }
 
     private static LocalDate? ParseDate(
@@ -217,7 +224,15 @@ internal static class MtmManifestParser
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            problems.Add(new MtmManifestProblem(rowNumber, tripNumber, "ServiceDate", "Appointment date is required."));
+            problems.Add(
+                new MtmManifestProblem(
+                    rowNumber,
+                    tripNumber,
+                    "ServiceDate",
+                    "Appointment date is required.",
+                    "manifest.dateRequired"
+                )
+            );
 
             return null;
         }
@@ -235,7 +250,13 @@ internal static class MtmManifestParser
         }
 
         problems.Add(
-            new MtmManifestProblem(rowNumber, tripNumber, "ServiceDate", $"Appointment date '{value}' is invalid.")
+            new MtmManifestProblem(
+                rowNumber,
+                tripNumber,
+                "ServiceDate",
+                $"Appointment date '{value}' is invalid.",
+                "manifest.dateInvalid"
+            )
         );
 
         return null;
@@ -266,7 +287,15 @@ internal static class MtmManifestParser
             return result;
         }
 
-        problems.Add(new MtmManifestProblem(rowNumber, tripNumber, field, $"Value '{value}' is invalid."));
+        problems.Add(
+            new MtmManifestProblem(
+                rowNumber,
+                tripNumber,
+                field,
+                $"Value '{value}' is invalid.",
+                "manifest.numberInvalid"
+            )
+        );
 
         return null;
     }
@@ -280,7 +309,15 @@ internal static class MtmManifestParser
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            problems.Add(new MtmManifestProblem(rowNumber, tripNumber, "Direction", "Trip type is required."));
+            problems.Add(
+                new MtmManifestProblem(
+                    rowNumber,
+                    tripNumber,
+                    "Direction",
+                    "Trip type is required.",
+                    "manifest.directionRequired"
+                )
+            );
 
             return null;
         }
@@ -299,7 +336,8 @@ internal static class MtmManifestParser
                         rowNumber,
                         tripNumber,
                         "Direction",
-                        $"Trip type '{value}' is not recognized."
+                        $"Trip type '{value}' is not recognized.",
+                        "manifest.directionInvalid"
                     )
                 );
 
@@ -332,7 +370,9 @@ internal static class MtmManifestParser
             return LocalTime.FromTimeOnly(time);
         }
 
-        problems.Add(new MtmManifestProblem(rowNumber, tripNumber, "Time", $"Time '{value}' is invalid."));
+        problems.Add(
+            new MtmManifestProblem(rowNumber, tripNumber, "Time", $"Time '{value}' is invalid.", "manifest.timeInvalid")
+        );
 
         return null;
     }
@@ -363,7 +403,8 @@ internal static class MtmManifestParser
                         rowNumber,
                         tripNumber,
                         "IsWillCall",
-                        $"Will Call value '{value}' is not recognized."
+                        $"Will Call value '{value}' is not recognized.",
+                        "manifest.willCallInvalid"
                     )
                 );
 

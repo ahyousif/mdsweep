@@ -1,4 +1,4 @@
-<article
+<div
   hlmCard
   class="relative flex cursor-pointer flex-col gap-3 rounded-lg px-4 py-3 shadow-none transition-colors md:flex-row md:items-center md:gap-4"
   [class.border-primary]="selected()"
@@ -11,7 +11,7 @@
   (keydown.space)="$event.preventDefault(); select()"
 >
   @if (selected()) {
-    <span class="bg-primary absolute inset-y-0 left-0 w-1 rounded-l-lg" aria-hidden="true"></span>
+    <span class="bg-primary absolute inset-y-0 start-0 w-1 rounded-s-lg" aria-hidden="true"></span>
   }
 
   <!-- Pickup -->
@@ -20,17 +20,17 @@
       {{ pickupTime() }}
     </p>
 
-    <p class="text-muted-foreground mt-1 text-sm">Pickup</p>
+    <p class="text-muted-foreground mt-1 text-sm">{{ 'trips.pickup' | translate }}</p>
   </div>
 
   <!-- Passenger -->
   <div class="min-w-0 md:w-48 md:shrink-0">
     <p class="truncate font-semibold">
-      {{ passengerName() }}
+      <bdi>{{ passengerName() }}</bdi>
     </p>
 
     <p class="text-muted-foreground mt-1 truncate text-sm">
-      {{ trip().brokerTripNumber }}
+      <bdi>{{ trip().brokerTripNumber }}</bdi>
     </p>
   </div>
 
@@ -44,14 +44,17 @@
       />
 
       <p class="truncate text-sm">
-        {{ trip().pickup.address }}
+        <bdi>{{ trip().pickup.address }}</bdi>
       </p>
     </div>
 
     <div class="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
       <span class="w-4 shrink-0 text-center" aria-hidden="true">↓</span>
 
-      <p class="truncate">→ {{ trip().dropoff.address }}</p>
+      <p class="truncate">
+        <span class="inline-block rtl:rotate-180" aria-hidden="true">→</span>
+        <bdi>{{ trip().dropoff.address }}</bdi>
+      </p>
     </div>
 
     <div
@@ -74,8 +77,8 @@
 
     <ng-icon
       name="lucideChevronRight"
-      class="text-muted-foreground ml-auto size-5 shrink-0"
+      class="rtl:rotate-180 text-muted-foreground ms-auto size-5 shrink-0"
       aria-hidden="true"
     />
   </div>
-</article>
+</div>

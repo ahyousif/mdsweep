@@ -1,9 +1,9 @@
 @switch (step()) {
   @case ('upload') {
     <hlm-dialog-header>
-      <h2 hlmDialogTitle>Import trips</h2>
+      <h2 hlmDialogTitle>{{ 'trips.import' | translate }}</h2>
 
-      <p hlmDialogDescription>Upload a broker trip file to import trips into MDSweep.</p>
+      <p hlmDialogDescription>{{ 'tripImport.help' | translate }}</p>
     </hlm-dialog-header>
 
     <div class="space-y-4">
@@ -17,11 +17,11 @@
 
           <div class="min-w-0 flex-1">
             <p class="truncate font-medium">
-              {{ file.name }}
+              <bdi>{{ file.name }}</bdi>
             </p>
 
             <p class="text-muted-foreground text-sm">
-              {{ fileType() }}
+              {{ fileType() | translate }}
             </p>
           </div>
 
@@ -33,16 +33,15 @@
             [disabled]="importing()"
             (click)="changeFile()"
           >
-            Change
+            {{ 'common.change' | translate }}
           </button>
         </div>
 
         <div class="bg-muted/30 rounded-lg border p-4">
-          <p class="font-medium">Ready to import</p>
+          <p class="font-medium">{{ 'tripImport.ready' | translate }}</p>
 
           <p class="text-muted-foreground mt-1 text-sm">
-            MDSweep will check the file as it imports. Rows with problems will be skipped and shown
-            when the import is complete.
+            {{ 'tripImport.readyHelp' | translate }}
           </p>
         </div>
       } @else {
@@ -66,15 +65,14 @@
             <ng-icon name="lucideUpload" class="size-6" aria-hidden="true" />
           </div>
 
-          <p class="mt-4 font-medium">Drop a CSV or Excel file here</p>
+          <p class="mt-4 font-medium">{{ 'tripImport.drop' | translate }}</p>
 
           <p class="text-muted-foreground mt-1 text-sm">
-            or
-            <span class="text-primary font-medium"> browse files </span>
+            {{ 'tripImport.browse' | translate }}
           </p>
         </label>
 
-        <p class="text-muted-foreground text-sm">Supports .csv and .xlsx</p>
+        <p class="text-muted-foreground text-sm">{{ 'tripImport.supported' | translate }}</p>
       }
 
       @if (error()) {
@@ -84,23 +82,23 @@
         >
           <ng-icon name="lucideCircleAlert" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
 
-          <span>{{ error() }}</span>
+          <span>{{ error() | uiMessage }}</span>
         </div>
       }
     </div>
 
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" [disabled]="importing()" (click)="cancel()">
-        Cancel
+        {{ 'common.cancel' | translate }}
       </button>
 
       @if (file()) {
         <button hlmBtn type="button" [disabled]="importing()" (click)="importTrips()">
           @if (importing()) {
-            <hlm-spinner class="size-4" />
-            Importing...
+            <hlm-spinner class="size-4" aria-hidden="true" />
+            {{ 'tripImport.importing' | translate }}
           } @else {
-            Import trips
+            {{ 'trips.import' | translate }}
           }
         </button>
       }
@@ -110,9 +108,9 @@
   @case ('complete') {
     @if (result(); as result) {
       <hlm-dialog-header>
-        <h2 hlmDialogTitle>Import complete</h2>
+        <h2 hlmDialogTitle>{{ 'tripImport.complete' | translate }}</h2>
 
-        <p hlmDialogDescription>Your trip file has been processed.</p>
+        <p hlmDialogDescription>{{ 'tripImport.processed' | translate }}</p>
       </hlm-dialog-header>
 
       <div class="space-y-4">
@@ -125,11 +123,11 @@
 
           <div class="min-w-0 flex-1">
             <p class="truncate font-medium">
-              {{ file()?.name }}
+              <bdi>{{ file()?.name }}</bdi>
             </p>
 
             <p class="text-muted-foreground text-sm">
-              {{ fileType() }}
+              {{ fileType() | translate }}
             </p>
           </div>
         </div>
@@ -144,7 +142,7 @@
               </span>
             </div>
 
-            <p class="text-muted-foreground mt-1 text-sm">Processed successfully</p>
+            <p class="text-muted-foreground mt-1 text-sm">{{ 'tripImport.success' | translate }}</p>
           </div>
 
           <div class="bg-destructive/5 rounded-lg p-4">
@@ -160,14 +158,16 @@
               </span>
             </div>
 
-            <p class="text-muted-foreground mt-1 text-sm">Skipped</p>
+            <p class="text-muted-foreground mt-1 text-sm">{{ 'tripImport.skipped' | translate }}</p>
           </div>
         </div>
 
         @if (result.problems.length > 0) {
           <div class="overflow-hidden rounded-lg border">
             <div class="border-b px-4 py-3">
-              <h3 class="font-medium">Issues ({{ result.problems.length }})</h3>
+              <h3 class="font-medium">
+                {{ 'tripImport.issues' | translate: { count: result.problems.length } }}
+              </h3>
             </div>
 
             <div class="max-h-52 overflow-y-auto">
@@ -182,18 +182,26 @@
                   <div class="min-w-0">
                     <p class="text-sm font-medium">
                       @if (problem.rowNumber) {
-                        Row {{ problem.rowNumber }}
+                        {{ 'tripImport.row' | translate: { row: problem.rowNumber } }}
                       } @else {
-                        File issue
+                        {{ 'tripImport.fileIssue' | translate }}
                       }
 
                       @if (problem.tripNumber) {
-                        · {{ problem.tripNumber }}
+                        · <bdi>{{ problem.tripNumber }}</bdi>
                       }
                     </p>
 
                     <p class="text-muted-foreground mt-1 text-sm">
-                      {{ problem.message }}
+                      {{
+                        {
+                          key: 'errors.' + (problem.code || 'manifest.problem'),
+                          params: problem.parameters,
+                        } | uiMessage
+                      }}
+                      @if (problem.field) {
+                        <bdi class="block text-xs">{{ problem.field }}</bdi>
+                      }
                     </p>
                   </div>
                 </div>
@@ -204,7 +212,7 @@
       </div>
 
       <hlm-dialog-footer>
-        <button hlmBtn type="button" (click)="done()">Done</button>
+        <button hlmBtn type="button" (click)="done()">{{ 'common.done' | translate }}</button>
       </hlm-dialog-footer>
     }
   }

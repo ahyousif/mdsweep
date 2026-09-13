@@ -1,4 +1,7 @@
-import { Component, computed, input, output } from '@angular/core';
+import { LocalizedCalendar } from '@app/core/i18n/localized-calendar';
+import { LanguageService } from '@app/core/i18n/language.service';
+import { TranslatePipe } from '@ngx-translate/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -11,16 +14,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDatePickerImports } from '@spartan-ng/helm/date-picker';
 import { HlmInput } from '@spartan-ng/helm/input';
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-  weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
-
 @Component({
   selector: 'app-trip-toolbar',
-  imports: [NgIcon, HlmButton, HlmInput, ...HlmDatePickerImports],
+  imports: [LocalizedCalendar, TranslatePipe, NgIcon, HlmButton, HlmInput, ...HlmDatePickerImports],
   providers: [
     provideIcons({
       lucideChevronLeft,
@@ -32,6 +28,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   templateUrl: './trip-toolbar.html',
 })
 export default class TripToolbar {
+  readonly language = inject(LanguageService);
   readonly serviceDate = input.required<Date>();
   readonly search = input('');
 
@@ -44,7 +41,16 @@ export default class TripToolbar {
   readonly searchChange = output<string>();
   readonly importTripsClicked = output<void>();
 
-  readonly formatServiceDate = (date: Date): string => dateFormatter.format(date);
+  readonly formatServiceDate = computed(() => {
+    const locale = this.language.locale();
+    const formatter = new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return (date: Date) => formatter.format(date);
+  });
 
   readonly isToday = computed(() => isSameDay(this.serviceDate(), new Date()));
 

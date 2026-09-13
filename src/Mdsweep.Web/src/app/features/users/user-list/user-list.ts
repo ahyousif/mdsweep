@@ -1,3 +1,4 @@
+import { TranslatePipe } from '@ngx-translate/core';
 import { Component, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -10,7 +11,7 @@ import { type UserListItem } from '../users.api';
 
 @Component({
   selector: 'app-user-list',
-  imports: [NgIcon, HlmBadge, ...HlmEmptyImports, ...HlmTableImports],
+  imports: [TranslatePipe, NgIcon, HlmBadge, ...HlmEmptyImports, ...HlmTableImports],
   providers: [provideIcons({ lucideChevronRight })],
   templateUrl: './user-list.html',
 })

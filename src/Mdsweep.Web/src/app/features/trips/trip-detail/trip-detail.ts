@@ -1,4 +1,7 @@
-import { Component, computed, input, output } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+import { LanguageService } from '@app/core/i18n/language.service';
+import { TranslatePipe } from '@ngx-translate/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
@@ -20,15 +23,9 @@ import { HlmCard } from '@spartan-ng/helm/card';
 
 import { Address, Trip } from '../trips-types';
 
-const timeFormatter = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-});
-
 @Component({
   selector: 'app-trip-detail',
-  imports: [NgIcon, HlmButton, HlmCard, ...HlmBadgeImports],
+  imports: [TranslatePipe, NgIcon, HlmButton, HlmCard, ...HlmBadgeImports],
   providers: [
     provideIcons({
       lucideCalendarDays,
@@ -50,6 +47,8 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
   templateUrl: './trip-detail.html',
 })
 export default class TripDetail {
+  readonly language = inject(LanguageService);
+  private readonly translate = inject(TranslateService);
   readonly trip = input.required<Trip>();
   readonly closed = output<void>();
 
@@ -58,7 +57,9 @@ export default class TripDetail {
   );
 
   readonly primaryTimeLabel = computed(() =>
-    this.trip().direction === 'To' ? 'Appointment' : 'Return pickup',
+    this.translate.instant(
+      this.trip().direction === 'To' ? 'trips.appointment' : 'trips.returnPickup',
+    ),
   );
 
   readonly primaryTime = computed(() => {
@@ -69,7 +70,7 @@ export default class TripDetail {
     }
 
     if (trip.isWillCall) {
-      return 'Will call';
+      return this.translate.instant('trips.willCall');
     }
 
     return this.formatTime(trip.returnPickupTime);
@@ -79,15 +80,15 @@ export default class TripDetail {
     const trip = this.trip();
 
     if (trip.manualPickupTime) {
-      return 'Using manual time';
+      return this.translate.instant('trips.manualTime');
     }
 
     if (trip.calculatedPickupTime) {
-      return 'Using calculated time';
+      return this.translate.instant('trips.calculatedTime');
     }
 
     if (trip.returnPickupTime) {
-      return 'Using broker time';
+      return this.translate.instant('trips.brokerTime');
     }
 
     return '';
@@ -97,37 +98,31 @@ export default class TripDetail {
     const trip = this.trip();
 
     if (!trip.estimatedTravelMinutes) {
-      return 'Not available';
+      return this.translate.instant('common.notAvailable');
     }
 
     if (!trip.estimatedDistanceMeters) {
-      return `${trip.estimatedTravelMinutes} min`;
+      return this.translate.instant('trips.driveMinutes', { minutes: trip.estimatedTravelMinutes });
     }
 
-    return `${trip.estimatedTravelMinutes} min · ${metersToMiles(trip.estimatedDistanceMeters)} mi`;
+    return this.translate.instant('trips.driveDistance', {
+      minutes: trip.estimatedTravelMinutes,
+      miles: metersToMiles(trip.estimatedDistanceMeters),
+    });
   });
 
   readonly brokerStatusLabel = computed(() => {
     const status = this.trip().brokerStatus;
 
     if (!status) {
-      return 'Not supplied';
+      return this.translate.instant('common.notSupplied');
     }
 
-    return status
-      .replaceAll('_', ' ')
-      .toLowerCase()
-      .replace(/^\w/, (value) => value.toUpperCase());
+    return status.toUpperCase() === 'VALID' ? this.translate.instant('trips.brokerValid') : status;
   });
 
   formatTime(value: string | null): string {
-    if (!value) {
-      return 'Not supplied';
-    }
-
-    const [hours, minutes] = value.split(':').map(Number);
-
-    return timeFormatter.format(new Date(2000, 0, 1, hours, minutes));
+    return this.language.formatTime(value);
   }
 
   formatAddress(address: Address): string {
