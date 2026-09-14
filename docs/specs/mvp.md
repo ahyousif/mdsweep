@@ -19,8 +19,8 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 5. As a Dispatcher, I want to maintain Provider-owned Passenger contact information and notes, so that operations can use current information without erasing what the broker supplied.
 6. As a Dispatcher, I want to view a Passenger's Trip history, so that I can understand and support their transportation history.
 7. As a Dispatcher, I want to upload an MTM CSV or supported spreadsheet, so that I do not copy Trip fields manually.
-8. As a Dispatcher, I want an import preview, so that I understand what will happen before records change.
-9. As a Dispatcher, I want ready, warning, and blocked counts, so that I review exceptions instead of every normal row.
+8. As a Dispatcher, I want to select a file, import it, and see the result, so that I can process a Manifest in one step.
+9. As a Dispatcher, I want Ready and Needs Attention counts with row-level Problems, so that I review exceptions instead of every normal row.
 10. As a Dispatcher, I want invalid rows explained in plain language, so that I can correct them without editing the source file.
 11. As a Dispatcher, I want valid rows imported even when other rows are blocked, so that one bad row does not stop the entire Manifest.
 12. As a Dispatcher, I want broker-invalid or turned-back Trips retained but inactive, so that they remain in history without being assigned accidentally.
@@ -51,7 +51,7 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 37. As a Dispatcher, I want each billable Trip to use the Driver's Primary Vehicle automatically unless I record an exception, so that billing reflects performed work without repetitive confirmation.
 38. As a Dispatcher, I want one MTM-compatible billing file, so that I do not open and enter every Trip individually.
 39. As a Dispatcher, I want to download a daily operational spreadsheet when needed, so that operations have a simple fallback.
-40. As the Provider, I want the normal workflow to remain usable in English initially, so that language support does not delay validation.
+40. As the Provider, I want the normal workflow to remain usable in English and Arabic, so that Dispatchers can use their preferred language.
 41. As the product team, we want to measure hands-on processing time before and after adoption, so that claimed savings are honest and Provider-specific.
 
 ## Implementation Decisions
@@ -79,14 +79,14 @@ The MVP keeps human decisions where they matter and automates repetitive copying
 - When a Trip is closed, preserve the resolved Performed Vehicle VIN as historical Trip data so later Vehicle edits, deactivation, or Primary Vehicle changes cannot rewrite prior work or claims. Drivers do not select Vehicles.
 - MDSweep records the Tenant's confirmation but does not independently verify current MTM registration or Driver/Vehicle eligibility. MTM Link remains authoritative during manual upload.
 - ASP.NET Core endpoints enforce that Drivers access only their assignments and Dispatchers access Provider-wide operations.
-- EF Core accesses PostgreSQL directly inside the owning feature; there is no generic repository layer.
+- Aggregate mutations follow HTTP → Wolverine → Application handler → Domain aggregate → IRepository → EF Core. Application handlers use the intentional common IRepository abstraction; its EF Core implementation belongs in Infrastructure.
 - MTM input and billing output remain user-initiated file workflows.
 - Billing Export uses the supplied MTM bulk-upload template, but production compatibility remains gated on the bounded synthetic portal trial. Client confirmation is still required for which Trip outcomes require a VIN and whether outbound and return Trips may use different Vehicles.
 - MDSweep does not store or manage signature documents in the MVP. The Dispatcher continues uploading the generic signature document accepted by the current MTM Link workflow, and exported claim rows use the accepted signed-log indication.
 - Wolverine PostgreSQL persistence/transport, durable queues, a separate automation worker, and MTM-specific Playwright automation are deferred until an authorized durable automation workflow exists. In-process Wolverine HTTP dispatch and EF Core unit-of-work handling do not change this deferral.
 - Development, tests, issues, logs, and screenshots use synthetic Passenger data.
 - Production hosting targets a small BAA-covered Linux deployment with encrypted off-machine backups and a tested restore, under an initial infrastructure target of $75 per month.
-- English is the MVP language. Store controlled UI text and status codes in a localization-ready form so future Arabic support does not require rewriting domain state.
+- English is the default language, and Arabic is implemented with live language switching, RTL layouts, Gregorian dates, and western digits. Changed UI text ships in both catalogs using the existing localization services.
 - The first client receives a supervised pilot. Product validation is whether the complete Manifest can be processed without column copying or per-Trip billing entry and with materially lower hands-on time.
 
 ## Testing Decisions
@@ -99,7 +99,7 @@ The final smoke seam is one browser workflow after the end-to-end path exists. A
 
 Angular behavior may receive focused tests where interaction logic is substantial. Real pilot bugs receive regression tests at the highest stable seam.
 
-The repository has no existing application tests. Synthetic Manifest fixtures and worked scheduling examples provide independent expected values.
+The repository has PostgreSQL HTTP integration tests and focused Angular behavior tests. Synthetic Manifest fixtures and worked scheduling examples provide independent expected values.
 
 ## Out of Scope
 
@@ -110,7 +110,7 @@ The repository has no existing application tests. Synthetic Manifest fixtures an
 - App Store or Play Store distribution
 - Live GPS tracking unless later shown to be required for the billing file
 - Signature-document storage or management; the existing generic signature remains a manual MTM Link upload
-- Arabic or additional UI translations
+- Additional UI languages beyond English and Arabic
 - Other brokers
 - Payment reconciliation
 - Payroll, fleet maintenance, credential management, or general NEMT management
@@ -126,4 +126,4 @@ Two inputs remain intentionally pinned rather than guessed:
 1. Observe 5–10 representative scheduling decisions to derive the initial pickup-time policy and worked test cases.
 2. Confirm the remaining billing questions with the client and through a bounded synthetic MTM Link trial before implementing production Billing Export validation.
 
-The first usable tracer bullet is: upload a synthetic MTM Manifest, preview its validation summary, accept it, and display the resulting Passengers and Trips without spreadsheet repair.
+The first usable tracer bullet is: select a synthetic MTM Manifest file, import it, and display the result and resulting Passengers and Trips without spreadsheet repair. There is no preview or separate acceptance step before persistence. TripImportSummary retains only ReadyCount, NeedsAttentionCount, and Problems.

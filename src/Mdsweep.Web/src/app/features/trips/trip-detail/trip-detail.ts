@@ -9,11 +9,9 @@ import {
   lucideCarFront,
   lucideCircleHelp,
   lucideClock3,
-  lucideEllipsis,
   lucideMapPin,
   lucidePen,
   lucidePhone,
-  lucidePlay,
   lucideUserRound,
   lucideX,
 } from '@ng-icons/lucide';
@@ -32,11 +30,9 @@ import { Address, Trip } from '../trips-types';
       lucideCarFront,
       lucideCircleHelp,
       lucideClock3,
-      lucideEllipsis,
       lucideMapPin,
       lucidePen,
       lucidePhone,
-      lucidePlay,
       lucideUserRound,
       lucideX,
     }),
@@ -51,18 +47,21 @@ export default class TripDetail {
   private readonly translate = inject(TranslateService);
   readonly trip = input.required<Trip>();
   readonly closed = output<void>();
+  readonly changeScheduledPickup = output<void>();
 
   readonly passengerName = computed(
     () => `${this.trip().passengerFirstName} ${this.trip().passengerLastName}`,
   );
 
-  readonly primaryTimeLabel = computed(() =>
-    this.translate.instant(
+  readonly primaryTimeLabel = computed(() => {
+    this.language.language();
+    return this.translate.instant(
       this.trip().direction === 'To' ? 'trips.appointment' : 'trips.returnPickup',
-    ),
-  );
+    );
+  });
 
   readonly primaryTime = computed(() => {
+    this.language.language();
     const trip = this.trip();
 
     if (trip.direction === 'To') {
@@ -79,6 +78,8 @@ export default class TripDetail {
   readonly scheduledPickupSource = computed(() => {
     const trip = this.trip();
 
+    this.language.language();
+
     if (trip.manualPickupTime) {
       return this.translate.instant('trips.manualTime');
     }
@@ -91,17 +92,18 @@ export default class TripDetail {
       return this.translate.instant('trips.brokerTime');
     }
 
-    return '';
+    return trip.isWillCall ? this.translate.instant('trips.willCall') : '';
   });
 
   readonly driveEstimate = computed(() => {
+    this.language.language();
     const trip = this.trip();
 
-    if (!trip.estimatedTravelMinutes) {
+    if (trip.estimatedTravelMinutes === null) {
       return this.translate.instant('common.notAvailable');
     }
 
-    if (!trip.estimatedDistanceMeters) {
+    if (trip.estimatedDistanceMeters === null) {
       return this.translate.instant('trips.driveMinutes', { minutes: trip.estimatedTravelMinutes });
     }
 
@@ -112,6 +114,7 @@ export default class TripDetail {
   });
 
   readonly brokerStatusLabel = computed(() => {
+    this.language.language();
     const status = this.trip().brokerStatus;
 
     if (!status) {
@@ -119,6 +122,19 @@ export default class TripDetail {
     }
 
     return status.toUpperCase() === 'VALID' ? this.translate.instant('trips.brokerValid') : status;
+  });
+
+  readonly directionsUrl = computed(() => {
+    const trip = this.trip();
+    const address = (value: Address) =>
+      [value.address, value.city, value.state, value.zip].filter(Boolean).join(', ');
+    const params = new URLSearchParams({
+      api: '1',
+      origin: address(trip.pickup),
+      destination: address(trip.dropoff),
+      travelmode: 'driving',
+    });
+    return `https://www.google.com/maps/dir/?${params}`;
   });
 
   formatTime(value: string | null): string {

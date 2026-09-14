@@ -37,7 +37,6 @@ export default class TripToolbar {
   readonly nextDayClicked = output<void>();
   readonly todayClicked = output<void>();
   readonly tomorrowClicked = output<void>();
-  readonly thisWeekClicked = output<void>();
   readonly searchChange = output<string>();
   readonly importTripsClicked = output<void>();
 

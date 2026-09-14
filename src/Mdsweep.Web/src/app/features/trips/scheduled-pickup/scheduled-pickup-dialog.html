@@ -1,0 +1,136 @@
+<button
+  hlmBtn
+  variant="ghost"
+  size="icon-sm"
+  type="button"
+  class="absolute end-3 top-3 text-muted-foreground"
+  [attr.aria-label]="'common.close' | translate"
+  [disabled]="saving()"
+  (click)="cancel()"
+>
+  <ng-icon name="lucideX" class="text-xl" aria-hidden="true" />
+</button>
+<hlm-dialog-header class="gap-1">
+  <h2 hlmDialogTitle class="pe-4 text-2xl font-bold leading-7 tracking-tight">
+    {{ 'scheduledPickup.title' | translate }}
+  </h2>
+  <p hlmDialogDescription class="text-xs leading-5">{{ 'scheduledPickup.subtitle' | translate }}</p>
+</hlm-dialog-header>
+
+<div
+  class="bg-muted/30 grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.1fr)] rounded-md border py-3 text-xs"
+>
+  <div class="flex min-w-0 flex-col items-start gap-1 px-2 sm:flex-row sm:gap-2 sm:px-3">
+    <ng-icon
+      name="lucideCalendarDays"
+      class="text-muted-foreground mt-0.5 shrink-0 text-xl"
+      aria-hidden="true"
+    />
+    <div>
+      <p class="text-muted-foreground">{{ 'trips.appointment' | translate }}</p>
+      <p class="mt-0.5 font-semibold">{{ language.formatTime(trip.appointmentTime) }}</p>
+    </div>
+  </div>
+  <div class="flex min-w-0 flex-col items-start gap-1 border-s px-2 sm:flex-row sm:gap-2 sm:px-3">
+    <ng-icon
+      name="lucideCarFront"
+      class="text-muted-foreground mt-0.5 shrink-0 text-xl"
+      aria-hidden="true"
+    />
+    <div>
+      <p class="text-muted-foreground">{{ 'trips.estimatedDrive' | translate }}</p>
+      <p class="mt-0.5 font-semibold">{{ driveEstimate() }}</p>
+    </div>
+  </div>
+  <div class="flex min-w-0 flex-col items-start gap-1 border-s px-2 sm:flex-row sm:gap-2 sm:px-3">
+    <ng-icon
+      name="lucideClock3"
+      class="text-muted-foreground mt-0.5 shrink-0 text-xl"
+      aria-hidden="true"
+    />
+    <div>
+      <p class="text-muted-foreground">{{ 'trips.calculatedPickup' | translate }}</p>
+      <p class="mt-0.5 font-semibold">
+        {{ language.formatTime(trip.calculatedPickupTime, 'common.notAvailable') }}
+      </p>
+    </div>
+  </div>
+</div>
+
+<form class="flex flex-col gap-2" (submit)="save(); $event.preventDefault()">
+  <div hlmField>
+    <label hlmFieldLabel for="scheduled-pickup-time">{{
+      'trips.scheduledPickup' | translate
+    }}</label>
+    <div hlmInputGroup class="h-10" [attr.data-disabled]="saving()">
+      <input
+        hlmInputGroupInput
+        id="scheduled-pickup-time"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        aria-describedby="scheduled-pickup-time-hint"
+        dir="ltr"
+        class="h-full min-w-0 text-lg font-medium"
+        [formField]="timeForm.time"
+        (blur)="normalizeTime()"
+      />
+      <div hlmInputGroupAddon align="inline-end">
+        <ng-icon name="lucideClock3" class="text-xl" aria-hidden="true" />
+      </div>
+    </div>
+    <p hlmFieldDescription id="scheduled-pickup-time-hint" class="sr-only">
+      {{ 'scheduledPickup.timeHint' | translate }}
+    </p>
+    @if (timeForm.time().touched() && timeForm.time().invalid()) {
+      <hlm-field-error>{{ 'scheduledPickup.timeRequired' | translate }}</hlm-field-error>
+    }
+  </div>
+  @if (trip.manualPickupTime !== null) {
+    <span hlmBadge variant="secondary" class="bg-warning/15 text-warning rounded-md">{{
+      'trips.manualTime' | translate
+    }}</span>
+  }
+  @if (trip.calculatedPickupTime !== null) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      class="mt-1 self-start bg-muted/30"
+      [disabled]="saving()"
+      (click)="reset()"
+    >
+      <ng-icon name="lucideRotateCcw" class="text-xl" aria-hidden="true" />
+      {{
+        'scheduledPickup.useCalculated'
+          | translate: { time: language.formatTime(trip.calculatedPickupTime) }
+      }}
+    </button>
+  } @else if (trip.manualPickupTime !== null) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      class="mt-1 self-start bg-muted/30"
+      [disabled]="saving()"
+      (click)="reset()"
+    >
+      <ng-icon name="lucideRotateCcw" class="text-xl" aria-hidden="true" />
+      {{ 'scheduledPickup.removeOverride' | translate }}
+    </button>
+  }
+  @if (error(); as message) {
+    <p class="text-destructive text-sm" role="alert">{{ message | uiMessage }}</p>
+  }
+  <hlm-dialog-footer class="mt-2 border-t pt-3">
+    <button hlmBtn variant="outline" type="button" [disabled]="saving()" (click)="cancel()">
+      {{ 'common.cancel' | translate }}
+    </button>
+    <button hlmBtn type="submit" [disabled]="saving() || timeForm().invalid()">
+      @if (saving()) {
+        <hlm-spinner aria-hidden="true" />
+      }
+      {{ 'scheduledPickup.saveChanges' | translate }}
+    </button>
+  </hlm-dialog-footer>
+</form>
