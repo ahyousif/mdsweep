@@ -53,11 +53,6 @@
     <section hlmCard class="rounded-lg p-4 shadow-none">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">{{ 'trips.timing' | translate }}</h3>
-
-        <button hlmBtn variant="outline" size="sm" type="button">
-          <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
-          {{ 'common.edit' | translate }}
-        </button>
       </div>
 
       <div class="mt-2 grid grid-cols-[1fr_auto] gap-3">
@@ -71,11 +66,11 @@
 
             <div>
               <p class="text-muted-foreground text-sm">
-                {{ primaryTimeLabel() }}
+                {{ referenceTime().labelKey | translate }}
               </p>
 
               <p class="font-semibold leading-tight">
-                {{ primaryTime() }}
+                {{ language.formatTime(referenceTime().value, referenceTime().fallbackKey) }}
               </p>
             </div>
           </div>
@@ -127,7 +122,11 @@
           <p class="text-muted-foreground text-sm">{{ 'trips.scheduledPickup' | translate }}</p>
 
           <p class="mt-0.5 font-semibold">
-            {{ formatTime(trip().scheduledPickupTime) }}
+            {{
+              trip().isWillCall && !trip().scheduledPickupTime
+                ? ('trips.willCall' | translate)
+                : formatTime(trip().scheduledPickupTime)
+            }}
           </p>
 
           @if (scheduledPickupSource()) {
@@ -136,7 +135,14 @@
             </p>
           }
 
-          <button hlmBtn variant="outline" size="sm" type="button" class="mt-2">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            class="mt-2"
+            (click)="changeScheduledPickup.emit()"
+          >
             {{ 'common.change' | translate }}
           </button>
         </div>
@@ -148,10 +154,17 @@
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">{{ 'trips.route' | translate }}</h3>
 
-        <button hlmBtn variant="outline" size="sm" type="button">
+        <a
+          hlmBtn
+          variant="outline"
+          size="sm"
+          [href]="directionsUrl()"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <ng-icon name="lucideMapPin" class="size-4" aria-hidden="true" />
           {{ 'trips.viewMap' | translate }}
-        </button>
+        </a>
       </div>
 
       <div class="mt-2">
@@ -202,7 +215,7 @@
 
         <button hlmBtn variant="outline" size="sm" type="button">
           <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
-          {{ 'common.edit' | translate }}
+          {{ 'common.change' | translate }}
         </button>
       </div>
 
@@ -281,24 +294,4 @@
       <p class="text-muted-foreground mt-1 text-sm">{{ 'trips.noNotes' | translate }}</p>
     </section>
   </div>
-
-  <!-- Always-visible actions -->
-  <footer class="bg-background shrink-0 border-t p-4">
-    <div class="flex gap-2">
-      <button hlmBtn type="button" class="flex-1">
-        <ng-icon name="lucidePlay" class="size-4" aria-hidden="true" />
-        {{ 'trips.markReady' | translate }}
-      </button>
-
-      <button hlmBtn variant="outline" type="button" class="flex-1">
-        <ng-icon name="lucideUserRound" class="size-4" aria-hidden="true" />
-        {{ 'trips.assignDriver' | translate }}
-      </button>
-
-      <button hlmBtn variant="outline" type="button">
-        <ng-icon name="lucideEllipsis" class="size-4" aria-hidden="true" />
-        {{ 'trips.more' | translate }}
-      </button>
-    </div>
-  </footer>
 </div>

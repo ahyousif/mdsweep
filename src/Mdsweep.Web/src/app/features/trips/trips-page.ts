@@ -9,6 +9,7 @@ import { HlmDialogService } from '@spartan-ng/helm/dialog';
 import { injectQuery } from '@tanstack/angular-query-experimental';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 
+import ScheduledPickupDialog from './scheduled-pickup/scheduled-pickup-dialog';
 import TripDetail from './trip-detail/trip-detail';
 import TripImportDialog from './trip-import/trip-import-dialog';
 import TripList from './trip-list/trip-list';
@@ -103,12 +104,17 @@ export default class TripsPage {
     this.#setDate(addDays(new Date(), 1));
   }
 
-  setThisWeek(): void {
-    // Multi-day grouping comes later.
-  }
-
   setServiceDate(date: Date): void {
     this.#setDate(date);
+  }
+
+  openScheduledPickupDialog(trip: Trip): void {
+    this.#dialog.open(ScheduledPickupDialog, {
+      context: { trip },
+      contentClass: 'w-[calc(100vw-2rem)] rounded-lg p-5 sm:w-[29rem] sm:max-w-[29rem]',
+      showCloseButton: false,
+      disableClose: true,
+    });
   }
 
   openImportDialog(): void {

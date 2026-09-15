@@ -1,3 +1,3 @@
-namespace Mdsweep.Api.Features.Trips.SetScheduledPickupTime;
+﻿namespace Mdsweep.Api.Features.Trips.SetScheduledPickupTime;
 
-public sealed record SetScheduledPickupTimeRequest(LocalTime ScheduledPickupTime);
+public sealed record SetScheduledPickupTimeRequest(LocalTime? ScheduledPickupTime);

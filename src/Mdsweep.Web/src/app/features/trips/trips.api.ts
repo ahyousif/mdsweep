@@ -10,6 +10,14 @@ import { Trip, TripsQuery } from './trips-types';
 export class TripsApi {
   readonly #api = inject(ApiClient);
 
+  setScheduledPickupTime(id: string, scheduledPickupTime: string | null): Promise<unknown> {
+    return firstValueFrom(
+      this.#api.http.put(this.#api.url(`trips/${id}/scheduled-pickup-time`), {
+        scheduledPickupTime,
+      }),
+    );
+  }
+
   getTrips(query: TripsQuery): Promise<PagedResponse<Trip>> {
     const params: Record<string, string | number | boolean> = {
       startDate: query.startDate,

@@ -146,9 +146,9 @@
     "appointment": "الموعد",
     "returnPickup": "اصطحاب العودة",
     "willCall": "عند الاتصال",
-    "manualTime": "باستخدام الوقت المدخل يدويًا",
-    "calculatedTime": "باستخدام الوقت المحسوب",
-    "brokerTime": "باستخدام وقت وسيط النقل",
+    "manualTime": "تعديل يدوي",
+    "calculatedTime": "محسوب",
+    "brokerTime": "مقدم من وسيط النقل",
     "appointmentTime": "الموعد: ⁨{time}⁩",
     "returnTime": "العودة: ⁨{time}⁩",
     "brokerLabel": "وسيط النقل: ⁨{status}⁩",
@@ -227,6 +227,16 @@
       "requiredPickupCity": "مدينة الاصطحاب مطلوبة.",
       "requiredDropoffAddress": "عنوان الوصول مطلوب.",
       "requiredDropoffCity": "مدينة الوصول مطلوبة."
-    }
+    },
+    "saveScheduledPickup": "تعذر حفظ وقت الاصطحاب المجدول. يرجى المحاولة مرة أخرى."
+  },
+  "scheduledPickup": {
+    "title": "تغيير وقت الاصطحاب المجدول",
+    "subtitle": "اختر وقتًا يدويًا أو استخدم الوقت المقترح المحسوب.",
+    "timeRequired": "أدخل وقتًا صالحًا، مثل 4:15 ص أو 16:15.",
+    "useCalculated": "استخدام الوقت المحسوب · {time}",
+    "removeOverride": "إزالة التعديل اليدوي",
+    "saveChanges": "حفظ التغييرات",
+    "timeHint": "مثال: 4:15 ص أو 16:15."
   }
 }
