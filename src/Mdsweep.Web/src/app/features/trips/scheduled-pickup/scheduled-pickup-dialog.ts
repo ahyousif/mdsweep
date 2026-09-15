@@ -21,6 +21,7 @@ import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { LanguageService } from '@app/core/i18n/language.service';
 import { UiMessagePipe } from '@app/core/i18n/ui-message';
 import { Trip } from '../trips-types';
+import { tripReferenceTime } from '../trip-reference-time';
 import { TripsApi } from '../trips.api';
 import { scheduledPickupMutationOptions } from '../trips.queries';
 import { parseScheduledPickupTime } from './scheduled-pickup-time';
@@ -52,6 +53,7 @@ export default class ScheduledPickupDialog {
   readonly #dialogRef = inject(BrnDialogRef);
   readonly #api = inject(TripsApi);
   readonly #queryClient = inject(QueryClient);
+  readonly referenceTime = computed(() => tripReferenceTime(this.trip));
   readonly model = signal({
     time: this.trip.scheduledPickupTime
       ? this.language.formatTime(this.trip.scheduledPickupTime)

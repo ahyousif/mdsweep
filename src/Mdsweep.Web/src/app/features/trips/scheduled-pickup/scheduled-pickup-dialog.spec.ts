@@ -56,6 +56,26 @@ function setup(value = trip) {
 }
 
 describe('Scheduled pickup dialog', () => {
+  it.each([
+    ['To', false, 'Appointment', '5:00 AM'],
+    ['From', false, 'Return pickup', '9:30 AM'],
+    ['From', true, 'Return pickup', 'Will call'],
+  ] as const)(
+    'shows the broker reference for %s (will-call: %s)',
+    (direction, isWillCall, label, value) => {
+      const { fixture } = setup({ ...trip, direction, isWillCall, returnPickupTime: '09:30:00' });
+      const summary = fixture.nativeElement.querySelector('hlm-dialog-header').nextElementSibling;
+      expect(summary.textContent).toContain(label);
+      expect(summary.textContent).toContain(value);
+      if (direction === 'From') expect(summary.textContent).not.toContain('Appointment');
+      if (isWillCall) expect(summary.textContent).not.toContain('9:30 AM');
+      TestBed.inject(LanguageService).setLanguage('ar');
+      fixture.detectChanges();
+      expect(summary.textContent).toContain(direction === 'To' ? 'الموعد' : 'اصطحاب العودة');
+      if (isWillCall) expect(summary.textContent).toContain('عند الاتصال');
+    },
+  );
+
   it('uses a styled text field and a decorative clock without a native picker', () => {
     const { fixture } = setup();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;

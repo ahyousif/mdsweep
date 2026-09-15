@@ -66,11 +66,11 @@
 
             <div>
               <p class="text-muted-foreground text-sm">
-                {{ primaryTimeLabel() }}
+                {{ referenceTime().labelKey | translate }}
               </p>
 
               <p class="font-semibold leading-tight">
-                {{ primaryTime() }}
+                {{ language.formatTime(referenceTime().value, referenceTime().fallbackKey) }}
               </p>
             </div>
           </div>

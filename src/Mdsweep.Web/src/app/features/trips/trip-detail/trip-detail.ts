@@ -20,6 +20,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmCard } from '@spartan-ng/helm/card';
 
 import { Address, Trip } from '../trips-types';
+import { tripReferenceTime } from '../trip-reference-time';
 
 @Component({
   selector: 'app-trip-detail',
@@ -53,27 +54,7 @@ export default class TripDetail {
     () => `${this.trip().passengerFirstName} ${this.trip().passengerLastName}`,
   );
 
-  readonly primaryTimeLabel = computed(() => {
-    this.language.language();
-    return this.translate.instant(
-      this.trip().direction === 'To' ? 'trips.appointment' : 'trips.returnPickup',
-    );
-  });
-
-  readonly primaryTime = computed(() => {
-    this.language.language();
-    const trip = this.trip();
-
-    if (trip.direction === 'To') {
-      return this.formatTime(trip.appointmentTime);
-    }
-
-    if (trip.isWillCall) {
-      return this.translate.instant('trips.willCall');
-    }
-
-    return this.formatTime(trip.returnPickupTime);
-  });
+  readonly referenceTime = computed(() => tripReferenceTime(this.trip()));
 
   readonly scheduledPickupSource = computed(() => {
     const trip = this.trip();
