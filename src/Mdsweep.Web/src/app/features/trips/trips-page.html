@@ -6,12 +6,17 @@
       <app-trip-toolbar
         [serviceDate]="currentDate()"
         [search]="search()"
+        [weekSelected]="weekSelected()"
+        [selectedFilter]="selectedFilter()"
+        [filterCounts]="filterCounts()"
         (serviceDateChange)="setServiceDate($event)"
         (previousDayClicked)="previousDay()"
         (nextDayClicked)="nextDay()"
         (todayClicked)="setToday()"
         (tomorrowClicked)="setTomorrow()"
+        (thisWeekClicked)="setThisWeek()"
         (searchChange)="setSearch($event)"
+        (filterChange)="setFilter($event)"
         (importTripsClicked)="openImportDialog()"
       />
     </div>
@@ -25,27 +30,29 @@
         <button hlmBtn variant="outline" (click)="tripsQuery.refetch()">
           {{ 'common.retry' | translate }}
         </button>
-      } @else if (trips().length === 0) {
+      } @else if (displayedJourneys().length === 0) {
         <p class="py-4" role="status">{{ 'trips.empty' | translate }}</p>
       }
       <app-trip-list
-        [trips]="trips()"
-        [selectedTripId]="selectedTripId()"
-        (tripSelected)="selectTrip($event)"
+        [journeys]="displayedJourneys()"
+        [selectedJourneyId]="selectedJourneyId()"
+        (journeySelected)="selectJourney($event)"
       />
     </div>
   </section>
 
   <!-- Fixed right detail workspace -->
-  @if (selectedTrip(); as trip) {
+  @if (selectedJourney(); as journey) {
     <aside
-      class="bg-background absolute inset-0 z-10 h-full w-full shrink-0 overflow-hidden border-s xl:static xl:w-136"
+      class="bg-background absolute inset-0 h-full w-full shrink-0 overflow-hidden border-s xl:static xl:w-136"
     >
       <app-trip-detail
         class="block h-full min-h-0"
-        [trip]="trip"
+        [journey]="journey"
+        [selectedTripId]="selectedTripId()"
+        (tripSelected)="selectTrip($event)"
         (closed)="closeTripDetail()"
-        (changeScheduledPickup)="openScheduledPickupDialog(trip)"
+        (changeScheduledPickup)="openScheduledPickupDialog($event)"
       />
     </aside>
   }

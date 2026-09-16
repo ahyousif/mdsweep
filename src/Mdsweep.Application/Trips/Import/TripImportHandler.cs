@@ -59,6 +59,7 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
 
         var problems = manifest.Problems.ToList();
         var readyCount = 0;
+        var newTrips = new List<JourneyGroupingCandidate>();
 
         var duplicateTripNumbers = rows.GroupBy(row => row.TripNumber)
             .Where(group => group.Count() > 1)
@@ -137,19 +138,72 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                         await ReconcilePassengerAsync(passenger, row, repository, ct);
                     }
 
-                    var trip = TripAggregate.Create(passenger.Id, row.TripNumber, ToBrokerTripData(row));
-
-                    await repository.AddAsync(trip, ct);
-
-                    if (trip.RequiresRouteEstimate)
-                    {
-                        outgoingMessages.Add(new ScheduleTripCommand(trip.Id));
-                    }
-
-                    tripsByNumber.Add(row.TripNumber, trip);
-
-                    readyCount++;
+                    newTrips.Add(new JourneyGroupingCandidate(row.TripNumber, passenger.Id, ToBrokerTripData(row)));
                 }
+            }
+        }
+
+        if (newTrips.Count > 0)
+        {
+            var candidateTrips = await repository.ListAsync(
+                new TripsSpecification()
+                    .WithPassengerIds(newTrips.Select(trip => trip.PassengerId).Distinct().ToArray())
+                    .WithServiceDates(newTrips.Select(trip => trip.BrokerData.ServiceDate).Distinct().ToArray())
+                    .Build(),
+                ct
+            );
+
+            var candidateJourneyIds = candidateTrips.Select(trip => trip.JourneyId).Distinct().ToArray();
+            var existingJourneyTrips =
+                candidateJourneyIds.Length == 0
+                    ? []
+                    : await repository.ListAsync(
+                        new TripsSpecification().WithJourneyIds(candidateJourneyIds).Build(),
+                        ct
+                    );
+
+            var decisions = JourneyGroupingPolicy.Group(newTrips, existingJourneyTrips);
+            var newJourneyIds = new Dictionary<string, Guid>();
+
+            foreach (var candidate in newTrips)
+            {
+                var decision = decisions[candidate.TripNumber];
+                Guid journeyId;
+
+                if (decision.ExistingJourneyId is { } existingJourneyId)
+                {
+                    journeyId = existingJourneyId;
+                }
+                else if (
+                    decision.PairedNewTripNumber is { } partnerTripNumber
+                    && newJourneyIds.TryGetValue(partnerTripNumber, out var partnerJourneyId)
+                )
+                {
+                    journeyId = partnerJourneyId;
+                }
+                else
+                {
+                    var journey = JourneyAggregate.Create();
+                    journeyId = journey.Id;
+                    await repository.AddAsync(journey, ct);
+                }
+
+                newJourneyIds[candidate.TripNumber] = journeyId;
+
+                var trip = TripAggregate.Create(
+                    journeyId,
+                    candidate.PassengerId,
+                    candidate.TripNumber,
+                    candidate.BrokerData
+                );
+                await repository.AddAsync(trip, ct);
+
+                if (trip.RequiresRouteEstimate)
+                {
+                    outgoingMessages.Add(new ScheduleTripCommand(trip.Id));
+                }
+
+                readyCount++;
             }
         }
 

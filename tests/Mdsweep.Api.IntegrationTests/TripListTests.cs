@@ -27,6 +27,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
         Assert.Equal(["TRIP-15", "TRIP-16"], range.Items.Select(trip => trip.BrokerTripNumber));
 
         var trip = range.Items.Single(trip => trip.BrokerTripNumber == "TRIP-15");
+        Assert.NotEqual(Guid.Empty, trip.JourneyId);
         Assert.Equal("2026-09-15", trip.ServiceDate);
         Assert.Equal("100 Sample St", trip.Pickup.Address);
         Assert.Equal("Mesa", trip.Dropoff.City);
@@ -194,7 +195,10 @@ public sealed class TripListTests : MdsweepIntegrationTest
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create(brokerMemberId ?? $"MED-{brokerTripNumber}", firstName, lastName);
         passenger.TenantId = tenantId;
+        var journey = JourneyAggregate.Create();
+        journey.TenantId = tenantId;
         var trip = TripAggregate.Create(
+            journey.Id,
             passenger.Id,
             brokerTripNumber,
             new BrokerTripData(
@@ -219,7 +223,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
             )
         );
         trip.TenantId = tenantId;
-        db.AddRange(passenger, trip);
+        db.AddRange(passenger, journey, trip);
         await db.SaveChangesAsync();
     }
 
@@ -233,6 +237,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
 
     private sealed record TripResponse(
         Guid Id,
+        Guid JourneyId,
         string BrokerTripNumber,
         string ServiceDate,
         string? AppointmentTime,

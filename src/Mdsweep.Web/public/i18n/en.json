@@ -116,6 +116,53 @@
     "tomorrow": "Tomorrow",
     "thisWeek": "This week",
     "search": "Search by passenger, address, trip number, or driver...",
+    "subtitle": "Journeys and trips for {date}",
+    "addTrip": "Add trip",
+    "addUnavailable": "Trip creation is not available yet.",
+    "sortBy": "Sort by",
+    "pickupEarliest": "Pickup time (earliest)",
+    "unassigned": "Unassigned",
+    "journeyActions": "Journey actions",
+    "tripActions": "Actions for trip {trip}",
+    "openJourney": "Open journey for {passenger}",
+    "appointmentCompact": "Appt {time}",
+    "appointmentNotSupplied": "Appt not supplied",
+    "journeySummary": "{count, plural, one {1 trip} other {{count} trips}}",
+    "journey": "Journey",
+    "firstPickup": "First pickup",
+    "totalTrips": "Total trips",
+    "tripsInJourney": "Trips in this journey",
+    "tripPosition": "Trip {current} of {total}",
+    "changePickupTime": "Change pickup time",
+    "memberId": "Member ID",
+    "historyUnavailable": "Journey history is not available yet.",
+    "columns": {
+      "pickup": "Pickup / Appt",
+      "passengerRoute": "Passenger / Route",
+      "trips": "Trips",
+      "driver": "Driver"
+    },
+    "filters": {
+      "all": "All",
+      "scheduled": "Scheduled",
+      "needsAttention": "Needs attention",
+      "willCall": "Will call"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "needsPickupTime": "Needs pickup time",
+      "brokerIssue": "Broker: {status}"
+    },
+    "tabs": {
+      "trips": "Trips ({count})",
+      "passenger": "Passenger"
+    },
+    "actions": {
+      "edit": "Edit trip",
+      "move": "Move to another journey",
+      "separate": "Separate into own journey",
+      "delete": "Delete trip"
+    },
     "pickup": "Pickup",
     "closeDetails": "Close trip details",
     "overview": "Overview",

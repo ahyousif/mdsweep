@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Mdsweep.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260910225750_InitialSchema")]
+    [Migration("20260916045136_InitialSchema")]
     partial class InitialSchema
     {
         /// <inheritdoc />
@@ -137,6 +137,28 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     b.ToTable("tenant_memberships", (string)null);
                 });
 
+            modelBuilder.Entity("Mdsweep.Domain.Trips.JourneyAggregate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_journeys");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_journeys_tenant_id");
+
+                    b.ToTable("journeys", (string)null);
+                });
+
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -162,6 +184,10 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("estimated_travel_minutes");
 
+                    b.Property<Guid>("JourneyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journey_id");
+
                     b.Property<LocalTime?>("ManualPickupTime")
                         .HasColumnType("time")
                         .HasColumnName("manual_pickup_time");
@@ -178,6 +204,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_trips");
+
+                    b.HasIndex("JourneyId")
+                        .HasDatabaseName("ix_trips_journey_id");
 
                     b.HasIndex("PassengerId")
                         .HasDatabaseName("ix_trips_passenger_id");
@@ -199,16 +228,16 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("accepted_at");
 
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("display_name");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("email");
-
-                    b.Property<string>("DisplayName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("display_name");
 
                     b.Property<Instant>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
@@ -331,6 +360,13 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.TripAggregate", b =>
                 {
+                    b.HasOne("Mdsweep.Domain.Trips.JourneyAggregate", null)
+                        .WithMany()
+                        .HasForeignKey("JourneyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_trips_journeys_journey_id");
+
                     b.HasOne("Mdsweep.Domain.Passengers.PassengerAggregate", "Passenger")
                         .WithMany()
                         .HasForeignKey("PassengerId")

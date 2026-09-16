@@ -116,6 +116,53 @@
     "tomorrow": "غدًا",
     "thisWeek": "هذا الأسبوع",
     "search": "البحث بالراكب أو العنوان أو رقم الرحلة أو السائق…",
+    "subtitle": "المجموعات والرحلات ليوم {date}",
+    "addTrip": "إضافة رحلة",
+    "addUnavailable": "إنشاء الرحلات غير متاح بعد.",
+    "sortBy": "الترتيب حسب",
+    "pickupEarliest": "وقت الاصطحاب (الأبكر)",
+    "unassigned": "غير مسندة",
+    "journeyActions": "إجراءات المجموعة",
+    "tripActions": "إجراءات الرحلة ⁨{trip}⁩",
+    "openJourney": "فتح مجموعة رحلات ⁨{passenger}⁩",
+    "appointmentCompact": "الموعد ⁨{time}⁩",
+    "appointmentNotSupplied": "الموعد غير مقدم",
+    "journeySummary": "{count, plural, zero {لا توجد رحلات} one {رحلة واحدة} two {رحلتان} few {{count} رحلات} many {{count} رحلة} other {{count} رحلة}}",
+    "journey": "مجموعة الرحلات",
+    "firstPickup": "أول اصطحاب",
+    "totalTrips": "إجمالي الرحلات",
+    "tripsInJourney": "الرحلات في هذه المجموعة",
+    "tripPosition": "الرحلة {current} من {total}",
+    "changePickupTime": "تغيير وقت الاصطحاب",
+    "memberId": "رقم العضو",
+    "historyUnavailable": "سجل مجموعة الرحلات غير متاح بعد.",
+    "columns": {
+      "pickup": "الاصطحاب / الموعد",
+      "passengerRoute": "الراكب / المسار",
+      "trips": "الرحلات",
+      "driver": "السائق"
+    },
+    "filters": {
+      "all": "الكل",
+      "scheduled": "مجدولة",
+      "needsAttention": "تحتاج إلى مراجعة",
+      "willCall": "عند الاتصال"
+    },
+    "status": {
+      "scheduled": "مجدولة",
+      "needsPickupTime": "تحتاج وقت اصطحاب",
+      "brokerIssue": "وسيط النقل: ⁨{status}⁩"
+    },
+    "tabs": {
+      "trips": "الرحلات ({count})",
+      "passenger": "الراكب"
+    },
+    "actions": {
+      "edit": "تعديل الرحلة",
+      "move": "نقل إلى مجموعة رحلات أخرى",
+      "separate": "فصل في مجموعة مستقلة",
+      "delete": "حذف الرحلة"
+    },
     "pickup": "الاصطحاب",
     "closeDetails": "إغلاق تفاصيل الرحلة",
     "overview": "نظرة عامة",

@@ -135,7 +135,10 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", "Synthetic", "Passenger");
         passenger.TenantId = tenantId;
+        var journey = JourneyAggregate.Create();
+        journey.TenantId = tenantId;
         var trip = TripAggregate.Create(
+            journey.Id,
             passenger.Id,
             brokerTripNumber,
             new BrokerTripData(
@@ -161,7 +164,7 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         );
         if (calculated == true) trip.ApplyRouteEstimate(Duration.FromMinutes(42), 47475, 15);
         trip.TenantId = tenantId;
-        db.AddRange(passenger, trip);
+        db.AddRange(passenger, journey, trip);
         await db.SaveChangesAsync();
         Assert.Equal(tenantId, (await db.Trips.SingleAsync(saved => saved.Id == trip.Id)).TenantId);
         await using var scope = Application.Services.CreateAsyncScope();

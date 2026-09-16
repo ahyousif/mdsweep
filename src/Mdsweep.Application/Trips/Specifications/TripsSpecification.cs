@@ -67,6 +67,36 @@ public sealed class TripsSpecification : SpecificationBuilder<TripAggregate, Gui
         return this;
     }
 
+    public TripsSpecification WithPassengerIds(IReadOnlyCollection<Guid> passengerIds)
+    {
+        if (passengerIds.Count > 0)
+        {
+            Spec.Add(query => query.Where(trip => passengerIds.Contains(trip.PassengerId)));
+        }
+
+        return this;
+    }
+
+    public TripsSpecification WithJourneyIds(IReadOnlyCollection<Guid> journeyIds)
+    {
+        if (journeyIds.Count > 0)
+        {
+            Spec.Add(query => query.Where(trip => journeyIds.Contains(trip.JourneyId)));
+        }
+
+        return this;
+    }
+
+    public TripsSpecification WithServiceDates(IReadOnlyCollection<LocalDate> serviceDates)
+    {
+        if (serviceDates.Count > 0)
+        {
+            Spec.Add(query => query.Where(trip => serviceDates.Contains(trip.BrokerData.ServiceDate)));
+        }
+
+        return this;
+    }
+
     public TripsSpecification WithWillCall(bool? willCall)
     {
         if (willCall.HasValue)

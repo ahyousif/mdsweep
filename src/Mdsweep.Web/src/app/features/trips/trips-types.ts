@@ -19,6 +19,7 @@ export type TripDirection = 'To' | 'From';
 
 export type Trip = {
   id: string;
+  journeyId: string;
   brokerTripNumber: string;
 
   passengerFirstName: string;

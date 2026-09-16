@@ -1,25 +1,21 @@
-<div class="space-y-8">
-  @for (group of groups(); track group.label) {
-    <section>
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">
-          {{ group.label | translate }}
-        </h2>
+<div class="flex flex-col gap-2">
+  <div
+    class="text-muted-foreground hidden grid-cols-[6.5rem_minmax(15rem,1fr)_4.5rem_7.5rem_9rem_auto] gap-3 px-4 text-sm md:grid"
+    aria-hidden="true"
+  >
+    <span>{{ 'trips.columns.pickup' | translate }}</span>
+    <span>{{ 'trips.columns.passengerRoute' | translate }}</span>
+    <span>{{ 'trips.columns.trips' | translate }}</span>
+    <span>{{ 'trips.columns.driver' | translate }}</span>
+    <span>{{ 'common.status' | translate }}</span>
+    <span></span>
+  </div>
 
-        <span class="text-muted-foreground text-sm">
-          {{ 'trips.count' | translate: { count: group.trips.length } }}
-        </span>
-      </div>
-
-      <div class="space-y-2">
-        @for (trip of group.trips; track trip.id) {
-          <app-trip-card
-            [trip]="trip"
-            [selected]="trip.id === selectedTripId()"
-            (tripSelected)="selectTrip($event)"
-          />
-        }
-      </div>
-    </section>
+  @for (journey of journeys(); track journey.id) {
+    <app-trip-card
+      [journey]="journey"
+      [selected]="journey.id === selectedJourneyId()"
+      (journeySelected)="journeySelected.emit($event)"
+    />
   }
 </div>

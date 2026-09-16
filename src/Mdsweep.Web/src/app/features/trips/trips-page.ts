@@ -14,6 +14,12 @@ import TripDetail from './trip-detail/trip-detail';
 import TripImportDialog from './trip-import/trip-import-dialog';
 import TripList from './trip-list/trip-list';
 import TripToolbar from './trip-toolbar/trip-toolbar';
+import {
+  buildJourneys,
+  JourneyFilter,
+  JourneyViewModel,
+  matchesJourneyFilter,
+} from './journey-view-model';
 import { Trip, TripsQuery } from './trips-types';
 import { TripsApi } from './trips.api';
 import { tripsQueryOptions } from './trips.queries';
@@ -32,7 +38,10 @@ export default class TripsPage {
   readonly #translate = inject(TranslateService);
 
   readonly currentDate = signal(new Date());
+  readonly weekSelected = signal(false);
   readonly search = signal('');
+  readonly selectedFilter = signal<JourneyFilter>('all');
+  readonly selectedJourneyId = signal<string | null>(null);
   readonly selectedTripId = signal<string | null>(null);
 
   readonly debouncedSearch = toSignal(
@@ -47,11 +56,12 @@ export default class TripsPage {
   );
 
   readonly query = computed<TripsQuery>(() => {
-    const serviceDate = toServiceDate(this.currentDate());
+    const startDate = this.weekSelected() ? startOfWeek(this.currentDate()) : this.currentDate();
+    const endDate = this.weekSelected() ? addDays(startDate, 6) : startDate;
 
     return {
-      startDate: serviceDate,
-      endDate: serviceDate,
+      startDate: toServiceDate(startDate),
+      endDate: toServiceDate(endDate),
       search: this.debouncedSearch() || undefined,
       page: 1,
       pageSize: 100,
@@ -65,6 +75,25 @@ export default class TripsPage {
   );
 
   readonly trips = computed(() => this.tripsQuery.data()?.items ?? []);
+  readonly journeys = computed(() => buildJourneys(this.trips()));
+  readonly displayedJourneys = computed(() =>
+    this.journeys().filter((journey) => matchesJourneyFilter(journey, this.selectedFilter())),
+  );
+
+  readonly filterCounts = computed(() => ({
+    all: this.journeys().length,
+    scheduled: this.journeys().filter((journey) => matchesJourneyFilter(journey, 'scheduled'))
+      .length,
+    needsAttention: this.journeys().filter((journey) =>
+      matchesJourneyFilter(journey, 'needsAttention'),
+    ).length,
+    willCall: this.journeys().filter((journey) => matchesJourneyFilter(journey, 'willCall')).length,
+  }));
+
+  readonly selectedJourney = computed<JourneyViewModel | null>(() => {
+    const id = this.selectedJourneyId();
+    return id ? (this.journeys().find((journey) => journey.id === id) ?? null) : null;
+  });
 
   readonly selectedTrip = computed<Trip | null>(() => {
     const id = this.selectedTripId();
@@ -73,19 +102,29 @@ export default class TripsPage {
       return null;
     }
 
-    return this.trips().find((trip) => trip.id === id) ?? null;
+    return this.selectedJourney()?.trips.find((trip) => trip.id === id) ?? null;
   });
+
+  selectJourney(journey: JourneyViewModel): void {
+    this.selectedJourneyId.set(journey.id);
+    this.selectedTripId.set(journey.firstTrip.id);
+  }
 
   selectTrip(trip: Trip): void {
     this.selectedTripId.set(trip.id);
   }
 
   closeTripDetail(): void {
+    this.selectedJourneyId.set(null);
     this.selectedTripId.set(null);
   }
 
   setSearch(value: string): void {
     this.search.set(value);
+  }
+
+  setFilter(filter: JourneyFilter): void {
+    this.selectedFilter.set(filter);
   }
 
   previousDay(): void {
@@ -102,6 +141,12 @@ export default class TripsPage {
 
   setTomorrow(): void {
     this.#setDate(addDays(new Date(), 1));
+  }
+
+  setThisWeek(): void {
+    this.currentDate.set(startOfWeek(new Date()));
+    this.weekSelected.set(true);
+    this.closeTripDetail();
   }
 
   setServiceDate(date: Date): void {
@@ -127,8 +172,16 @@ export default class TripsPage {
 
   #setDate(date: Date): void {
     this.currentDate.set(date);
-    this.selectedTripId.set(null);
+    this.weekSelected.set(false);
+    this.closeTripDetail();
   }
+}
+
+function startOfWeek(date: Date): Date {
+  const result = new Date(date);
+  const day = result.getDay();
+  result.setDate(result.getDate() - (day === 0 ? 6 : day - 1));
+  return result;
 }
 
 function addDays(date: Date, amount: number): Date {
