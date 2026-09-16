@@ -243,6 +243,38 @@ for (const language of ['en', 'ar'] as const) {
       return { pickupTop: pickup.top, dropoffTop: dropoff.top };
     });
     expect(routeLines.dropoffTop).toBeGreaterThan(routeLines.pickupTop);
+    const tripLayout = await tripRows.evaluateAll((rows, direction) =>
+      rows.map((button) => {
+        const row = button.parentElement!;
+        const badge = button.querySelector('[data-trip-status] [data-slot="badge"]')!;
+        const badgeBox = badge.getBoundingClientRect();
+        const statusBox = badge.parentElement!.getBoundingClientRect();
+        const menuBox = row
+          .querySelector('[data-slot="dropdown-menu-trigger"]')!
+          .getBoundingClientRect();
+        const rowBox = row.getBoundingClientRect();
+        return {
+          tracks: getComputedStyle(row).gridTemplateColumns,
+          statusWidth: statusBox.width,
+          badgeEnd: direction === 'rtl' ? badgeBox.left : badgeBox.right,
+          statusEnd: direction === 'rtl' ? statusBox.left : statusBox.right,
+          menuStart: direction === 'rtl' ? menuBox.right : menuBox.left,
+          verticalOffset: Math.abs(
+            (badgeBox.top + badgeBox.bottom - rowBox.top - rowBox.bottom) / 2,
+          ),
+        };
+      }),
+      language === 'ar' ? 'rtl' : 'ltr',
+    );
+    expect(tripLayout[0].tracks).toBe(tripLayout[1].tracks);
+    expect(tripLayout[0].statusWidth).toBeGreaterThanOrEqual(100);
+    expect(tripLayout[0].statusWidth).toBe(tripLayout[1].statusWidth);
+    expect(Math.abs(tripLayout[0].statusEnd - tripLayout[1].statusEnd)).toBeLessThanOrEqual(1);
+    for (const rowLayout of tripLayout) {
+      expect(Math.abs(rowLayout.badgeEnd - rowLayout.statusEnd)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rowLayout.menuStart - rowLayout.statusEnd)).toBeLessThanOrEqual(10);
+      expect(rowLayout.verticalOffset).toBeLessThanOrEqual(2);
+    }
     await expect(tripRows.first().locator('..')).toHaveClass(/bg-accent/);
     await expect(
       page.locator('app-trip-detail ng-icon[name="lucideEllipsisVertical"]'),

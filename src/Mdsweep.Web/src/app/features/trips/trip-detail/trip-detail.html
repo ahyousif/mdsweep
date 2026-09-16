@@ -24,7 +24,7 @@
         [attr.aria-label]="'trips.closeDetails' | translate"
         (click)="closed.emit()"
       >
-        <ng-icon name="lucideX" class="text-[length:--spacing(5)]" aria-hidden="true" />
+        <ng-icon name="lucideX" class="text-[--spacing(5)]" aria-hidden="true" />
       </button>
     </div>
 
@@ -78,10 +78,10 @@
                   aria-hidden="true"
                 />
                 <div class="min-w-0">
-                  <p class="break-words font-medium">
+                  <p class="wrap-break-word font-medium">
                     <bdi>{{ stop.address }}</bdi>
                   </p>
-                  <p class="text-muted-foreground break-words">
+                  <p class="text-muted-foreground wrap-break-word">
                     <bdi>{{ formatAddress(stop) }}</bdi>
                   </p>
                 </div>
@@ -148,13 +148,13 @@
           @for (trip of journey().trips; track trip.id; let sequence = $index) {
             @let assignment = assignmentSummary(trip);
             <div
-              class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-t px-4 py-3 transition-colors"
+              class="grid grid-cols-[2rem_5rem_minmax(0,1fr)_6.25rem_2rem] items-center gap-x-2 border-t px-4 py-3 transition-colors"
               [class.bg-accent]="trip.id === selectedTrip().id"
               (click)="tripSelected.emit(trip)"
             >
               <button
                 data-trip-row=""
-                class="grid min-w-0 grid-cols-[2rem_5rem_minmax(0,1fr)] items-center gap-x-2 rounded-md text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                class="col-span-4 grid min-w-0 grid-cols-subgrid items-center gap-x-2 rounded-md text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
                 [attr.aria-label]="'trips.openTrip' | translate: { trip: trip.brokerTripNumber }"
                 [attr.aria-pressed]="trip.id === selectedTrip().id"
@@ -185,10 +185,13 @@
                 >
                   → <bdi>{{ trip.dropoff.address }}</bdi>
                 </span>
-                <span class="col-start-3 flex min-w-0 items-center justify-between gap-2">
-                  <span class="text-muted-foreground truncate text-xs">
-                    {{ assignment.key | translate: assignment.params }}
-                  </span>
+                <span class="text-muted-foreground col-start-3 min-w-0 truncate text-xs">
+                  {{ assignment.key | translate: assignment.params }}
+                </span>
+                <span
+                  data-trip-status=""
+                  class="col-start-4 row-start-1 row-span-3 flex min-w-0 justify-end self-center"
+                >
                   <span hlmBadge [variant]="status(trip).variant">
                     {{ status(trip).key | translate: status(trip).params }}
                   </span>
@@ -276,7 +279,7 @@
             <dd class="font-semibold">{{ formatTime(selectedTrip().appointmentTime) }}</dd>
             <ng-icon name="lucideMapPin" class="text-primary mt-0.5" aria-hidden="true" />
             <dt class="text-muted-foreground">{{ 'trips.pickupAddress' | translate }}</dt>
-            <dd class="min-w-0 break-words text-start">
+            <dd class="min-w-0 wrap-break-word text-start">
               <bdi
                 >{{ selectedTrip().pickup.address }},
                 {{ formatAddress(selectedTrip().pickup) }}</bdi
@@ -284,7 +287,7 @@
             </dd>
             <ng-icon name="lucideMapPin" class="text-destructive mt-0.5" aria-hidden="true" />
             <dt class="text-muted-foreground">{{ 'trips.dropoffAddress' | translate }}</dt>
-            <dd class="min-w-0 break-words text-start">
+            <dd class="min-w-0 wrap-break-word text-start">
               <bdi
                 >{{ selectedTrip().dropoff.address }},
                 {{ formatAddress(selectedTrip().dropoff) }}</bdi
