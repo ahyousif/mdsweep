@@ -87,13 +87,6 @@ export default class TripDetail {
     return route;
   });
 
-  readonly isReciprocal = computed(
-    () =>
-      this.journey().trips.length === 2 &&
-      this.routeStops().length === 2 &&
-      addressKey(this.journey().trips[0].pickup) === addressKey(this.journey().trips[1].dropoff),
-  );
-
   readonly directionsUrl = computed(() => {
     const route = journeyRoute(this.journey().trips);
     const params = new URLSearchParams({

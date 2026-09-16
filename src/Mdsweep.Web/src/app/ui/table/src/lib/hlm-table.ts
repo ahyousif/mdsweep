@@ -20,7 +20,7 @@ export class HlmTableContainer {
 })
 export class HlmTable {
   constructor() {
-    classes(() => 'w-full caption-bottom text-sm');
+    classes(() => 'w-full caption-bottom type-body');
   }
 }
 

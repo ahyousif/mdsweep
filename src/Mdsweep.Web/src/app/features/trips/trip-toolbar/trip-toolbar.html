@@ -1,8 +1,8 @@
 <div class="flex flex-col gap-4 pb-5">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="flex min-w-0 items-baseline gap-4">
-      <h1 class="text-3xl font-semibold tracking-tight">{{ 'trips.title' | translate }}</h1>
-      <p class="text-muted-foreground hidden truncate text-sm lg:block">
+      <h1 class="type-page-title">{{ 'trips.title' | translate }}</h1>
+      <p class="type-meta hidden truncate lg:block">
         {{ 'trips.subtitle' | translate: { date: formatServiceDate()(serviceDate()) } }}
       </p>
     </div>
@@ -117,7 +117,7 @@
       }
     </div>
 
-    <p class="text-muted-foreground text-sm">
+    <p class="type-meta">
       {{ 'trips.sortBy' | translate }}
       <span class="text-foreground ms-1 font-medium">{{ 'trips.pickupEarliest' | translate }}</span>
     </p>

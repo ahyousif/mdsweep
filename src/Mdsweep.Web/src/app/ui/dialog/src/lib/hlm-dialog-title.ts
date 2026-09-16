@@ -9,6 +9,6 @@ import { classes } from '@spartan-ng/helm/utils';
 })
 export class HlmDialogTitle {
 	constructor() {
-		classes(() => 'leading-none font-medium');
+		classes(() => 'type-panel-title');
 	}
 }

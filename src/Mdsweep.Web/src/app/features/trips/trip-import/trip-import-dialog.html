@@ -16,11 +16,11 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <p class="truncate font-medium">
+            <p class="type-body truncate font-medium">
               <bdi>{{ file.name }}</bdi>
             </p>
 
-            <p class="text-muted-foreground text-sm">
+            <p class="type-meta">
               {{ fileType() | translate }}
             </p>
           </div>
@@ -38,9 +38,9 @@
         </div>
 
         <div class="bg-muted/30 rounded-lg border p-4">
-          <p class="font-medium">{{ 'tripImport.ready' | translate }}</p>
+          <p class="type-body font-medium">{{ 'tripImport.ready' | translate }}</p>
 
-          <p class="text-muted-foreground mt-1 text-sm">
+          <p class="type-meta mt-1">
             {{ 'tripImport.readyHelp' | translate }}
           </p>
         </div>
@@ -65,19 +65,19 @@
             <ng-icon name="lucideUpload" class="size-6" aria-hidden="true" />
           </div>
 
-          <p class="mt-4 font-medium">{{ 'tripImport.drop' | translate }}</p>
+          <p class="type-body mt-4 font-medium">{{ 'tripImport.drop' | translate }}</p>
 
-          <p class="text-muted-foreground mt-1 text-sm">
+          <p class="type-meta mt-1">
             {{ 'tripImport.browse' | translate }}
           </p>
         </label>
 
-        <p class="text-muted-foreground text-sm">{{ 'tripImport.supported' | translate }}</p>
+        <p class="type-meta">{{ 'tripImport.supported' | translate }}</p>
       }
 
       @if (error()) {
         <div
-          class="bg-destructive/10 text-destructive flex items-start gap-2 rounded-lg p-3 text-sm"
+          class="type-body bg-destructive/10 text-destructive flex items-start gap-2 rounded-lg p-3"
           role="alert"
         >
           <ng-icon name="lucideCircleAlert" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -122,11 +122,11 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <p class="truncate font-medium">
+            <p class="type-body truncate font-medium">
               <bdi>{{ file()?.name }}</bdi>
             </p>
 
-            <p class="text-muted-foreground text-sm">
+            <p class="type-meta">
               {{ fileType() | translate }}
             </p>
           </div>
@@ -142,7 +142,7 @@
               </span>
             </div>
 
-            <p class="text-muted-foreground mt-1 text-sm">{{ 'tripImport.success' | translate }}</p>
+            <p class="type-meta mt-1">{{ 'tripImport.success' | translate }}</p>
           </div>
 
           <div class="bg-destructive/5 rounded-lg p-4">
@@ -158,14 +158,14 @@
               </span>
             </div>
 
-            <p class="text-muted-foreground mt-1 text-sm">{{ 'tripImport.skipped' | translate }}</p>
+            <p class="type-meta mt-1">{{ 'tripImport.skipped' | translate }}</p>
           </div>
         </div>
 
         @if (result.problems.length > 0) {
           <div class="overflow-hidden rounded-lg border">
             <div class="border-b px-4 py-3">
-              <h3 class="font-medium">
+              <h3 class="type-card-title">
                 {{ 'tripImport.issues' | translate: { count: result.problems.length } }}
               </h3>
             </div>
@@ -180,7 +180,7 @@
                   />
 
                   <div class="min-w-0">
-                    <p class="text-sm font-medium">
+                    <p class="type-body font-medium">
                       @if (problem.rowNumber) {
                         {{ 'tripImport.row' | translate: { row: problem.rowNumber } }}
                       } @else {
@@ -192,7 +192,7 @@
                       }
                     </p>
 
-                    <p class="text-muted-foreground mt-1 text-sm">
+                    <p class="type-meta mt-1">
                       {{
                         {
                           key: 'errors.' + (problem.code || 'manifest.problem'),

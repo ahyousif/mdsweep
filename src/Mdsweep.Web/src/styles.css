@@ -180,8 +180,43 @@
   }
 
   body {
-    @apply min-h-screen bg-background text-foreground antialiased;
+    @apply min-h-screen bg-background text-sm text-foreground antialiased;
     margin: 0;
     font-family: var(--font-sans);
+  }
+}
+
+/* Shared text roles for application content and Spartan primitives. */
+@layer components {
+  .type-button {
+    @apply text-sm font-medium leading-normal;
+  }
+
+  .type-meta {
+    @apply text-sm font-normal leading-normal text-muted-foreground;
+  }
+
+  .type-body {
+    @apply text-sm font-normal leading-normal;
+  }
+
+  .type-entity-name {
+    @apply text-base font-semibold leading-snug;
+  }
+
+  .type-operational-time {
+    @apply text-lg font-semibold leading-snug tabular-nums;
+  }
+
+  .type-card-title {
+    @apply text-base font-semibold leading-normal;
+  }
+
+  .type-panel-title {
+    @apply text-2xl font-semibold leading-tight tracking-tight;
+  }
+
+  .type-page-title {
+    @apply text-3xl font-semibold leading-tight tracking-tight;
   }
 }

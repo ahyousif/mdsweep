@@ -168,6 +168,21 @@ for (const language of ['en', 'ar'] as const) {
     const routeText = await route.textContent();
     expect(routeText?.match(/100 Synthetic St/g)).toHaveLength(1);
     expect(routeText?.match(/200 Example Ave/g)).toHaveLength(1);
+    const routeRail = await route.evaluate((element) => {
+      const pins = element.querySelectorAll('ng-icon[name="lucideMapPin"]');
+      const connector = element.querySelector('[data-route-connector]')!.getBoundingClientRect();
+      const firstPin = pins[0].getBoundingClientRect();
+      const nextPin = pins[1].getBoundingClientRect();
+      return {
+        connectorTop: connector.top,
+        connectorBottom: connector.bottom,
+        firstPinBottom: firstPin.bottom,
+        nextPinTop: nextPin.top,
+      };
+    });
+    expect(routeRail.connectorTop - routeRail.firstPinBottom).toBeGreaterThanOrEqual(-1);
+    expect(routeRail.connectorTop - routeRail.firstPinBottom).toBeLessThanOrEqual(4);
+    expect(Math.abs(routeRail.connectorBottom - routeRail.nextPinTop)).toBeLessThanOrEqual(1);
 
     const journeyLayout = await journeyCard.evaluate((card) => {
       const heading = card.querySelector('h3')!.getBoundingClientRect();

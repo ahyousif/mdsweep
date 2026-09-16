@@ -32,7 +32,9 @@
     <main class="grid flex-1 place-items-center p-4">
       <section hlmCard class="w-full max-w-md">
         <div hlmCardHeader>
-          <h1 hlmCardTitle>{{ 'access.driverUnavailable' | translate }}</h1>
+          <h1 hlmCardTitle class="type-panel-title">
+            {{ 'access.driverUnavailable' | translate }}
+          </h1>
           <button hlmBtn variant="outline" type="button" (click)="managingAccess.set(true)">
             {{ 'access.title' | translate }}
           </button>

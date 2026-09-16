@@ -5,7 +5,10 @@
   (click)="select()"
 >
   @if (selected()) {
-    <span class="bg-primary absolute inset-y-0 start-0 w-1 rounded-s-lg" aria-hidden="true"></span>
+    <span
+      class="bg-primary absolute inset-y-0 inset-s-0 w-1 rounded-s-lg"
+      aria-hidden="true"
+    ></span>
   }
 
   <button
@@ -16,8 +19,8 @@
     [attr.aria-pressed]="selected()"
   >
     <div>
-      <p class="text-lg font-semibold leading-tight">{{ pickupTime() }}</p>
-      <p class="text-muted-foreground mt-1 text-sm">
+      <p class="type-operational-time">{{ pickupTime() }}</p>
+      <p class="type-meta mt-1">
         @if (journey().appointmentTime; as appointmentTime) {
           {{
             'trips.appointmentCompact' | translate: { time: language.formatTime(appointmentTime) }
@@ -29,14 +32,12 @@
     </div>
 
     <div class="min-w-0">
-      <p class="truncate font-semibold">
+      <p class="type-entity-name truncate">
         <bdi>{{ journey().passengerName }}</bdi>
       </p>
-      <div
-        class="text-muted-foreground mt-1 grid min-w-0 grid-cols-[1rem_1fr] items-center gap-x-2 gap-y-1 text-sm"
-      >
+      <div class="type-body mt-1 grid min-w-0 grid-cols-[1rem_1fr] items-center gap-x-2 gap-y-1">
         <ng-icon name="lucideMapPin" class="text-primary" aria-hidden="true" />
-        <p class="truncate">
+        <p class="text-muted-foreground truncate">
           <bdi>{{ journey().origin.address }}</bdi>
         </p>
         <ng-icon name="lucideMapPin" class="text-destructive" aria-hidden="true" />
@@ -46,9 +47,11 @@
       </div>
     </div>
 
-    <p class="text-sm">{{ 'trips.count' | translate: { count: journey().trips.length } }}</p>
+    <p class="type-meta">
+      {{ 'trips.count' | translate: { count: journey().trips.length } }}
+    </p>
 
-    <p class="text-muted-foreground min-w-0 truncate text-sm">
+    <p class="type-meta min-w-0 truncate">
       {{ journey().assignment.key | translate: journey().assignment.params }}
     </p>
 

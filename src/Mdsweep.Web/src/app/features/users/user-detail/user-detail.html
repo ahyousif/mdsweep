@@ -10,7 +10,7 @@
         </span>
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="truncate text-xl font-semibold tracking-tight">
+            <h2 class="type-panel-title truncate">
               <bdi>{{ user().displayName }}</bdi>
             </h2>
             <span
@@ -26,7 +26,7 @@
               {{ 'users.status.' + statusLabel() | translate }}
             </span>
           </div>
-          <p class="text-muted-foreground mt-1 truncate text-sm">
+          <p class="type-meta mt-1 truncate">
             <bdi>{{ user().email }}</bdi>
           </p>
         </div>
@@ -48,7 +48,7 @@
   <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6">
     @if (editing() && user().type === 'User') {
       <section aria-labelledby="edit-user-heading">
-        <h3 id="edit-user-heading" class="mb-5 text-lg font-semibold">
+        <h3 id="edit-user-heading" class="type-card-title mb-5">
           {{ 'users.editAccess' | translate }}
         </h3>
         <app-user-form
@@ -61,13 +61,13 @@
       </section>
     } @else {
       <section aria-labelledby="user-details-heading">
-        <h3 id="user-details-heading" class="text-lg font-semibold">
+        <h3 id="user-details-heading" class="type-card-title">
           {{ 'common.details' | translate }}
         </h3>
 
-        <dl class="mt-6 flex flex-col gap-6 text-sm">
+        <dl class="type-body mt-6 flex flex-col gap-6">
           <div class="grid grid-cols-[5rem_1fr] items-center gap-3">
-            <dt class="text-muted-foreground">{{ 'common.roles' | translate }}</dt>
+            <dt class="type-meta">{{ 'common.roles' | translate }}</dt>
             <dd class="flex items-center justify-between gap-3">
               <span class="flex flex-wrap gap-1.5">
                 @for (role of user().roles; track role) {
@@ -91,7 +91,7 @@
           </div>
 
           <div class="grid grid-cols-[5rem_1fr] items-center gap-3">
-            <dt class="text-muted-foreground">{{ 'common.status' | translate }}</dt>
+            <dt class="type-meta">{{ 'common.status' | translate }}</dt>
             <dd>
               <span hlmBadge [variant]="user().status === 'Inactive' ? 'destructive' : 'secondary'">
                 <span
@@ -108,7 +108,7 @@
 
           @if (user().type === 'Invitation' && user().expiresAt) {
             <div class="grid grid-cols-[5rem_1fr] items-center gap-3">
-              <dt class="text-muted-foreground">{{ 'users.expires' | translate }}</dt>
+              <dt class="type-meta">{{ 'users.expires' | translate }}</dt>
               <dd>{{ language.formatDate(expiresAt()!) }}</dd>
             </div>
           }
@@ -146,10 +146,10 @@
         </section>
       } @else if (user().status === 'Active') {
         <section aria-labelledby="disable-access-heading">
-          <h3 id="disable-access-heading" class="font-semibold">
+          <h3 id="disable-access-heading" class="type-card-title">
             {{ 'users.disableAccess' | translate }}
           </h3>
-          <p class="text-muted-foreground mt-1 text-sm">
+          <p class="type-meta mt-1">
             {{ 'users.disableHelp' | translate }}
           </p>
           <button
@@ -166,10 +166,10 @@
         </section>
       } @else {
         <section aria-labelledby="enable-access-heading">
-          <h3 id="enable-access-heading" class="font-semibold">
+          <h3 id="enable-access-heading" class="type-card-title">
             {{ 'users.enableAccess' | translate }}
           </h3>
-          <p class="text-muted-foreground mt-1 text-sm">
+          <p class="type-meta mt-1">
             {{ 'users.enableHelp' | translate }}
           </p>
           <button

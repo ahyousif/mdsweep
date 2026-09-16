@@ -41,7 +41,7 @@ describe('Trip journey list', () => {
     await fixture.whenStable();
 
     const row = fixture.nativeElement.querySelector('[data-journey-row]') as HTMLElement;
-    expect(row.querySelector('p.text-lg')?.textContent?.trim()).toBe('Not set');
+    expect(row.querySelector('p')?.textContent?.trim()).toBe('Not set');
     expect(row.textContent).toContain('Appt 10:00 AM');
     const badge = row.querySelector('[data-slot="badge"]') as HTMLElement;
     expect(badge.textContent).toContain('Scheduled');

@@ -14,7 +14,7 @@ import { JourneyViewModel } from '../journey-view-model';
 export default class TripList {
   readonly headerClasses = hlm(
     JOURNEY_ROW_LAYOUT,
-    'text-muted-foreground hidden border border-transparent text-sm @4xl:grid',
+    'type-meta hidden border border-transparent @4xl:grid',
   );
   readonly journeys = input.required<JourneyViewModel[]>();
   readonly selectedJourneyId = input<string | null>(null);

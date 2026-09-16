@@ -18,7 +18,7 @@
         >
           M
         </span>
-        <span class="truncate text-base font-semibold group-data-[collapsible=icon]:hidden"
+        <span class="type-card-title truncate group-data-[collapsible=icon]:hidden"
           >MDSweep</span
         >
       </a>
@@ -54,17 +54,17 @@
         [attr.aria-label]="'shell.openUserMenu' | translate"
       >
         <span
-          class="bg-sidebar-accent text-sidebar-accent-foreground grid size-8 shrink-0 place-items-center rounded-md text-sm font-semibold"
+          class="bg-sidebar-accent text-sidebar-accent-foreground grid size-8 shrink-0 place-items-center rounded-md text-sm font-medium"
         >
           M
         </span>
         <span
           class="flex min-w-0 flex-1 flex-col items-start gap-0.5 group-data-[collapsible=icon]:hidden"
         >
-          <span class="w-full truncate text-sm font-medium"
+          <span class="type-body w-full truncate font-medium"
             ><bdi>{{ session().displayName }}</bdi></span
           >
-          <span class="w-full truncate text-sm text-muted-foreground">
+          <span class="type-meta w-full truncate">
             @for (role of session().roles; track role) {
               {{ 'roles.' + role | translate }}
               @if (!$last) {
@@ -77,7 +77,7 @@
     </div>
 
     @if (signOutError()) {
-      <p class="text-destructive px-2 text-sm" role="alert">
+      <p class="type-body text-destructive px-2" role="alert">
         {{ signOutError() | uiMessage }}
       </p>
     }
@@ -90,7 +90,7 @@
         type="button"
         [srOnlyText]="'shell.toggleNavigation' | translate"
       ></button>
-      <span class="text-base font-semibold">MDSweep</span>
+      <span class="type-card-title">MDSweep</span>
     </header>
 
     <div class="min-h-0 min-w-0 flex-1 overflow-hidden">
