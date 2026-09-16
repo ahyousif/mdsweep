@@ -1,4 +1,4 @@
-using Mdsweep.Application.Trips.Import;
+﻿using Mdsweep.Application.Trips.Import;
 using Mdsweep.Domain.Trips;
 using NodaTime;
 
@@ -11,11 +11,11 @@ public sealed class JourneyGroupingPolicyTests
     private static readonly LocalDate ServiceDate = new(2026, 9, 15);
 
     [Fact]
-    public void One_new_trip_has_no_inferred_match()
+    public void One_new_trip_has_no_automatic_match()
     {
         var trip = Candidate("1001", PassengerOne, ServiceDate, TripDirection.To, "Home", "Clinic");
 
-        var decision = JourneyGroupingPolicy.Group([trip], [])[trip.TripNumber];
+        var decision = JourneyGroupingPolicy.Group([trip], [], [])[trip.TripNumber];
 
         Assert.False(decision.HasMatch);
     }
@@ -26,7 +26,7 @@ public sealed class JourneyGroupingPolicyTests
         var outbound = Candidate("1001", PassengerOne, ServiceDate, TripDirection.To, " Home ", "Clinic");
         var inbound = Candidate("1002", PassengerOne, ServiceDate, TripDirection.From, "clinic", "HOME");
 
-        var decisions = JourneyGroupingPolicy.Group([outbound, inbound], []);
+        var decisions = JourneyGroupingPolicy.Group([outbound, inbound], [], []);
 
         Assert.Equal(inbound.TripNumber, decisions[outbound.TripNumber].PairedNewTripNumber);
         Assert.Equal(outbound.TripNumber, decisions[inbound.TripNumber].PairedNewTripNumber);
@@ -39,7 +39,7 @@ public sealed class JourneyGroupingPolicyTests
         var inbound = Candidate("1002", PassengerOne, ServiceDate, TripDirection.From, "Pharmacy", "Home");
 
         Assert.All(
-            JourneyGroupingPolicy.Group([outbound, inbound], []).Values,
+            JourneyGroupingPolicy.Group([outbound, inbound], [], []).Values,
             decision => Assert.False(decision.HasMatch)
         );
     }
@@ -51,7 +51,7 @@ public sealed class JourneyGroupingPolicyTests
         var inbound = Candidate("1002", PassengerTwo, ServiceDate, TripDirection.From, "Clinic", "Home");
 
         Assert.All(
-            JourneyGroupingPolicy.Group([outbound, inbound], []).Values,
+            JourneyGroupingPolicy.Group([outbound, inbound], [], []).Values,
             decision => Assert.False(decision.HasMatch)
         );
     }
@@ -63,7 +63,7 @@ public sealed class JourneyGroupingPolicyTests
         var inbound = Candidate("1002", PassengerOne, ServiceDate.PlusDays(1), TripDirection.From, "Clinic", "Home");
 
         Assert.All(
-            JourneyGroupingPolicy.Group([outbound, inbound], []).Values,
+            JourneyGroupingPolicy.Group([outbound, inbound], [], []).Values,
             decision => Assert.False(decision.HasMatch)
         );
     }
@@ -75,7 +75,7 @@ public sealed class JourneyGroupingPolicyTests
         var second = Candidate("1002", PassengerOne, ServiceDate, TripDirection.To, "Clinic", "Home");
 
         Assert.All(
-            JourneyGroupingPolicy.Group([first, second], []).Values,
+            JourneyGroupingPolicy.Group([first, second], [], []).Values,
             decision => Assert.False(decision.HasMatch)
         );
     }
@@ -88,7 +88,7 @@ public sealed class JourneyGroupingPolicyTests
         var secondReturn = Candidate("1003", PassengerOne, ServiceDate, TripDirection.From, "Clinic", "Home");
 
         Assert.All(
-            JourneyGroupingPolicy.Group([outbound, firstReturn, secondReturn], []).Values,
+            JourneyGroupingPolicy.Group([outbound, firstReturn, secondReturn], [], []).Values,
             decision => Assert.False(decision.HasMatch)
         );
     }
@@ -104,7 +104,7 @@ public sealed class JourneyGroupingPolicyTests
             Candidate("2002", PassengerTwo, ServiceDate, TripDirection.From, "Dentist", "House"),
         };
 
-        var decisions = JourneyGroupingPolicy.Group(trips, []);
+        var decisions = JourneyGroupingPolicy.Group(trips, [], []);
 
         Assert.Equal("1002", decisions["1001"].PairedNewTripNumber);
         Assert.Equal("2002", decisions["2001"].PairedNewTripNumber);
@@ -117,19 +117,19 @@ public sealed class JourneyGroupingPolicyTests
         var second = Candidate("TRIP-100-B", PassengerOne, ServiceDate, TripDirection.From, "Other", "Elsewhere");
 
         Assert.All(
-            JourneyGroupingPolicy.Group([first, second], []).Values,
+            JourneyGroupingPolicy.Group([first, second], [], []).Values,
             decision => Assert.False(decision.HasMatch)
         );
     }
 
     [Fact]
-    public void New_trip_can_join_one_unambiguous_existing_single_leg_journey()
+    public void New_trip_can_join_one_unambiguous_automatic_singleton_journey()
     {
-        var journey = JourneyAggregate.Create();
+        var journey = JourneyAggregate.Create(JourneyGroupingType.Automatic);
         var existing = Existing(journey.Id, "1001", PassengerOne, TripDirection.To, "Home", "Clinic");
         var added = Candidate("1002", PassengerOne, ServiceDate, TripDirection.From, "Clinic", "Home");
 
-        var decision = JourneyGroupingPolicy.Group([added], [existing])[added.TripNumber];
+        var decision = JourneyGroupingPolicy.Group([added], [existing], [journey])[added.TripNumber];
 
         Assert.Equal(journey.Id, decision.ExistingJourneyId);
     }
@@ -137,14 +137,33 @@ public sealed class JourneyGroupingPolicyTests
     [Fact]
     public void New_reciprocal_trip_does_not_join_an_already_paired_journey()
     {
-        var journey = JourneyAggregate.Create();
+        var journey = JourneyAggregate.Create(JourneyGroupingType.Automatic);
         var outbound = Existing(journey.Id, "1001", PassengerOne, TripDirection.To, "Home", "Clinic");
         var inbound = Existing(journey.Id, "1002", PassengerOne, TripDirection.From, "Clinic", "Home");
         var added = Candidate("1003", PassengerOne, ServiceDate, TripDirection.From, "Clinic", "Home");
 
-        var decision = JourneyGroupingPolicy.Group([added], [outbound, inbound])[added.TripNumber];
+        var decision = JourneyGroupingPolicy.Group([added], [outbound, inbound], [journey])[added.TripNumber];
 
         Assert.False(decision.HasMatch);
+    }
+
+    [Fact]
+    public void Manual_reciprocal_candidate_does_not_prevent_an_unambiguous_automatic_match()
+    {
+        var manualJourney = JourneyAggregate.Create(JourneyGroupingType.Manual);
+        ;
+        var automaticJourney = JourneyAggregate.Create(JourneyGroupingType.Automatic);
+        var manualTrip = Existing(manualJourney.Id, "1001", PassengerOne, TripDirection.To, "Home", "Clinic");
+        var automaticTrip = Existing(automaticJourney.Id, "1002", PassengerOne, TripDirection.To, "Home", "Clinic");
+        var added = Candidate("1003", PassengerOne, ServiceDate, TripDirection.From, "Clinic", "Home");
+
+        var decision = JourneyGroupingPolicy.Group(
+            [added],
+            [manualTrip, automaticTrip],
+            [manualJourney, automaticJourney]
+        )[added.TripNumber];
+
+        Assert.Equal(automaticJourney.Id, decision.ExistingJourneyId);
     }
 
     private static JourneyGroupingCandidate Candidate(

@@ -3,8 +3,11 @@ import { UiMessagePipe } from '@app/core/i18n/ui-message';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { Component, computed, inject, signal } from '@angular/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideCalendarX2 } from '@ng-icons/lucide';
 
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
+import { HlmEmptyImports } from '@spartan-ng/helm/empty';
 import { injectQuery } from '@tanstack/angular-query-experimental';
 
 import ScheduledPickupDialog from './scheduled-pickup/scheduled-pickup-dialog';
@@ -25,7 +28,17 @@ import { tripsQueryOptions } from './trips.queries';
 
 @Component({
   selector: 'app-trips-page',
-  imports: [TranslatePipe, UiMessagePipe, HlmButton, TripToolbar, TripList, TripDetail],
+  imports: [
+    TranslatePipe,
+    UiMessagePipe,
+    NgIcon,
+    HlmButton,
+    ...HlmEmptyImports,
+    TripToolbar,
+    TripList,
+    TripDetail,
+  ],
+  providers: [provideIcons({ lucideCalendarX2 })],
   templateUrl: './trips-page.html',
   host: {
     class: 'block h-full min-h-0',

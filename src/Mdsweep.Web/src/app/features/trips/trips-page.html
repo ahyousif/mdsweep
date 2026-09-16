@@ -32,13 +32,30 @@
           {{ 'common.retry' | translate }}
         </button>
       } @else if (displayedJourneys().length === 0) {
-        <p class="py-4" role="status">{{ 'trips.empty' | translate }}</p>
+        <hlm-empty class="mx-auto mt-16 max-w-lg flex-none p-0" role="status">
+          <hlm-empty-header>
+            <hlm-empty-media variant="icon">
+              <ng-icon name="lucideCalendarX2" aria-hidden="true" />
+            </hlm-empty-media>
+            <h2 hlmEmptyTitle class="text-base font-semibold">
+              @if (journeys().length === 0) {
+                {{ (weekSelected() ? 'trips.emptyWeek' : 'trips.empty') | translate }}
+              } @else {
+                {{ 'trips.noMatches' | translate }}
+              }
+            </h2>
+            <p hlmEmptyDescription>
+              {{ (journeys().length === 0 ? 'trips.emptyHelp' : 'trips.noMatchesHelp') | translate }}
+            </p>
+          </hlm-empty-header>
+        </hlm-empty>
+      } @else {
+        <app-trip-list
+          [journeys]="displayedJourneys()"
+          [selectedJourneyId]="selectedJourneyId()"
+          (journeySelected)="selectJourney($event)"
+        />
       }
-      <app-trip-list
-        [journeys]="displayedJourneys()"
-        [selectedJourneyId]="selectedJourneyId()"
-        (journeySelected)="selectJourney($event)"
-      />
     </div>
   </section>
 

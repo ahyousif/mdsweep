@@ -1,4 +1,4 @@
-using Mdsweep.Domain.Common.Abstractions;
+﻿using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Common.Extensions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
@@ -59,9 +59,16 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         return trip;
     }
 
-    public void ChangeJourney(Guid journeyId)
+    public void ChangeJourney(JourneyAggregate source, JourneyAggregate destination)
     {
-        JourneyId = Guard.Against.Default(journeyId, nameof(journeyId));
+        Guard.Against.Null(source);
+        Guard.Against.Null(destination);
+        Guard.Against.Invalid(source.Id != JourneyId, "The source Journey must contain this Trip.");
+        Guard.Against.Invalid(source.Id == destination.Id, "The destination Journey must differ from the source.");
+
+        source.MarkManual();
+        destination.MarkManual();
+        JourneyId = destination.Id;
     }
 
     public void OverridePickupTime(LocalTime pickupTime)

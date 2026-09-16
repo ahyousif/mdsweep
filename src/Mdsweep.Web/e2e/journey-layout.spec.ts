@@ -121,6 +121,37 @@ for (const language of ['en', 'ar'] as const) {
     await expect(row).toHaveCount(1);
     await expect(header).toBeVisible();
     await expectAlignedColumns(page, language === 'ar' ? 'rtl' : 'ltr');
+    await page.getByRole('searchbox').fill('no-matching-trip');
+    await expect(row).toHaveCount(0);
+    await expect(header).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', {
+        name: language === 'ar' ? 'لا توجد رحلات مطابقة' : 'No matching trips',
+      }),
+    ).toBeVisible();
+    const emptyLayout = await page.locator('hlm-empty').evaluate((empty) => {
+      const bounds = empty.getBoundingClientRect();
+      const listArea = empty.parentElement!.getBoundingClientRect();
+      const toolbar = document.querySelector('app-trip-toolbar > div')!.getBoundingClientRect();
+      const search = document.querySelector('app-trip-toolbar input[type="search"]')!;
+      return {
+        topGap: bounds.top - toolbar.bottom,
+        centerOffset: Math.abs((bounds.left + bounds.right - listArea.left - listArea.right) / 2),
+        searchWidth: search.getBoundingClientRect().width,
+      };
+    });
+    expect(emptyLayout.topGap).toBeGreaterThanOrEqual(48);
+    expect(emptyLayout.topGap).toBeLessThanOrEqual(96);
+    expect(emptyLayout.centerOffset).toBeLessThanOrEqual(1);
+    expect(emptyLayout.searchWidth).toBeLessThanOrEqual(673);
+    await expect(
+      page.getByRole('button', { name: language === 'ar' ? 'استيراد الرحلات' : 'Import trips' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: language === 'ar' ? 'إضافة رحلة' : 'Add trip' }),
+    ).toBeVisible();
+    await page.getByRole('searchbox').fill('');
+    await expect(header).toBeVisible();
     await expect(
       page.getByRole('button', {
         name: new RegExp(language === 'ar' ? 'قيد التنفيذ' : 'In progress'),

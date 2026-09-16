@@ -22,6 +22,9 @@ describe('Trip journey list', () => {
 
     const rows = fixture.nativeElement.querySelectorAll('[data-journey-row]');
     expect(rows).toHaveLength(1);
+    const header = fixture.nativeElement.querySelector('[data-journey-header]') as HTMLElement;
+    expect(header).not.toBeNull();
+    expect(header.textContent).toContain('Pickup / Appt');
     expect(rows[0].textContent).toContain('2 trips');
     const card = fixture.nativeElement.querySelector('app-trip-card') as HTMLElement;
     expect(card.querySelector('ng-icon[name="lucideChevronRight"]')).toBeNull();
@@ -31,6 +34,17 @@ describe('Trip journey list', () => {
     await fixture.whenStable();
 
     expect(selected).toHaveBeenCalledWith(journeys[0]);
+  });
+
+  it('omits column headers when there are no journeys', async () => {
+    TestBed.configureTestingModule({ providers: [provideLocalization()] });
+    const fixture = TestBed.createComponent(TripList);
+    fixture.componentRef.setInput('journeys', []);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('[data-journey-header]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-journey-row]')).toBeNull();
   });
 
   it('shows the appointment beneath an unset pickup instead of using it as pickup', async () => {

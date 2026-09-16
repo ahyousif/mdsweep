@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Mdsweep.Domain.Passengers;
@@ -195,7 +195,7 @@ public sealed class TripListTests : MdsweepIntegrationTest
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create(brokerMemberId ?? $"MED-{brokerTripNumber}", firstName, lastName);
         passenger.TenantId = tenantId;
-        var journey = JourneyAggregate.Create();
+        var journey = JourneyAggregate.Create(JourneyGroupingType.Automatic);
         journey.TenantId = tenantId;
         var trip = TripAggregate.Create(
             journey.Id,

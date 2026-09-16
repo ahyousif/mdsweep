@@ -1,12 +1,14 @@
 <div class="flex flex-col gap-2">
-  <div [class]="headerClasses" aria-hidden="true" data-journey-header="">
-    <span>{{ 'trips.columns.pickup' | translate }}</span>
-    <span>{{ 'trips.columns.passengerRoute' | translate }}</span>
-    <span>{{ 'trips.columns.trips' | translate }}</span>
-    <span>{{ 'trips.columns.driver' | translate }}</span>
-    <span>{{ 'common.status' | translate }}</span>
-    <span></span>
-  </div>
+  @if (journeys().length > 0) {
+    <div [class]="headerClasses" aria-hidden="true" data-journey-header="">
+      <span>{{ 'trips.columns.pickup' | translate }}</span>
+      <span>{{ 'trips.columns.passengerRoute' | translate }}</span>
+      <span>{{ 'trips.columns.trips' | translate }}</span>
+      <span>{{ 'trips.columns.driver' | translate }}</span>
+      <span>{{ 'common.status' | translate }}</span>
+      <span></span>
+    </div>
+  }
 
   @for (journey of journeys(); track journey.id) {
     <app-trip-card

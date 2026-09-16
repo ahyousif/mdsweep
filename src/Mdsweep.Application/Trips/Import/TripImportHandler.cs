@@ -1,4 +1,4 @@
-using Mdsweep.Application.Common.Abstractions;
+﻿using Mdsweep.Application.Common.Abstractions;
 using Mdsweep.Application.Passengers.Specifications;
 using Mdsweep.Application.Trips.Import.Manifest;
 using Mdsweep.Application.Trips.Scheduling;
@@ -162,7 +162,12 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                         ct
                     );
 
-            var decisions = JourneyGroupingPolicy.Group(newTrips, existingJourneyTrips);
+            var existingJourneys =
+                candidateJourneyIds.Length == 0
+                    ? []
+                    : await repository.ListAsync(new JourneysSpecification().WithIds(candidateJourneyIds).Build(), ct);
+
+            var decisions = JourneyGroupingPolicy.Group(newTrips, existingJourneyTrips, existingJourneys);
             var newJourneyIds = new Dictionary<string, Guid>();
 
             foreach (var candidate in newTrips)
@@ -183,8 +188,9 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                 }
                 else
                 {
-                    var journey = JourneyAggregate.Create();
+                    var journey = JourneyAggregate.Create(JourneyGroupingType.Automatic);
                     journeyId = journey.Id;
+
                     await repository.AddAsync(journey, ct);
                 }
 
@@ -196,6 +202,7 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                     candidate.TripNumber,
                     candidate.BrokerData
                 );
+
                 await repository.AddAsync(trip, ct);
 
                 if (trip.RequiresRouteEstimate)

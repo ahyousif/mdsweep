@@ -51,7 +51,7 @@ A broker-authorized passenger movement from one pickup location to one drop-off 
 _Avoid_: Ride, job
 
 **Journey**:
-A passenger's related outbound and return trips for the same visit. Each trip remains independently assignable and completable.
+A passenger's related outbound and return Trips for the same visit, each independently assignable and completable. MDSweep groups an Automatic Journey; a Dispatcher deliberately arranges a Manual Journey.
 _Avoid_: Round Trip
 
 **Manifest**:

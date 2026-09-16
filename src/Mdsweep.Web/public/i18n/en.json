@@ -220,7 +220,11 @@
     },
     "count": "{count, plural, one {# trip} other {# trips}}",
     "loading": "Loading trips…",
-    "empty": "No trips for this date.",
+    "empty": "No trips for this date",
+    "emptyWeek": "No trips for this week",
+    "emptyHelp": "Import a manifest or add a trip to get started.",
+    "noMatches": "No matching trips",
+    "noMatchesHelp": "Try another search or filter.",
     "brokerValid": "Valid"
   },
   "tripImport": {

@@ -136,6 +136,10 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Mdsweep.Domain.Trips.JourneyAggregate", b =>
                 {
+                    b.Property<int>("GroupingType")
+                        .HasColumnType("integer")
+                        .HasColumnName("grouping_type");
+
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")

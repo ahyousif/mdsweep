@@ -1,5 +1,4 @@
-using System.Net;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Infrastructure.Persistence;
@@ -23,6 +22,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var firstTrip = await firstDb.Trips.IgnoreQueryFilters().SingleAsync();
         var firstTripId = firstTrip.Id;
         var firstJourneyId = firstTrip.JourneyId;
+        var firstBrokerData = firstTrip.BrokerData;
         using var repeat = await Upload(client, Csv());
         var repeatResult = await repeat.Content.ReadFromJsonAsync<ImportTripsResponse>();
         Assert.NotNull(repeatResult);
@@ -32,7 +32,12 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var repeatedTrip = await db.Trips.IgnoreQueryFilters().SingleAsync();
         Assert.Equal(firstTripId, repeatedTrip.Id);
         Assert.Equal(firstJourneyId, repeatedTrip.JourneyId);
+        Assert.Equal(firstBrokerData, repeatedTrip.BrokerData);
         Assert.Single(await db.Journeys.IgnoreQueryFilters().ToListAsync());
+        Assert.Equal(
+            JourneyGroupingType.Automatic,
+            (await db.Journeys.IgnoreQueryFilters().SingleAsync()).GroupingType
+        );
     }
 
     [Fact]
@@ -59,7 +64,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         var trips = await db.Trips.IgnoreQueryFilters().ToListAsync();
         Assert.Equal(2, trips.Count);
         Assert.Single(trips.Select(trip => trip.JourneyId).Distinct());
-        Assert.Single(await db.Journeys.IgnoreQueryFilters().ToListAsync());
+        Assert.Equal(
+            JourneyGroupingType.Automatic,
+            (await db.Journeys.IgnoreQueryFilters().SingleAsync()).GroupingType
+        );
     }
 
     [Fact]
@@ -116,10 +124,12 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             .Trips.IgnoreQueryFilters()
             .SingleAsync();
         Assert.Equal(new LocalTime(8, 30), trip.ScheduledPickupTime);
+        Assert.Equal(new LocalDate(2026, 9, 16), trip.BrokerData.ServiceDate);
+        Assert.Equal("101 St", trip.BrokerData.PickupAddress);
     }
 
     [Fact]
-    public async Task Later_reciprocal_trip_joins_the_existing_single_leg_journey()
+    public async Task Later_reciprocal_trip_joins_the_existing_automatic_singleton_journey()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
@@ -146,12 +156,104 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         Assert.Equal(2, trips.Count);
         Assert.Equal(originalTripId, trips[0].Id);
         Assert.All(trips, trip => Assert.Equal(originalJourneyId, trip.JourneyId));
-        Assert.Single(
-            await verification
-                .ServiceProvider.GetRequiredService<ApplicationDbContext>()
-                .Journeys.IgnoreQueryFilters()
-                .ToListAsync()
+        var journey = await verification
+            .ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Journeys.IgnoreQueryFilters()
+            .SingleAsync();
+        Assert.Equal(JourneyGroupingType.Automatic, journey.GroupingType);
+    }
+
+    [Fact]
+    public async Task Later_reciprocal_trip_does_not_join_a_manual_singleton()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001")));
+        first.EnsureSuccessStatusCode();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+            .UseSnakeCaseNamingConvention()
+            .Options;
+        Guid originalJourneyId;
+        await using (var db = new ApplicationDbContext(options))
+        {
+            var journey = await db.Journeys.IgnoreQueryFilters().SingleAsync();
+            originalJourneyId = journey.Id;
+            journey.MarkManual();
+            await db.SaveChangesAsync();
+        }
+
+        using var later = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        later.EnsureSuccessStatusCode();
+
+        await using var verification = new ApplicationDbContext(options);
+        var trips = await verification.Trips.IgnoreQueryFilters().OrderBy(trip => trip.BrokerTripNumber).ToListAsync();
+        Assert.Equal(2, trips.Count);
+        Assert.Equal(originalJourneyId, trips[0].JourneyId);
+        Assert.NotEqual(originalJourneyId, trips[1].JourneyId);
+        Assert.Equal(
+            JourneyGroupingType.Automatic,
+            (
+                await verification
+                    .Journeys.IgnoreQueryFilters()
+                    .SingleAsync(journey => journey.Id == trips[1].JourneyId)
+            ).GroupingType
         );
+    }
+
+    [Fact]
+    public async Task Moving_a_trip_marks_both_journeys_manual_and_protects_the_remaining_source()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+            .UseSnakeCaseNamingConvention()
+            .Options;
+        Guid sourceJourneyId;
+        Guid destinationJourneyId;
+        await using (var db = new ApplicationDbContext(options))
+        {
+            var trips = await db.Trips.IgnoreQueryFilters().OrderBy(trip => trip.BrokerTripNumber).ToListAsync();
+            var source = await db.Journeys.IgnoreQueryFilters().SingleAsync();
+            var destination = JourneyAggregate.Create(JourneyGroupingType.Automatic);
+            ;
+            destination.TenantId = source.TenantId;
+            db.Journeys.Add(destination);
+            var unrelated = TripAggregate.Create(
+                destination.Id,
+                trips[0].PassengerId,
+                "2000",
+                trips[1].BrokerData with
+                {
+                    PickupAddress = "Other Synthetic Location",
+                }
+            );
+            unrelated.TenantId = source.TenantId;
+            db.Trips.Add(unrelated);
+            trips[1].ChangeJourney(source, destination);
+            sourceJourneyId = source.Id;
+            destinationJourneyId = destination.Id;
+            await db.SaveChangesAsync();
+        }
+
+        using var later = await Upload(client, Manifest(Outbound("1001"), Inbound("1002"), Inbound("1003")));
+        later.EnsureSuccessStatusCode();
+
+        await using var verification = new ApplicationDbContext(options);
+        var stored = await verification.Trips.IgnoreQueryFilters().OrderBy(trip => trip.BrokerTripNumber).ToListAsync();
+        Assert.Equal(4, stored.Count);
+        Assert.Equal(sourceJourneyId, stored[0].JourneyId);
+        Assert.Equal(destinationJourneyId, stored[1].JourneyId);
+        Assert.NotEqual(sourceJourneyId, stored[2].JourneyId);
+        Assert.NotEqual(destinationJourneyId, stored[2].JourneyId);
+        var journeys = await verification.Journeys.IgnoreQueryFilters().ToDictionaryAsync(journey => journey.Id);
+        Assert.Equal(JourneyGroupingType.Manual, journeys[sourceJourneyId].GroupingType);
+        Assert.Equal(JourneyGroupingType.Manual, journeys[destinationJourneyId].GroupingType);
     }
 
     [Fact]
@@ -162,7 +264,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var first = await Upload(client, Manifest(Outbound("1001")));
         first.EnsureSuccessStatusCode();
 
-        Guid authoritativeJourneyId;
+        Guid manualJourneyId;
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
             .UseSnakeCaseNamingConvention()
@@ -170,15 +272,22 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         await using (var db = new ApplicationDbContext(options))
         {
             var trip = await db.Trips.IgnoreQueryFilters().SingleAsync();
-            var authoritativeJourney = JourneyAggregate.Create();
-            authoritativeJourney.TenantId = trip.TenantId;
-            db.Journeys.Add(authoritativeJourney);
-            trip.ChangeJourney(authoritativeJourney.Id);
+            var sourceJourney = await db.Journeys.IgnoreQueryFilters().SingleAsync();
+            var manualJourney = JourneyAggregate.Create(JourneyGroupingType.Manual);
+            ;
+            manualJourney.TenantId = trip.TenantId;
+            db.Journeys.Add(manualJourney);
+            trip.ChangeJourney(sourceJourney, manualJourney);
             await db.SaveChangesAsync();
-            authoritativeJourneyId = authoritativeJourney.Id;
+            manualJourneyId = manualJourney.Id;
         }
 
-        using var repeat = await Upload(client, Manifest(Outbound("1001")));
+        using var repeat = await Upload(
+            client,
+            Manifest(
+                "09/15/2026,200 Clinic Ave,101 Home St,09:15,1001,MED-100,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T"
+            )
+        );
         repeat.EnsureSuccessStatusCode();
 
         await using var verification = Application.Services.CreateAsyncScope();
@@ -186,7 +295,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             .ServiceProvider.GetRequiredService<ApplicationDbContext>()
             .Trips.IgnoreQueryFilters()
             .SingleAsync();
-        Assert.Equal(authoritativeJourneyId, stored.JourneyId);
+        Assert.Equal(manualJourneyId, stored.JourneyId);
+        Assert.Equal("101 Home St", stored.BrokerData.PickupAddress);
     }
 
     [Fact]
@@ -196,6 +306,16 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         await AddAntiforgeryToken(client);
         using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
         first.EnsureSuccessStatusCode();
+        Guid omittedTripJourneyId;
+        await using (var firstScope = Application.Services.CreateAsyncScope())
+        {
+            omittedTripJourneyId = (
+                await firstScope
+                    .ServiceProvider.GetRequiredService<ApplicationDbContext>()
+                    .Trips.IgnoreQueryFilters()
+                    .SingleAsync(trip => trip.BrokerTripNumber == "1002")
+            ).JourneyId;
+        }
         using var later = await Upload(client, Manifest(Outbound("1001")));
         later.EnsureSuccessStatusCode();
 
@@ -205,6 +325,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             .Options;
         await using var db = new ApplicationDbContext(options);
         Assert.Equal(2, await db.Trips.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(
+            omittedTripJourneyId,
+            (await db.Trips.IgnoreQueryFilters().SingleAsync(trip => trip.BrokerTripNumber == "1002")).JourneyId
+        );
     }
 
     [Fact]
@@ -218,7 +342,7 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create("MED-THREE", "Synthetic", "Passenger");
         passenger.TenantId = tenantId;
-        var journey = JourneyAggregate.Create();
+        var journey = JourneyAggregate.Create(JourneyGroupingType.Automatic);
         journey.TenantId = tenantId;
         var trips = Enumerable
             .Range(1, 3)

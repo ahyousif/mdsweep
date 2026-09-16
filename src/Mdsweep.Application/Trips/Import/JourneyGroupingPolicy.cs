@@ -1,4 +1,4 @@
-using Mdsweep.Domain.Trips;
+﻿using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Application.Trips.Import;
 
@@ -6,15 +6,20 @@ public static class JourneyGroupingPolicy
 {
     public static IReadOnlyDictionary<string, JourneyGroupingDecision> Group(
         IReadOnlyCollection<JourneyGroupingCandidate> newTrips,
-        IReadOnlyCollection<TripAggregate> existingTrips
+        IReadOnlyCollection<TripAggregate> existingTrips,
+        IReadOnlyCollection<JourneyAggregate> existingJourneys
     )
     {
+        var journeysById = existingJourneys.ToDictionary(journey => journey.Id);
         var existingJourneySizes = existingTrips
             .GroupBy(trip => trip.JourneyId)
             .ToDictionary(group => group.Key, group => group.Count());
 
         var candidates = existingTrips
-            .Where(trip => existingJourneySizes[trip.JourneyId] == 1)
+            .Where(trip =>
+                existingJourneySizes[trip.JourneyId] == 1
+                && journeysById[trip.JourneyId].GroupingType == JourneyGroupingType.Automatic
+            )
             .Select(trip => new Candidate(
                 trip.BrokerTripNumber,
                 trip.PassengerId,

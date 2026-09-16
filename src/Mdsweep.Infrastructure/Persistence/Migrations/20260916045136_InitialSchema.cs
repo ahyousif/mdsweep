@@ -17,6 +17,7 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    grouping_type = table.Column<int>(type: "integer", nullable: false),
                     tenant_id = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false)
                 },
                 constraints: table =>
