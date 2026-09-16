@@ -1,12 +1,22 @@
 import { tripReferenceTime } from './trip-reference-time';
 import { Address, Trip } from './trips-types';
 
-export type JourneyFilter = 'all' | 'scheduled' | 'needsAttention' | 'willCall';
+export type JourneyFilter = 'all' | 'scheduled' | 'inProgress' | 'completed' | 'willCall';
 
 export type JourneyStatus = {
   key: string;
   params?: Record<string, string>;
-  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  variant: 'default' | 'secondary' | 'outline';
+};
+
+export type JourneyAttention = {
+  key: string;
+  params?: Record<string, string>;
+};
+
+export type AssignmentSummary = {
+  key: string;
+  params?: Record<string, string>;
 };
 
 export type JourneyViewModel = {
@@ -15,15 +25,18 @@ export type JourneyViewModel = {
   memberId: string | null;
   trips: Trip[];
   firstTrip: Trip;
-  pickupTime: string | null;
+  displayPickupTime: string | null;
   appointmentTime: string | null;
   isWillCall: boolean;
+  isEntirelyWillCall: boolean;
   origin: Address;
   destination: Address;
   routeContinuation: string;
   routeSummary: string;
   status: JourneyStatus;
-  sortTime: string;
+  attention: JourneyAttention | null;
+  assignment: AssignmentSummary;
+  sortTime: string | null;
 };
 
 export function buildJourneys(trips: Trip[]): JourneyViewModel[] {
@@ -46,47 +59,78 @@ export function matchesJourneyFilter(journey: JourneyViewModel, filter: JourneyF
       return true;
     case 'scheduled':
       return journey.status.key === 'trips.status.scheduled';
-    case 'needsAttention':
-      return (
-        journey.status.key === 'trips.status.needsPickupTime' ||
-        journey.status.key === 'trips.status.brokerIssue'
-      );
+    case 'inProgress':
+      return journey.status.key === 'trips.status.inProgress';
+    case 'completed':
+      return journey.status.key === 'trips.status.completed';
     case 'willCall':
       return journey.isWillCall;
   }
 }
 
+export function matchesJourneySearch(journey: JourneyViewModel, search: string): boolean {
+  const query = search.trim().toLocaleUpperCase();
+
+  if (!query) {
+    return true;
+  }
+
+  return journey.trips.some((trip) =>
+    [
+      trip.brokerTripNumber,
+      trip.passengerFirstName,
+      trip.passengerLastName,
+      trip.memberId,
+      trip.pickup.address,
+      trip.pickup.city,
+      trip.dropoff.address,
+      trip.dropoff.city,
+    ].some((value) => value?.toLocaleUpperCase().includes(query)),
+  );
+}
+
 export function tripActionTime(trip: Trip): string | null {
-  return trip.scheduledPickupTime ?? tripReferenceTime(trip).value;
+  return trip.scheduledPickupTime ?? (trip.isWillCall ? null : tripReferenceTime(trip).value);
 }
 
 export function tripStatus(trip: Trip): JourneyStatus {
-  if (trip.brokerStatus && trip.brokerStatus.toUpperCase() !== 'VALID') {
-    return {
-      key: 'trips.status.brokerIssue',
-      params: { status: trip.brokerStatus },
-      variant: 'destructive',
-    };
+  switch (trip.lifecycleStatus) {
+    case 'inProgress':
+      return { key: 'trips.status.inProgress', variant: 'default' };
+    case 'completed':
+      return { key: 'trips.status.completed', variant: 'outline' };
+    default:
+      // The current API omits lifecycle. Treat an imported, unexecuted Trip as provisionally
+      // Scheduled regardless of whether a pickup time has been set; Will call stays distinct.
+      return trip.isWillCall && !trip.scheduledPickupTime
+        ? { key: 'trips.willCall', variant: 'outline' }
+        : { key: 'trips.status.scheduled', variant: 'secondary' };
   }
+}
 
-  if (trip.isWillCall && !trip.scheduledPickupTime) {
-    return { key: 'trips.willCall', variant: 'secondary' };
-  }
-
-  if (!trip.scheduledPickupTime) {
-    return { key: 'trips.status.needsPickupTime', variant: 'destructive' };
-  }
-
-  return { key: 'trips.status.scheduled', variant: 'default' };
+export function tripAssignmentSummary(trip: Trip): AssignmentSummary {
+  return trip.assignment
+    ? {
+        key: trip.assignment.vehicleName ? 'trips.assignmentSummary' : 'trips.driverOnly',
+        params: {
+          driver: trip.assignment.driverName,
+          vehicle: trip.assignment.vehicleName ?? '',
+        },
+      }
+    : { key: 'trips.unassigned' };
 }
 
 function toJourney(id: string, trips: Trip[]): JourneyViewModel {
   const sortedTrips = [...trips].sort(compareTrips);
   const firstTrip = sortedTrips[0];
   const route = routeAddresses(sortedTrips);
-  const pickupTime = sortedTrips.map(tripActionTime).find((time) => time !== null) ?? null;
+  const displayPickupTime = earliestTime(sortedTrips.map((trip) => trip.scheduledPickupTime));
+  const sortTime = displayPickupTime ?? earliestTime(sortedTrips.map(tripActionTime));
   const appointmentTime = sortedTrips.map((trip) => trip.appointmentTime).find(Boolean) ?? null;
   const isWillCall = sortedTrips.some((trip) => trip.isWillCall && !trip.scheduledPickupTime);
+  const isEntirelyWillCall = sortedTrips.every(
+    (trip) => trip.isWillCall && !trip.scheduledPickupTime,
+  );
 
   return {
     id,
@@ -94,15 +138,18 @@ function toJourney(id: string, trips: Trip[]): JourneyViewModel {
     memberId: firstTrip.memberId,
     trips: sortedTrips,
     firstTrip,
-    pickupTime,
+    displayPickupTime,
     appointmentTime,
     isWillCall,
+    isEntirelyWillCall,
     origin: route[0],
     destination: visualDestination(route, sortedTrips.length),
     routeContinuation: routeContinuation(route),
     routeSummary: routeSummary(route, sortedTrips.length),
     status: journeyStatus(sortedTrips),
-    sortTime: pickupTime ?? '99:99:99',
+    attention: journeyAttention(sortedTrips),
+    assignment: journeyAssignment(sortedTrips),
+    sortTime,
   };
 }
 
@@ -116,7 +163,9 @@ function visualDestination(route: Address[], tripCount: number): Address {
 
 function compareJourneys(a: JourneyViewModel, b: JourneyViewModel): number {
   return (
-    a.sortTime.localeCompare(b.sortTime) ||
+    Number(b.sortTime !== null) - Number(a.sortTime !== null) ||
+    a.firstTrip.serviceDate.localeCompare(b.firstTrip.serviceDate) ||
+    (a.sortTime ?? '').localeCompare(b.sortTime ?? '') ||
     a.passengerName.localeCompare(b.passengerName) ||
     a.id.localeCompare(b.id)
   );
@@ -132,23 +181,52 @@ function compareTrips(a: Trip, b: Trip): number {
 
 function journeyStatus(trips: Trip[]): JourneyStatus {
   const statuses = trips.map(tripStatus);
-  const brokerIssue = statuses.find((status) => status.key === 'trips.status.brokerIssue');
+  if (statuses.some((status) => status.key === 'trips.status.inProgress')) {
+    return { key: 'trips.status.inProgress', variant: 'default' };
+  }
+  if (statuses.every((status) => status.key === 'trips.status.completed')) {
+    return { key: 'trips.status.completed', variant: 'outline' };
+  }
+  if (statuses.some((status) => status.key === 'trips.willCall')) {
+    return { key: 'trips.willCall', variant: 'outline' };
+  }
+  return { key: 'trips.status.scheduled', variant: 'secondary' };
+}
 
+function journeyAttention(trips: Trip[]): JourneyAttention | null {
+  const brokerIssue = trips.find(isBrokerIssue);
   if (brokerIssue) {
-    return brokerIssue;
+    return { key: 'trips.status.brokerIssue', params: { status: brokerIssue.brokerStatus! } };
   }
+  return trips.some((trip) => !trip.isWillCall && trip.scheduledPickupTime === null)
+    ? { key: 'trips.status.needsPickupTime' }
+    : null;
+}
 
-  const willCall = statuses.find((status) => status.key === 'trips.willCall');
-  if (willCall) {
-    return willCall;
+function journeyAssignment(trips: Trip[]): AssignmentSummary {
+  const assignments = trips.map((trip) => trip.assignment);
+  if (assignments.every((assignment) => !assignment)) {
+    return { key: 'trips.unassigned' };
   }
-
-  const needsPickup = statuses.find((status) => status.key === 'trips.status.needsPickupTime');
-  if (needsPickup) {
-    return needsPickup;
+  if (assignments.some((assignment) => !assignment)) {
+    return { key: 'trips.partiallyAssigned' };
   }
+  const first = assignments[0]!;
+  return assignments.every(
+    (assignment) =>
+      assignment?.driverName === first.driverName &&
+      assignment?.vehicleName === first.vehicleName,
+  )
+    ? tripAssignmentSummary(trips[0])
+    : { key: 'trips.multipleAssignments' };
+}
 
-  return { key: 'trips.status.scheduled', variant: 'default' };
+function earliestTime(times: Array<string | null>): string | null {
+  return times.filter((time): time is string => time !== null).sort()[0] ?? null;
+}
+
+function isBrokerIssue(trip: Trip): boolean {
+  return Boolean(trip.brokerStatus && trip.brokerStatus.toUpperCase() !== 'VALID');
 }
 
 function routeAddresses(trips: Trip[]): Address[] {

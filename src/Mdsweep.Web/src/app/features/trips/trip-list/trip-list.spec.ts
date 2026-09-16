@@ -23,11 +23,45 @@ describe('Trip journey list', () => {
     const rows = fixture.nativeElement.querySelectorAll('[data-journey-row]');
     expect(rows).toHaveLength(1);
     expect(rows[0].textContent).toContain('2 trips');
+    const card = fixture.nativeElement.querySelector('app-trip-card') as HTMLElement;
+    expect(card.querySelector('ng-icon[name="lucideChevronRight"]')).toBeNull();
+    expect(card.querySelector('ng-icon[name="lucideEllipsisVertical"]')).not.toBeNull();
 
     rows[0].click();
     await fixture.whenStable();
 
     expect(selected).toHaveBeenCalledWith(journeys[0]);
+  });
+
+  it('shows the appointment beneath an unset pickup instead of using it as pickup', async () => {
+    TestBed.configureTestingModule({ providers: [provideLocalization()] });
+    const fixture = TestBed.createComponent(TripList);
+    fixture.componentRef.setInput('journeys', buildJourneys([trip({})]));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const row = fixture.nativeElement.querySelector('[data-journey-row]') as HTMLElement;
+    expect(row.querySelector('p.text-lg')?.textContent?.trim()).toBe('Not set');
+    expect(row.textContent).toContain('Appt 10:00 AM');
+    const badge = row.querySelector('[data-slot="badge"]') as HTMLElement;
+    expect(badge.textContent).toContain('Scheduled');
+    expect(badge.getAttribute('data-variant')).toBe('secondary');
+    expect(row.textContent).toContain('Needs pickup time');
+  });
+
+  it('keeps broker issues secondary to a lifecycle badge', async () => {
+    TestBed.configureTestingModule({ providers: [provideLocalization()] });
+    const fixture = TestBed.createComponent(TripList);
+    fixture.componentRef.setInput(
+      'journeys',
+      buildJourneys([trip({ brokerStatus: 'TURN BACK', scheduledPickupTime: '09:00:00' })]),
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const row = fixture.nativeElement.querySelector('[data-journey-row]') as HTMLElement;
+    expect(row.querySelector('[data-slot="badge"]')?.textContent).toContain('Scheduled');
+    expect(row.textContent).toContain('Broker: TURN BACK');
   });
 });
 

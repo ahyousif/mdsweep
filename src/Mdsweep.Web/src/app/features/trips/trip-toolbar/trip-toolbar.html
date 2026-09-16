@@ -74,7 +74,7 @@
     <div class="relative min-w-64 flex-1 lg:ms-4">
       <ng-icon
         name="lucideSearch"
-        class="text-muted-foreground pointer-events-none absolute top-1/2 start-3 -translate-y-1/2"
+        class="text-muted-foreground pointer-events-none absolute top-1/2 inset-s-3 -translate-y-1/2"
         aria-hidden="true"
       />
       <input
@@ -97,10 +97,22 @@
           size="sm"
           [variant]="selectedFilter() === filter ? 'secondary' : 'outline'"
           type="button"
+          [disabled]="(filter === 'inProgress' || filter === 'completed') && !lifecycleAvailable()"
+          [attr.title]="
+            (filter === 'inProgress' || filter === 'completed') && !lifecycleAvailable()
+              ? ('trips.lifecycleUnavailable' | translate)
+              : null
+          "
           (click)="filterChange.emit(filter)"
         >
           {{ 'trips.filters.' + filter | translate }}
-          <span class="text-muted-foreground">{{ filterCounts()[filter] }}</span>
+          <span class="text-muted-foreground">
+            @if ((filter === 'inProgress' || filter === 'completed') && !lifecycleAvailable()) {
+              —
+            } @else {
+              {{ filterCounts()[filter] }}
+            }
+          </span>
         </button>
       }
     </div>

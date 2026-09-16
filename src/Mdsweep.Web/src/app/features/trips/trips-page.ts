@@ -3,11 +3,9 @@ import { UiMessagePipe } from '@app/core/i18n/ui-message';
 import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 import { HlmDialogService } from '@spartan-ng/helm/dialog';
 import { injectQuery } from '@tanstack/angular-query-experimental';
-import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 
 import ScheduledPickupDialog from './scheduled-pickup/scheduled-pickup-dialog';
 import TripDetail from './trip-detail/trip-detail';
@@ -19,6 +17,7 @@ import {
   JourneyFilter,
   JourneyViewModel,
   matchesJourneyFilter,
+  matchesJourneySearch,
 } from './journey-view-model';
 import { Trip, TripsQuery } from './trips-types';
 import { TripsApi } from './trips.api';
@@ -44,17 +43,6 @@ export default class TripsPage {
   readonly selectedJourneyId = signal<string | null>(null);
   readonly selectedTripId = signal<string | null>(null);
 
-  readonly debouncedSearch = toSignal(
-    toObservable(this.search).pipe(
-      map((value) => value.trim()),
-      debounceTime(300),
-      distinctUntilChanged(),
-    ),
-    {
-      initialValue: '',
-    },
-  );
-
   readonly query = computed<TripsQuery>(() => {
     const startDate = this.weekSelected() ? startOfWeek(this.currentDate()) : this.currentDate();
     const endDate = this.weekSelected() ? addDays(startDate, 6) : startDate;
@@ -62,7 +50,6 @@ export default class TripsPage {
     return {
       startDate: toServiceDate(startDate),
       endDate: toServiceDate(endDate),
-      search: this.debouncedSearch() || undefined,
       page: 1,
       pageSize: 100,
     };
@@ -74,20 +61,33 @@ export default class TripsPage {
     httpErrorMessage(this.tripsQuery.error(), 'errors.loadTrips'),
   );
 
-  readonly trips = computed(() => this.tripsQuery.data()?.items ?? []);
+  readonly trips = computed(() => this.tripsQuery.data() ?? []);
+  readonly lifecycleAvailable = computed(
+    () => this.trips().length > 0 && this.trips().every((trip) => trip.lifecycleStatus != null),
+  );
   readonly journeys = computed(() => buildJourneys(this.trips()));
+  readonly searchedJourneys = computed(() =>
+    this.journeys().filter((journey) => matchesJourneySearch(journey, this.search())),
+  );
   readonly displayedJourneys = computed(() =>
-    this.journeys().filter((journey) => matchesJourneyFilter(journey, this.selectedFilter())),
+    this.searchedJourneys().filter((journey) =>
+      matchesJourneyFilter(journey, this.selectedFilter()),
+    ),
   );
 
   readonly filterCounts = computed(() => ({
-    all: this.journeys().length,
-    scheduled: this.journeys().filter((journey) => matchesJourneyFilter(journey, 'scheduled'))
-      .length,
-    needsAttention: this.journeys().filter((journey) =>
-      matchesJourneyFilter(journey, 'needsAttention'),
+    all: this.searchedJourneys().length,
+    scheduled: this.searchedJourneys().filter((journey) =>
+      matchesJourneyFilter(journey, 'scheduled'),
     ).length,
-    willCall: this.journeys().filter((journey) => matchesJourneyFilter(journey, 'willCall')).length,
+    inProgress: this.searchedJourneys().filter((journey) =>
+      matchesJourneyFilter(journey, 'inProgress'),
+    ).length,
+    completed: this.searchedJourneys().filter((journey) =>
+      matchesJourneyFilter(journey, 'completed'),
+    ).length,
+    willCall: this.searchedJourneys().filter((journey) => matchesJourneyFilter(journey, 'willCall'))
+      .length,
   }));
 
   readonly selectedJourney = computed<JourneyViewModel | null>(() => {

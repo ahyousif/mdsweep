@@ -16,6 +16,12 @@ export type TripsQuery = {
 };
 
 export type TripDirection = 'To' | 'From';
+export type TripLifecycle = 'scheduled' | 'inProgress' | 'completed';
+
+export type TripAssignment = {
+  driverName: string;
+  vehicleName: string | null;
+};
 
 export type Trip = {
   id: string;
@@ -30,6 +36,10 @@ export type Trip = {
   direction: TripDirection;
   brokerStatus: string | null;
   isWillCall: boolean;
+  // The current Trip API omits execution and assignment data. Keep these optional until it
+  // exposes the Trip-owned values; never infer them from pickup scheduling or Journey state.
+  lifecycleStatus?: TripLifecycle | null;
+  assignment?: TripAssignment | null;
 
   passengerType: string | null;
   specialNeeds: string | null;

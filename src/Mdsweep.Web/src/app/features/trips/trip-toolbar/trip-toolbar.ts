@@ -28,12 +28,13 @@ export type JourneyFilterCounts = Record<JourneyFilter, number>;
   templateUrl: './trip-toolbar.html',
 })
 export default class TripToolbar {
-  readonly filters: JourneyFilter[] = ['all', 'scheduled', 'needsAttention', 'willCall'];
+  readonly filters: JourneyFilter[] = ['all', 'scheduled', 'inProgress', 'completed', 'willCall'];
   readonly language = inject(LanguageService);
   readonly serviceDate = input.required<Date>();
   readonly search = input('');
   readonly selectedFilter = input.required<JourneyFilter>();
   readonly filterCounts = input.required<JourneyFilterCounts>();
+  readonly lifecycleAvailable = input(false);
   readonly weekSelected = input(false);
 
   readonly serviceDateChange = output<Date>();

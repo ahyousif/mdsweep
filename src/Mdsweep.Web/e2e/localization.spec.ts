@@ -26,6 +26,7 @@ async function mockApplication(page: Page) {
         items: [
           {
             id: 'synthetic-trip',
+            journeyId: 'synthetic-journey',
             brokerTripNumber: 'SYN-123-A',
             passengerFirstName: 'راكب',
             passengerLastName: 'تجريبي',
@@ -75,7 +76,7 @@ test('switches the complete Trips screen and preserves selection, filters, and d
   await expect(page.getByRole('heading', { name: 'Trips', exact: true })).toBeVisible();
   const search = page.getByRole('searchbox');
   await search.fill('SYN-123');
-  await page.getByRole('button').filter({ hasText: 'SYN-123-A' }).click();
+  await page.getByRole('button', { name: 'Open journey for راكب تجريبي' }).first().click();
   const originalUrl = page.url();
   await switchLanguage(page, 'ar');
   await expect(page).toHaveURL(originalUrl);
@@ -85,7 +86,7 @@ test('switches the complete Trips screen and preserves selection, filters, and d
   await expect(page.getByText('تفاصيل الرحلة', { exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('hlm-sidebar')).toHaveAttribute('data-side', 'right');
-  await expect(page.locator('bdi').filter({ hasText: 'SYN-123-A' }).first()).toBeVisible();
+  await expect(page.locator('bdi').filter({ hasText: 'راكب تجريبي' }).first()).toBeVisible();
   await page.getByRole('button', { name: 'إغلاق تفاصيل الرحلة' }).click();
   await page.locator('#service-date').click();
   await expect(page.getByRole('button', { name: 'الشهر التالي' })).toBeVisible();

@@ -3,16 +3,13 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import {
-  lucideChevronRight,
-  lucideMapPin,
-  lucideMoreHorizontal,
-  lucidePlus,
-} from '@ng-icons/lucide';
+import { lucideEllipsisVertical, lucideMapPin, lucidePlus } from '@ng-icons/lucide';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
+import { hlm } from '@spartan-ng/helm/utils';
 
+import { JOURNEY_ROW_LAYOUT } from '../journey-row-layout';
 import { JourneyViewModel } from '../journey-view-model';
 
 @Component({
@@ -20,9 +17,8 @@ import { JourneyViewModel } from '../journey-view-model';
   imports: [TranslatePipe, NgIcon, HlmButton, ...HlmBadgeImports, ...HlmDropdownMenuImports],
   providers: [
     provideIcons({
-      lucideChevronRight,
+      lucideEllipsisVertical,
       lucideMapPin,
-      lucideMoreHorizontal,
       lucidePlus,
     }),
   ],
@@ -30,6 +26,10 @@ import { JourneyViewModel } from '../journey-view-model';
   templateUrl: './trip-card.html',
 })
 export default class TripCard {
+  readonly rowClasses = hlm(
+    JOURNEY_ROW_LAYOUT,
+    'relative grid rounded-lg border py-3 transition-colors',
+  );
   readonly language = inject(LanguageService);
   readonly journey = input.required<JourneyViewModel>();
   readonly selected = input(false);
@@ -39,18 +39,13 @@ export default class TripCard {
   readonly pickupTime = computed(() => {
     const journey = this.journey();
 
-    if (!journey.pickupTime && journey.isWillCall) {
-      return null;
-    }
-
-    return this.language.formatTime(journey.pickupTime, 'common.notSet');
+    return this.language.formatTime(
+      journey.displayPickupTime,
+      journey.isEntirelyWillCall ? 'trips.willCall' : 'common.notSet',
+    );
   });
 
   select(): void {
     this.journeySelected.emit(this.journey());
-  }
-
-  stopRowSelection(event: Event): void {
-    event.stopPropagation();
   }
 }

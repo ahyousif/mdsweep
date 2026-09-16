@@ -7,12 +7,11 @@ import {
   lucideCalendarDays,
   lucideCarFront,
   lucideClock3,
+  lucideEllipsisVertical,
   lucideMapPin,
-  lucideMoreHorizontal,
   lucideMove,
   lucidePen,
   lucidePlus,
-  lucideRoute,
   lucideTrash2,
   lucideUnlink,
   lucideUserRound,
@@ -24,7 +23,7 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmTabsImports } from '@spartan-ng/helm/tabs';
 
-import { JourneyViewModel, tripStatus } from '../journey-view-model';
+import { JourneyViewModel, tripAssignmentSummary, tripStatus } from '../journey-view-model';
 import { Address, Trip } from '../trips-types';
 
 @Component({
@@ -43,12 +42,11 @@ import { Address, Trip } from '../trips-types';
       lucideCalendarDays,
       lucideCarFront,
       lucideClock3,
+      lucideEllipsisVertical,
       lucideMapPin,
-      lucideMoreHorizontal,
       lucideMove,
       lucidePen,
       lucidePlus,
-      lucideRoute,
       lucideTrash2,
       lucideUnlink,
       lucideUserRound,
@@ -73,6 +71,29 @@ export default class TripDetail {
       this.journey().firstTrip,
   );
 
+  readonly routeStops = computed(() => {
+    const route = journeyRoute(this.journey().trips);
+
+    // A reciprocal pair uses the same address as its first and last stop. Show the two
+    // distinct endpoints once in the compact card; individual legs remain below.
+    if (
+      this.journey().trips.length === 2 &&
+      route.length === 3 &&
+      addressKey(route[0]) === addressKey(route[2])
+    ) {
+      return route.slice(0, 2);
+    }
+
+    return route;
+  });
+
+  readonly isReciprocal = computed(
+    () =>
+      this.journey().trips.length === 2 &&
+      this.routeStops().length === 2 &&
+      addressKey(this.journey().trips[0].pickup) === addressKey(this.journey().trips[1].dropoff),
+  );
+
   readonly directionsUrl = computed(() => {
     const route = journeyRoute(this.journey().trips);
     const params = new URLSearchParams({
@@ -91,6 +112,10 @@ export default class TripDetail {
 
   status(trip: Trip) {
     return tripStatus(trip);
+  }
+
+  assignmentSummary(trip: Trip) {
+    return tripAssignmentSummary(trip);
   }
 
   formatTime(value: string | null, fallback = 'common.notSupplied'): string {

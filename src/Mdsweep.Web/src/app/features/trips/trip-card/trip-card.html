@@ -1,65 +1,73 @@
-<div
-  data-journey-row=""
-  class="relative grid cursor-pointer gap-3 rounded-lg border px-4 py-3 transition-colors md:grid-cols-[6.5rem_minmax(15rem,1fr)_4.5rem_7.5rem_9rem_auto] md:items-center"
+<article
+  [class]="rowClasses"
   [class.border-primary]="selected()"
   [class.bg-accent]="selected()"
-  [attr.aria-pressed]="selected()"
-  role="button"
-  tabindex="0"
   (click)="select()"
-  (keydown.enter)="select()"
-  (keydown.space)="$event.preventDefault(); select()"
 >
   @if (selected()) {
     <span class="bg-primary absolute inset-y-0 start-0 w-1 rounded-s-lg" aria-hidden="true"></span>
   }
 
-  <div>
-    <p class="text-lg font-semibold leading-tight">
-      @if (pickupTime(); as time) {
-        {{ time }}
-      } @else {
-        {{ 'trips.willCall' | translate }}
-      }
-    </p>
-    <p class="text-muted-foreground mt-1 text-sm">
-      @if (journey().appointmentTime; as appointmentTime) {
-        {{ 'trips.appointmentCompact' | translate: { time: language.formatTime(appointmentTime) } }}
-      } @else {
-        {{ 'trips.appointmentNotSupplied' | translate }}
-      }
-    </p>
-  </div>
-
-  <div class="min-w-0">
-    <p class="truncate font-semibold">
-      <bdi>{{ journey().passengerName }}</bdi>
-    </p>
-    <div
-      class="text-muted-foreground mt-1 grid min-w-0 grid-cols-[1rem_1fr] items-center gap-x-2 gap-y-1 text-sm"
-    >
-      <ng-icon name="lucideMapPin" class="text-primary" aria-hidden="true" />
-      <p class="truncate">
-        <bdi>{{ journey().origin.address }}</bdi>
-      </p>
-      <ng-icon name="lucideMapPin" class="text-destructive" aria-hidden="true" />
-      <p class="truncate">
-        <bdi>{{ journey().routeContinuation }}</bdi>
+  <button
+    data-journey-row=""
+    class="grid min-w-0 cursor-pointer gap-3 rounded-md text-start outline-none focus-visible:ring-2 focus-visible:ring-ring @4xl:col-span-5 @4xl:grid-cols-subgrid @4xl:items-center"
+    type="button"
+    [attr.aria-label]="'trips.openJourney' | translate: { passenger: journey().passengerName }"
+    [attr.aria-pressed]="selected()"
+  >
+    <div>
+      <p class="text-lg font-semibold leading-tight">{{ pickupTime() }}</p>
+      <p class="text-muted-foreground mt-1 text-sm">
+        @if (journey().appointmentTime; as appointmentTime) {
+          {{
+            'trips.appointmentCompact' | translate: { time: language.formatTime(appointmentTime) }
+          }}
+        } @else {
+          {{ 'trips.appointmentNotSupplied' | translate }}
+        }
       </p>
     </div>
-  </div>
 
-  <p class="text-sm">{{ 'trips.count' | translate: { count: journey().trips.length } }}</p>
+    <div class="min-w-0">
+      <p class="truncate font-semibold">
+        <bdi>{{ journey().passengerName }}</bdi>
+      </p>
+      <div
+        class="text-muted-foreground mt-1 grid min-w-0 grid-cols-[1rem_1fr] items-center gap-x-2 gap-y-1 text-sm"
+      >
+        <ng-icon name="lucideMapPin" class="text-primary" aria-hidden="true" />
+        <p class="truncate">
+          <bdi>{{ journey().origin.address }}</bdi>
+        </p>
+        <ng-icon name="lucideMapPin" class="text-destructive" aria-hidden="true" />
+        <p class="truncate">
+          <bdi>{{ journey().routeContinuation }}</bdi>
+        </p>
+      </div>
+    </div>
 
-  <p class="text-muted-foreground text-sm">{{ 'trips.unassigned' | translate }}</p>
+    <p class="text-sm">{{ 'trips.count' | translate: { count: journey().trips.length } }}</p>
 
-  <div>
-    <span hlmBadge [variant]="journey().status.variant">
-      {{ journey().status.key | translate: journey().status.params }}
-    </span>
-  </div>
+    <p class="text-muted-foreground min-w-0 truncate text-sm">
+      {{ journey().assignment.key | translate: journey().assignment.params }}
+    </p>
 
-  <div class="flex items-center justify-end gap-1" (click)="stopRowSelection($event)">
+    <div class="min-w-0">
+      <span hlmBadge [variant]="journey().status.variant">
+        {{ journey().status.key | translate: journey().status.params }}
+      </span>
+      @if (journey().attention; as attention) {
+        <p
+          class="text-destructive mt-1 truncate text-xs"
+          [title]="attention.key | translate: attention.params"
+        >
+          {{ attention.key | translate: attention.params }}
+        </p>
+      }
+    </div>
+  </button>
+
+  <div class="flex items-center justify-end" (click)="$event.stopPropagation()">
     <button
       hlmBtn
       variant="ghost"
@@ -68,7 +76,7 @@
       [hlmDropdownMenuTrigger]="journeyActions"
       [attr.aria-label]="'trips.journeyActions' | translate"
     >
-      <ng-icon name="lucideMoreHorizontal" aria-hidden="true" />
+      <ng-icon name="lucideEllipsisVertical" aria-hidden="true" />
     </button>
 
     <ng-template #journeyActions>
@@ -79,16 +87,5 @@
         </button>
       </hlm-dropdown-menu>
     </ng-template>
-
-    <button
-      hlmBtn
-      variant="ghost"
-      size="icon-sm"
-      type="button"
-      [attr.aria-label]="'trips.openJourney' | translate: { passenger: journey().passengerName }"
-      (click)="select()"
-    >
-      <ng-icon name="lucideChevronRight" class="rtl:rotate-180" aria-hidden="true" />
-    </button>
   </div>
-</div>
+</article>

@@ -1,6 +1,8 @@
 import { TranslatePipe } from '@ngx-translate/core';
 import { Component, input, output } from '@angular/core';
+import { hlm } from '@spartan-ng/helm/utils';
 
+import { JOURNEY_ROW_LAYOUT } from '../journey-row-layout';
 import TripCard from '../trip-card/trip-card';
 import { JourneyViewModel } from '../journey-view-model';
 
@@ -10,6 +12,10 @@ import { JourneyViewModel } from '../journey-view-model';
   templateUrl: './trip-list.html',
 })
 export default class TripList {
+  readonly headerClasses = hlm(
+    JOURNEY_ROW_LAYOUT,
+    'text-muted-foreground hidden border border-transparent text-sm @4xl:grid',
+  );
   readonly journeys = input.required<JourneyViewModel[]>();
   readonly selectedJourneyId = input<string | null>(null);
 

@@ -1,6 +1,6 @@
 <div class="relative flex h-full min-h-0 overflow-hidden">
   <!-- Trips workspace -->
-  <section class="bg-muted/10 flex min-w-0 flex-1 flex-col overflow-hidden">
+  <section class="bg-muted/10 @container flex min-w-0 flex-1 flex-col overflow-hidden">
     <!-- Fixed toolbar -->
     <div class="shrink-0 px-6 pt-6">
       <app-trip-toolbar
@@ -9,6 +9,7 @@
         [weekSelected]="weekSelected()"
         [selectedFilter]="selectedFilter()"
         [filterCounts]="filterCounts()"
+        [lifecycleAvailable]="lifecycleAvailable()"
         (serviceDateChange)="setServiceDate($event)"
         (previousDayClicked)="previousDay()"
         (nextDayClicked)="nextDay()"

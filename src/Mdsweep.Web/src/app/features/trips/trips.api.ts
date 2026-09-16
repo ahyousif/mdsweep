@@ -44,4 +44,32 @@ export class TripsApi {
       }),
     );
   }
+
+  async getAllTrips(query: TripsQuery): Promise<Trip[]> {
+    // Journey grouping must see every Trip in the bounded date window. Search stays client-side so
+    // matching one leg cannot hide its Journey siblings; the API's 100-row safety cap still applies
+    // to each request.
+    const unfilteredQuery = { ...query, search: undefined, page: 1, pageSize: 100 };
+    const firstPage = await this.getTrips(unfilteredQuery);
+    const remainingPages = await Promise.all(
+      Array.from({ length: Math.max(0, firstPage.totalPages - 1) }, (_, index) =>
+        this.getTrips({ ...unfilteredQuery, page: index + 2 }),
+      ),
+    );
+
+    const tripsById = new Map(firstPage.items.map((trip) => [trip.id, trip]));
+    for (const page of remainingPages) {
+      for (const trip of page.items) {
+        tripsById.set(trip.id, trip);
+      }
+    }
+
+    if (tripsById.size !== firstPage.totalCount) {
+      // Concurrent imports/edits can shift page boundaries. Never show a partially grouped
+      // Journey as though its membership were complete; the query's retry/recovery UI applies.
+      throw new Error('The Trip list changed while loading; retry to load complete Journeys.');
+    }
+
+    return Array.from(tripsById.values());
+  }
 }

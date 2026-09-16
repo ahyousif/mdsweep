@@ -1,8 +1,5 @@
 <div class="flex flex-col gap-2">
-  <div
-    class="text-muted-foreground hidden grid-cols-[6.5rem_minmax(15rem,1fr)_4.5rem_7.5rem_9rem_auto] gap-3 px-4 text-sm md:grid"
-    aria-hidden="true"
-  >
+  <div [class]="headerClasses" aria-hidden="true" data-journey-header="">
     <span>{{ 'trips.columns.pickup' | translate }}</span>
     <span>{{ 'trips.columns.passengerRoute' | translate }}</span>
     <span>{{ 'trips.columns.trips' | translate }}</span>
