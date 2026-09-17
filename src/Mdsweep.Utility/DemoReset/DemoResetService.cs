@@ -12,7 +12,7 @@ public sealed class DemoResetService(
     IOptions<WebOptions> webOptions
 )
 {
-    private const string TenantId = "demo-env-0001";
+    private const string TenantId = "dema-dema-2222";
     private const string Email = "demo.admin@mdsweep.test";
 
     public Task<string> RecreateKeycloakRealmAsync(CancellationToken cancellationToken = default) =>

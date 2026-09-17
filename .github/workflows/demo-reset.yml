@@ -12,6 +12,10 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: demo-environment-reset
+  cancel-in-progress: false
+
 jobs:
   reset:
     runs-on: ubuntu-latest
@@ -35,7 +39,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Start the Utility demo reset job
+      - name: Run the Utility demo reset job
         env:
           RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
         run: |
@@ -47,7 +51,37 @@ jobs:
             echo "Expected one deployed Utility Container Apps Job; found ${#JOB_NAMES[@]}." >&2
             exit 1
           fi
-          az containerapp job start \
+          EXECUTION_NAME="$(az containerapp job start \
             --name "${JOB_NAMES[0]}" \
             --resource-group "$RESOURCE_GROUP" \
-            --args demo reset --confirm RESET-DEMO
+            --args demo reset --confirm RESET-DEMO \
+            --query name \
+            --output tsv)"
+          if [ -z "$EXECUTION_NAME" ]; then
+            echo "The Utility job did not return an execution name." >&2
+            exit 1
+          fi
+
+          echo "Waiting for Utility execution $EXECUTION_NAME."
+          for attempt in {1..120}; do
+            STATUS="$(az containerapp job execution show \
+              --name "${JOB_NAMES[0]}" \
+              --resource-group "$RESOURCE_GROUP" \
+              --job-execution-name "$EXECUTION_NAME" \
+              --query properties.status \
+              --output tsv 2>/dev/null || true)"
+            case "$STATUS" in
+              Succeeded)
+                echo "Utility demo reset succeeded."
+                exit 0
+                ;;
+              Failed)
+                echo "Utility demo reset failed. Inspect Container Apps Job execution $EXECUTION_NAME logs." >&2
+                exit 1
+                ;;
+            esac
+            sleep 5
+          done
+
+          echo "Timed out waiting for Utility execution $EXECUTION_NAME." >&2
+          exit 1

@@ -94,7 +94,7 @@ Reset never targets the `keycloak` database.
 
 `demo reset --confirm RESET-DEMO` is a separate, destructive, synthetic-only operation. It uses the permanent Keycloak automation service account in `master` to delete and recreate only the `mdsweep` realm, recreates `mdsweep-api` with the existing `OIDC_CLIENT_SECRET`, and creates `demo.admin@mdsweep.test`. It then resets and migrates only the `mdsweep` application database and creates the MDSweep Demo Tenant, local User, and active Administrator Tenant Membership linked to that new Keycloak user. It never drops or resets `keycloak-db`.
 
-Run it only with the manually dispatched **Reset Demo Environment** GitHub Actions workflow. The workflow requires the literal `RESET-DEMO` input, uses the protected `production` environment, logs in through the existing GitHub OIDC identity, discovers the deployed Utility job, and starts:
+Run it only with the manually dispatched **Reset Demo Environment** GitHub Actions workflow. The workflow requires the literal `RESET-DEMO` input, uses the protected `production` environment, serializes reset requests, logs in through the existing GitHub OIDC identity, discovers the deployed Utility job, and waits for its execution to succeed:
 
 ```text
 demo reset --confirm RESET-DEMO
