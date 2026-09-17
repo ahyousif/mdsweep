@@ -23,7 +23,7 @@ A Tenant Membership role allowed to manage all Users and Invitations in that Ten
 A Tenant's pending offer of access to an email address with one or more roles. The recipient signs up or signs in through Keycloak and accepts before the Tenant Membership is created. An existing User identity is reused across Tenants. An invitation expires after seven days and may be resent or revoked.
 
 **Dispatcher**:
-A Tenant Membership role allowed to manage Passengers and Drivers, accept Manifests, plan and assign Trips, review outcomes, and prepare billing.
+A Tenant Membership role allowed to manage Passengers, Vehicles, and Drivers, accept Manifests, plan and assign Trips, review outcomes, and prepare billing.
 _Avoid_: Admin
 
 **Driver**:
@@ -34,6 +34,7 @@ The Tenant-owned operational record that makes a User eligible for Assignment an
 
 **Vehicle**:
 The Tenant's means of transportation registered with MTM and identified by its VIN. MTM remains authoritative for the Vehicle's registration.
+The Vehicles module owns the local reference record: a required display label, required 17-character VIN, and active state. VINs are unique within a Tenant, including inactive records. Local VIN validation does not verify MTM registration. Vehicle management is independent of Trip Assignment and billing.
 _Avoid_: Car
 
 **Primary Vehicle**:

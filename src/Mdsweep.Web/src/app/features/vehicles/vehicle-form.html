@@ -1,0 +1,67 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <fieldset [disabled]="busy()" class="min-w-0">
+    <div hlmFieldGroup>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-label"
+          >{{ 'vehicles.label' | translate }} <span aria-hidden="true">*</span></label
+        >
+        <input
+          hlmInput
+          id="vehicle-label"
+          formControlName="displayLabel"
+          required
+          maxlength="100"
+          [attr.aria-invalid]="
+            form.controls.displayLabel.touched && form.controls.displayLabel.invalid
+          "
+          aria-describedby="vehicle-label-error"
+        />
+        <div id="vehicle-label-error">
+          @if (form.controls.displayLabel.touched && form.controls.displayLabel.invalid) {
+            <hlm-field-error>{{ 'vehicles.labelInvalid' | translate }}</hlm-field-error>
+          }
+        </div>
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-vin"
+          >{{ 'vehicles.vin' | translate }} <span aria-hidden="true">*</span></label
+        >
+        <input
+          hlmInput
+          id="vehicle-vin"
+          class="font-mono uppercase"
+          dir="ltr"
+          formControlName="vin"
+          required
+          maxlength="17"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          [placeholder]="'vehicles.vinPlaceholder' | translate"
+          [attr.aria-invalid]="form.controls.vin.touched && form.controls.vin.invalid"
+          aria-describedby="vehicle-vin-help vehicle-vin-error"
+        />
+        <p hlmFieldDescription id="vehicle-vin-help">{{ 'vehicles.vinHelp' | translate }}</p>
+        <div id="vehicle-vin-error">
+          @if (form.controls.vin.touched && form.controls.vin.invalid) {
+            <hlm-field-error>{{ 'vehicles.vinInvalid' | translate }}</hlm-field-error>
+          }
+        </div>
+      </div>
+    </div>
+    @if (!value()) {
+      <p class="type-meta mt-4">{{ 'vehicles.activeByDefault' | translate }}</p>
+    }
+    <div class="mt-6 flex justify-end gap-3">
+      <button hlmBtn variant="outline" type="button" (click)="cancelled.emit()">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="submit">
+        @if (busy()) {
+          <hlm-spinner aria-hidden="true" />
+        }
+        {{ (value() ? 'vehicles.saveChanges' : 'vehicles.add') | translate }}
+      </button>
+    </div>
+  </fieldset>
+</form>

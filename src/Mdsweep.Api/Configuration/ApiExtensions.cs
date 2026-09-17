@@ -101,6 +101,13 @@ public static class ApiExtensions
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy(
+                AuthorizationPolicies.VehiclesManage,
+                policy =>
+                    policy
+                        .RequireAuthenticatedUser()
+                        .AddRequirements(new TenantRoleRequirement(TenantRoles.Administrator, TenantRoles.Dispatcher))
+            );
+            options.AddPolicy(
                 AuthorizationPolicies.UsersManage,
                 policy =>
                     policy

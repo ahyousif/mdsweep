@@ -1,0 +1,70 @@
+<div class="overflow-hidden rounded-lg border">
+  <div hlmTableContainer>
+    <table hlmTable>
+      <caption class="sr-only">
+        {{
+          'vehicles.title' | translate
+        }}
+      </caption>
+      <thead hlmTHead class="bg-muted/40">
+        <tr hlmTr>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'vehicles.vehicle' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'vehicles.vin' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'common.status' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (vehicle of vehicles(); track vehicle.id) {
+          <tr hlmTr [attr.data-state]="selectedId() === vehicle.id ? 'selected' : null">
+            <td hlmTd class="px-4 py-4">
+              <button
+                type="button"
+                class="type-entity-name flex items-center gap-3 rounded-sm text-start focus-visible:outline-2 focus-visible:outline-ring"
+                [disabled]="busy()"
+                [attr.aria-expanded]="selectedId() === vehicle.id"
+                aria-controls="vehicle-detail"
+                (click)="selected.emit(vehicle)"
+              >
+                <ng-icon name="lucideCar" class="size-5 shrink-0" aria-hidden="true" />
+                <bdi class="max-w-64 break-words whitespace-normal">{{ vehicle.displayLabel }}</bdi>
+                <ng-icon
+                  name="lucideChevronRight"
+                  class="size-4 shrink-0 rtl:rotate-180"
+                  aria-hidden="true"
+                />
+              </button>
+            </td>
+            <td hlmTd class="px-4 py-4 font-mono">
+              <bdi dir="ltr">{{ vehicle.vin }}</bdi>
+            </td>
+            <td hlmTd class="px-4 py-4">
+              <span hlmBadge variant="secondary">
+                <span
+                  class="size-2 rounded-full"
+                  [class.bg-success]="vehicle.isActive"
+                  [class.bg-muted-foreground]="!vehicle.isActive"
+                  aria-hidden="true"
+                ></span>
+                {{
+                  (vehicle.isActive ? 'vehicles.status.Active' : 'vehicles.status.Inactive')
+                    | translate
+                }}
+              </span>
+            </td>
+          </tr>
+        } @empty {
+          <tr hlmTr>
+            <td hlmTd colspan="3" class="py-10 text-center whitespace-normal">
+              <p class="type-card-title">
+                {{ (filtered() ? 'vehicles.noMatches' : 'vehicles.empty') | translate }}
+              </p>
+              <p class="type-meta mt-1">
+                {{ (filtered() ? 'vehicles.noMatchesHelp' : 'vehicles.emptyHelp') | translate }}
+              </p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -7,7 +7,14 @@ import { httpErrorMessage } from '@app/core/api/http-error-message';
 import { AuthSessionService, type TenantSession } from '@app/core/auth/auth-session.service';
 import { type ThemePreference, ThemeService } from '@app/core/theme/theme.service';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUsers } from '@ng-icons/lucide';
+import {
+  lucideCar,
+  lucideMonitor,
+  lucideMoon,
+  lucideRoute,
+  lucideSun,
+  lucideUsers,
+} from '@ng-icons/lucide';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 
@@ -23,7 +30,9 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
     ...HlmDropdownMenuImports,
     ...HlmSidebarImports,
   ],
-  providers: [provideIcons({ lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUsers })],
+  providers: [
+    provideIcons({ lucideCar, lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUsers }),
+  ],
   templateUrl: './app-shell.html',
 })
 export class AppShell {
@@ -38,6 +47,9 @@ export class AppShell {
 
   readonly navigation = computed(() => [
     { label: 'trips.title', route: '/trips', icon: 'lucideRoute' },
+    ...(this.session().roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
+      ? [{ label: 'vehicles.title', route: '/vehicles', icon: 'lucideCar' }]
+      : []),
     ...(this.session().roles.includes('Administrator')
       ? [{ label: 'users.title', route: '/users', icon: 'lucideUsers' }]
       : []),
