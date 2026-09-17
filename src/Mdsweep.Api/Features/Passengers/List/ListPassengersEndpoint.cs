@@ -16,7 +16,7 @@ public static class ListPassengersEndpoint
 
         return result.ToEndpointResult(value => new
         {
-            value.Items,
+            Items = value.Items.Select(PassengerResponse.FromModel),
             value.TotalCount,
             value.Page,
             value.PageSize,

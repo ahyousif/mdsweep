@@ -11,7 +11,7 @@ public sealed class ListPassengersHandler(IRepository repository)
         var specification = new PassengersSpecification().WithSearch(query.Search).OrderByName().AsNoTracking();
         var totalCount = await repository.CountAsync(specification.Build(), ct);
         var items = await repository.ListAsync(
-            specification.WithPagination(query.Page, query.PageSize).Build(PassengerListProjection.Instance),
+            specification.WithPagination(query.Page, query.PageSize).Build(PassengerModelProjection.Instance),
             ct
         );
         var totalPages = (long)Math.Ceiling(totalCount / (double)query.PageSize);
