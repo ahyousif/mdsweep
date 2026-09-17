@@ -77,7 +77,7 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
         return passenger;
     }
 
-    public void UpdateMtmDetails(
+    public bool UpdateMtmDetails(
         string firstName,
         string lastName,
         LocalDate? dateOfBirth,
@@ -87,13 +87,53 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
         string? specialNeeds
     )
     {
-        FirstName = Guard.Against.NullOrWhiteSpace(firstName, nameof(firstName));
-        LastName = Guard.Against.NullOrWhiteSpace(lastName, nameof(lastName));
-        DateOfBirth = dateOfBirth;
-        PhoneNumber = phoneNumber;
-        AlternatePhoneNumber = alternatePhoneNumber;
-        PassengerType = passengerType;
-        SpecialNeeds = specialNeeds;
+        var changed = false;
+        var updatedFirstName = Guard.Against.NullOrWhiteSpace(firstName, nameof(firstName));
+        var updatedLastName = Guard.Against.NullOrWhiteSpace(lastName, nameof(lastName));
+
+        if (FirstName != updatedFirstName)
+        {
+            FirstName = updatedFirstName;
+            changed = true;
+        }
+
+        if (LastName != updatedLastName)
+        {
+            LastName = updatedLastName;
+            changed = true;
+        }
+
+        if (dateOfBirth.HasValue && DateOfBirth != dateOfBirth)
+        {
+            DateOfBirth = dateOfBirth;
+            changed = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(phoneNumber) && PhoneNumber != phoneNumber)
+        {
+            PhoneNumber = phoneNumber;
+            changed = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(alternatePhoneNumber) && AlternatePhoneNumber != alternatePhoneNumber)
+        {
+            AlternatePhoneNumber = alternatePhoneNumber;
+            changed = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(passengerType) && PassengerType != passengerType)
+        {
+            PassengerType = passengerType;
+            changed = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(specialNeeds) && SpecialNeeds != specialNeeds)
+        {
+            SpecialNeeds = specialNeeds;
+            changed = true;
+        }
+
+        return changed;
     }
 
     public void UpdateNotes(string? notes) => Notes = notes;

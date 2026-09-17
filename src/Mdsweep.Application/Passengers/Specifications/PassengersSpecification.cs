@@ -16,4 +16,38 @@ public sealed class PassengersSpecification : SpecificationBuilder<PassengerAggr
 
         return this;
     }
+
+#pragma warning disable CA1862 // EF Core does not translate StringComparison overloads.
+    public PassengersSpecification WithSearch(string? search)
+    {
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var value = search.Trim().ToUpperInvariant();
+
+            Spec.Add(query =>
+                query.Where(passenger =>
+                    passenger.FirstName.ToUpper().Contains(value)
+                    || passenger.LastName.ToUpper().Contains(value)
+                    || (passenger.BrokerMemberId != null && passenger.BrokerMemberId.ToUpper().Contains(value))
+                    || (passenger.PhoneNumber != null && passenger.PhoneNumber.ToUpper().Contains(value))
+                    || (
+                        passenger.AlternatePhoneNumber != null
+                        && passenger.AlternatePhoneNumber.ToUpper().Contains(value)
+                    )
+                )
+            );
+        }
+
+        return this;
+    }
+#pragma warning restore CA1862
+
+    public PassengersSpecification OrderByName()
+    {
+        Spec.AddSorting(passenger => passenger.FirstName);
+        Spec.AddSorting(passenger => passenger.LastName);
+        Spec.AddSorting(passenger => passenger.Id);
+
+        return this;
+    }
 }

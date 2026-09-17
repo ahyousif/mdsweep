@@ -198,20 +198,7 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
         CancellationToken ct
     )
     {
-        if (
-            passenger.FirstName == row.FirstName
-            && passenger.LastName == row.LastName
-            && passenger.DateOfBirth == row.DateOfBirth
-            && passenger.PhoneNumber == row.PhoneNumber
-            && passenger.AlternatePhoneNumber == row.AlternatePhoneNumber
-            && passenger.PassengerType == row.PassengerType
-            && passenger.SpecialNeeds == row.SpecialNeeds
-        )
-        {
-            return;
-        }
-
-        passenger.UpdateMtmDetails(
+        if (!passenger.UpdateMtmDetails(
             row.FirstName,
             row.LastName,
             row.DateOfBirth,
@@ -219,7 +206,10 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
             row.AlternatePhoneNumber,
             row.PassengerType,
             row.SpecialNeeds
-        );
+        ))
+        {
+            return;
+        }
 
         await repository.UpdateAsync(passenger, ct);
     }

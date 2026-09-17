@@ -145,6 +145,58 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task Reimport_with_blank_optional_profile_fields_retains_existing_values()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,555-0199,Wheel Chair,Cannot Transfer,46")
+        );
+        first.EnsureSuccessStatusCode();
+        using var repeat = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,,,,,,46")
+        );
+        repeat.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(new LocalDate(1980, 1, 2), passenger.DateOfBirth);
+        Assert.Equal("555-0100", passenger.PhoneNumber);
+        Assert.Equal("555-0199", passenger.AlternatePhoneNumber);
+        Assert.Equal("Wheel Chair", passenger.PassengerType);
+        Assert.Equal("Cannot Transfer", passenger.SpecialNeeds);
+    }
+
+    [Fact]
+    public async Task Reimport_with_populated_optional_profile_fields_updates_an_earlier_blank_row()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,,,,,,46")
+        );
+        first.EnsureSuccessStatusCode();
+        using var repeat = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,555-0199,Wheel Chair,Cannot Transfer,46")
+        );
+        repeat.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(new LocalDate(1980, 1, 2), passenger.DateOfBirth);
+        Assert.Equal("555-0100", passenger.PhoneNumber);
+        Assert.Equal("555-0199", passenger.AlternatePhoneNumber);
+        Assert.Equal("Wheel Chair", passenger.PassengerType);
+        Assert.Equal("Cannot Transfer", passenger.SpecialNeeds);
+    }
+
+    [Fact]
     public async Task Reimport_preserves_mdsweep_owned_passenger_notes()
     {
         using var client = Application.CreateClient();

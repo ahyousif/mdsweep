@@ -42,6 +42,8 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             "GET /api/auth/antiforgery",
             "POST /api/auth/logout",
             "POST /api/passengers",
+            "GET /api/passengers/{id:guid}",
+            "GET /api/passengers",
             "POST /api/trips/import",
             "GET /api/trips/{id:guid}",
             "GET /api/trips",
