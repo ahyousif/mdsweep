@@ -18,7 +18,7 @@ public sealed class KeycloakRealmImportTests
         var redirectUris = realm.RootElement
             .GetProperty("clients")
             .EnumerateArray()
-            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-api")
             .GetProperty("redirectUris")
             .EnumerateArray()
             .Select(uri => uri.GetString())
@@ -30,7 +30,7 @@ public sealed class KeycloakRealmImportTests
         var postLogoutRedirectUris = realm.RootElement
             .GetProperty("clients")
             .EnumerateArray()
-            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+            .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-api")
             .GetProperty("attributes")
             .GetProperty("post.logout.redirect.uris")
             .GetString();
@@ -52,7 +52,7 @@ public sealed class KeycloakRealmImportTests
             realm.RootElement
                 .GetProperty("clients")
                 .EnumerateArray()
-                .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-server")
+                .Single(client => client.GetProperty("clientId").GetString() == "mdsweep-api")
                 .TryGetProperty("protocolMappers", out _)
         );
     }

@@ -7,7 +7,7 @@ namespace Mdsweep.AppHost;
 
 public static class HostingExtensions
 {
-    public sealed record MdsweepCommunicationResources(
+    public sealed record CommunicationResources(
         IResourceBuilder<MailPitContainerResource>? Mailpit,
         IResourceBuilder<ParameterResource>? WebBaseUrl,
         IResourceBuilder<IResourceWithConnectionString>? SmtpConnection,
@@ -90,13 +90,10 @@ public static class HostingExtensions
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database,
         IResourceBuilder<ContainerResource> keycloak,
-        MdsweepCommunicationResources communications
+        CommunicationResources communications,
+        IResourceBuilder<ParameterResource> oidcClientSecret
     )
     {
-        var oidcClientSecret = builder.ExecutionContext.IsRunMode
-            ? builder.AddParameter("oidc-client-secret", "Development-only-secret", secret: true)
-            : builder.AddParameter("oidc-client-secret", secret: true);
-
         var googleRoutesApiKey = builder.AddParameter("google-routes-api-key", secret: true);
 
         var keycloakAuthority = GetKeycloakAuthority(builder, keycloak);
@@ -107,7 +104,7 @@ public static class HostingExtensions
             .WithExternalHttpEndpoints()
             .WithReference(database)
             .WithEnvironment("Authentication__Authority", keycloakAuthority)
-            .WithEnvironment("Authentication__ClientId", "mdsweep-server")
+            .WithEnvironment("Authentication__ClientId", "mdsweep-api")
             .WithEnvironment("Authentication__ClientSecret", oidcClientSecret)
             .WithEnvironment("GoogleRoutes__ApiKey", googleRoutesApiKey)
             .WaitFor(database)
@@ -131,17 +128,27 @@ public static class HostingExtensions
         return api;
     }
 
-    public static IResourceBuilder<ProjectResource> AddMdsweepUtility(
+    public static IResourceBuilder<ProjectResource> AddUtility(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzurePostgresFlexibleServerResource> postgres,
         IResourceBuilder<AzurePostgresFlexibleServerDatabaseResource> database,
-        MdsweepCommunicationResources communications
+        IResourceBuilder<ContainerResource> keycloak,
+        CommunicationResources communications,
+        IResourceBuilder<ParameterResource> oidcClientSecret,
+        IResourceBuilder<ParameterResource> keycloakAutomationClientSecret,
+        IResourceBuilder<ParameterResource> demoAdminPassword
     )
     {
         var utility = builder
             .AddProject<Projects.Mdsweep_Utility>("utility")
             .WithReference(database)
+            .WithEnvironment("KeycloakAdministration__BaseUrl", GetKeycloakBaseUrl(builder, keycloak))
+            .WithEnvironment("KeycloakAdministration__AutomationClientId", "mdsweep-demo-automation")
+            .WithEnvironment("KeycloakAdministration__AutomationClientSecret", keycloakAutomationClientSecret)
+            .WithEnvironment("KeycloakAdministration__OidcClientSecret", oidcClientSecret)
+            .WithEnvironment("KeycloakAdministration__DemoAdminPassword", demoAdminPassword)
             .WaitFor(database)
+            .WaitFor(keycloak)
             .WithExplicitStart();
 
         ConfigureWebAndEmail(utility, communications);
@@ -174,14 +181,14 @@ public static class HostingExtensions
         );
     }
 
-    public static MdsweepCommunicationResources AddCommunications(
+    public static CommunicationResources AddCommunications(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<MailPitContainerResource>? mailpit
     )
     {
         if (mailpit is not null)
         {
-            return new MdsweepCommunicationResources(mailpit, null, null, null, null, null);
+            return new CommunicationResources(mailpit, null, null, null, null, null);
         }
 
         var webBaseUrl = builder.AddParameter("web-base-url");
@@ -190,19 +197,12 @@ public static class HostingExtensions
         var smtpPassword = builder.AddParameter("smtp-password", secret: true);
         var smtpFrom = builder.AddParameter("smtp-from");
 
-        return new MdsweepCommunicationResources(
-            null,
-            webBaseUrl,
-            smtpConnection,
-            smtpUsername,
-            smtpPassword,
-            smtpFrom
-        );
+        return new CommunicationResources(null, webBaseUrl, smtpConnection, smtpUsername, smtpPassword, smtpFrom);
     }
 
     private static void ConfigureWebAndEmail(
         IResourceBuilder<ProjectResource> resource,
-        MdsweepCommunicationResources communications
+        CommunicationResources communications
     )
     {
         if (communications.Mailpit is not null)
@@ -269,5 +269,17 @@ public static class HostingExtensions
             : KnownNetworkIdentifiers.PublicInternet;
 
         return ReferenceExpression.Create($"{keycloak.GetEndpoint("http", network)}/realms/mdsweep");
+    }
+
+    private static ReferenceExpression GetKeycloakBaseUrl(
+        IDistributedApplicationBuilder builder,
+        IResourceBuilder<ContainerResource> keycloak
+    )
+    {
+        var network = builder.ExecutionContext.IsRunMode
+            ? KnownNetworkIdentifiers.LocalhostNetwork
+            : KnownNetworkIdentifiers.PublicInternet;
+
+        return ReferenceExpression.Create($"{keycloak.GetEndpoint("http", network)}");
     }
 }

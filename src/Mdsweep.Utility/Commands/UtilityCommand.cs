@@ -4,6 +4,8 @@ namespace Mdsweep.Utility.Commands;
 
 public abstract record UtilityCommand
 {
+    public sealed record DemoReset : UtilityCommand;
+
     public sealed record TenantProvision(TenantProvisioningOptions Options) : UtilityCommand;
 
     public sealed record DatabaseMigrate : UtilityCommand;
@@ -25,6 +27,7 @@ internal static class UtilityArguments
     public const string Usage = """
         Usage:
           tenant provision --tenant-id <id> --tenant-name <name> --admin-email <email> --admin-first-name <name> --admin-last-name <name> [--admin-display-name <name>]
+          demo reset --confirm RESET-DEMO
           database migrate
           database reset --confirm mdsweep
         """;
@@ -46,9 +49,15 @@ internal static class UtilityArguments
             return true;
         }
 
+        if (args is ["demo", "reset", "--confirm", "RESET-DEMO"])
+        {
+            command = new UtilityCommand.DemoReset();
+            return true;
+        }
+
         if (args.Length < 2 || args[0] != "tenant" || args[1] != "provision")
         {
-            error = "Expected 'tenant provision', 'database migrate', or 'database reset'.";
+            error = "Expected 'tenant provision', 'demo reset', 'database migrate', or 'database reset'.";
             return false;
         }
 
