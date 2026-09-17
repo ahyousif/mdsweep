@@ -204,9 +204,8 @@ public sealed class TripImportTests : MdsweepIntegrationTest
         using var first = await Upload(client, ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-NOTES,MED-NOTES,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,,None,,46"));
         first.EnsureSuccessStatusCode();
 
-        await using (var scope = Application.Services.CreateAsyncScope())
+        await using (var db = CreateDbContext())
         {
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var passenger = await db.Passengers.IgnoreQueryFilters().SingleAsync();
             passenger.UpdateNotes("Call from the east entrance.");
             await db.SaveChangesAsync();
