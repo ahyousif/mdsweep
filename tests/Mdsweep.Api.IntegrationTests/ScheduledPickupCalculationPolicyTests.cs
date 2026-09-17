@@ -54,6 +54,7 @@ public sealed class ScheduledPickupCalculationPolicyTests
     private static TripAggregate CreateTrip() =>
         TripAggregate.Create(
             Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
             "TRIP-SCHEDULED",
             new BrokerTripData(
                 new LocalDate(2026, 9, 15),

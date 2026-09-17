@@ -28,14 +28,7 @@ describe('Trips routes', () => {
         {
           provide: TripsApi,
           useValue: {
-            getTrips: () =>
-              Promise.resolve({
-                items: [],
-                totalCount: 0,
-                page: 1,
-                pageSize: 100,
-                totalPages: 0,
-              }),
+            getAllTrips: () => Promise.resolve([]),
           },
         },
         {
@@ -53,8 +46,24 @@ describe('Trips routes', () => {
     const router = TestBed.inject(Router);
 
     await harness.navigateByUrl('/trips');
+    await harness.fixture.whenStable();
 
     expect(router.url).toBe('/trips');
     expect(harness.routeNativeElement?.textContent).toContain('Trips');
+    const page = harness.routeNativeElement as HTMLElement;
+    await vi.waitFor(() => {
+      harness.detectChanges();
+      expect(page.querySelector('[data-slot="empty"]')).not.toBeNull();
+    });
+    expect(page.querySelector('[data-journey-header]')).toBeNull();
+    expect(page.querySelector('[data-slot="empty-title"]')?.textContent?.trim()).toBe(
+      'No trips for this date',
+    );
+    expect(page.querySelector('[data-slot="empty-description"]')?.textContent?.trim()).toBe(
+      'Import a manifest or add a trip to get started.',
+    );
+    const toolbarButtons = Array.from(page.querySelectorAll('app-trip-toolbar button'));
+    expect(toolbarButtons.some((button) => button.textContent?.trim() === 'Import trips')).toBe(true);
+    expect(toolbarButtons.some((button) => button.textContent?.trim() === 'Add trip')).toBe(true);
   });
 });

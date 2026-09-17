@@ -65,14 +65,18 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         foreach (var time in new[] { "09:15:00", "08:30:00" })
         {
             using var response = await client.PutAsJsonAsync(
-                $"/api/trips/{trip.Id}/scheduled-pickup-time", new { scheduledPickupTime = time });
+                $"/api/trips/{trip.Id}/scheduled-pickup-time",
+                new { scheduledPickupTime = time }
+            );
             response.EnsureSuccessStatusCode();
             var result = await client.GetFromJsonAsync<TripResponse>($"/api/trips/{trip.Id}");
             Assert.Equal(time, result!.ScheduledPickupTime);
             Assert.Equal(time, result.ManualPickupTime);
         }
         using var cleared = await client.PutAsJsonAsync(
-            $"/api/trips/{trip.Id}/scheduled-pickup-time", new { scheduledPickupTime = (string?)null });
+            $"/api/trips/{trip.Id}/scheduled-pickup-time",
+            new { scheduledPickupTime = (string?)null }
+        );
         cleared.EnsureSuccessStatusCode();
         var fallback = await client.GetFromJsonAsync<TripResponse>($"/api/trips/{trip.Id}");
         Assert.Null(fallback!.ManualPickupTime);
@@ -92,7 +96,9 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         foreach (var time in new string?[] { "09:15:00", null })
         {
             using var response = await client.PutAsJsonAsync(
-                $"/api/trips/{Guid.NewGuid()}/scheduled-pickup-time", new { scheduledPickupTime = time });
+                $"/api/trips/{Guid.NewGuid()}/scheduled-pickup-time",
+                new { scheduledPickupTime = time }
+            );
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
     }
@@ -109,7 +115,9 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         membership.SetRoles(["Driver"]);
         await db.SaveChangesAsync();
         using var response = await client.PutAsJsonAsync(
-            $"/api/trips/{trip.Id}/scheduled-pickup-time", new { scheduledPickupTime = (string?)null });
+            $"/api/trips/{trip.Id}/scheduled-pickup-time",
+            new { scheduledPickupTime = (string?)null }
+        );
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
@@ -121,7 +129,9 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         foreach (var time in new string?[] { "09:15:00", null })
         {
             using var response = await client.PutAsJsonAsync(
-                $"/api/trips/{Guid.NewGuid()}/scheduled-pickup-time", new { scheduledPickupTime = time });
+                $"/api/trips/{Guid.NewGuid()}/scheduled-pickup-time",
+                new { scheduledPickupTime = time }
+            );
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
     }
@@ -135,7 +145,10 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         await using var db = new ApplicationDbContext(options);
         var passenger = PassengerAggregate.Create($"MED-{brokerTripNumber}", "Synthetic", "Passenger");
         passenger.TenantId = tenantId;
+        var journey = JourneyAggregate.Create(JourneyGroupingType.Automatic);
+        journey.TenantId = tenantId;
         var trip = TripAggregate.Create(
+            journey.Id,
             passenger.Id,
             brokerTripNumber,
             new BrokerTripData(
@@ -159,9 +172,10 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
                 null
             )
         );
-        if (calculated == true) trip.ApplyRouteEstimate(Duration.FromMinutes(42), 47475, 15);
+        if (calculated == true)
+            trip.ApplyRouteEstimate(Duration.FromMinutes(42), 47475, 15);
         trip.TenantId = tenantId;
-        db.AddRange(passenger, trip);
+        db.AddRange(passenger, journey, trip);
         await db.SaveChangesAsync();
         Assert.Equal(tenantId, (await db.Trips.SingleAsync(saved => saved.Id == trip.Id)).TenantId);
         await using var scope = Application.Services.CreateAsyncScope();
@@ -173,5 +187,10 @@ public sealed class TripPlanningTests : MdsweepIntegrationTest
         return trip;
     }
 
-    private sealed record TripResponse(Guid Id, string BrokerTripNumber, string? ScheduledPickupTime, string? ManualPickupTime);
+    private sealed record TripResponse(
+        Guid Id,
+        string BrokerTripNumber,
+        string? ScheduledPickupTime,
+        string? ManualPickupTime
+    );
 }

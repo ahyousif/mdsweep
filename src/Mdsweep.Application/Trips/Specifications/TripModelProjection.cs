@@ -10,6 +10,7 @@ internal sealed class TripModelProjection : Specification<TripAggregate, TripMod
     {
         Query.Select(trip => new TripModel(
             trip.Id,
+            trip.JourneyId,
             trip.BrokerTripNumber,
             trip.Passenger.FirstName,
             trip.Passenger.LastName,

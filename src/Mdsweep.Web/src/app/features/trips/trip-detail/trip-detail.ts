@@ -1,4 +1,3 @@
-import { TranslateService } from '@ngx-translate/core';
 import { LanguageService } from '@app/core/i18n/language.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, input, output } from '@angular/core';
@@ -7,119 +6,113 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideCalendarDays,
   lucideCarFront,
-  lucideCircleHelp,
   lucideClock3,
+  lucideEllipsisVertical,
   lucideMapPin,
+  lucideMove,
   lucidePen,
-  lucidePhone,
+  lucidePlus,
+  lucideTrash2,
+  lucideUnlink,
   lucideUserRound,
   lucideX,
 } from '@ng-icons/lucide';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { HlmCard } from '@spartan-ng/helm/card';
+import { HlmCardImports } from '@spartan-ng/helm/card';
+import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
+import { HlmTabsImports } from '@spartan-ng/helm/tabs';
 
+import { JourneyViewModel, tripAssignmentSummary, tripStatus } from '../journey-view-model';
 import { Address, Trip } from '../trips-types';
-import { tripReferenceTime } from '../trip-reference-time';
 
 @Component({
   selector: 'app-trip-detail',
-  imports: [TranslatePipe, NgIcon, HlmButton, HlmCard, ...HlmBadgeImports],
+  imports: [
+    TranslatePipe,
+    NgIcon,
+    HlmButton,
+    ...HlmBadgeImports,
+    ...HlmCardImports,
+    ...HlmDropdownMenuImports,
+    ...HlmTabsImports,
+  ],
   providers: [
     provideIcons({
       lucideCalendarDays,
       lucideCarFront,
-      lucideCircleHelp,
       lucideClock3,
+      lucideEllipsisVertical,
       lucideMapPin,
+      lucideMove,
       lucidePen,
-      lucidePhone,
+      lucidePlus,
+      lucideTrash2,
+      lucideUnlink,
       lucideUserRound,
       lucideX,
     }),
   ],
-  host: {
-    class: 'block h-full min-h-0',
-  },
+  host: { class: 'block h-full min-h-0' },
   templateUrl: './trip-detail.html',
 })
 export default class TripDetail {
   readonly language = inject(LanguageService);
-  private readonly translate = inject(TranslateService);
-  readonly trip = input.required<Trip>();
-  readonly closed = output<void>();
-  readonly changeScheduledPickup = output<void>();
+  readonly journey = input.required<JourneyViewModel>();
+  readonly selectedTripId = input<string | null>(null);
 
-  readonly passengerName = computed(
-    () => `${this.trip().passengerFirstName} ${this.trip().passengerLastName}`,
+  readonly closed = output<void>();
+  readonly tripSelected = output<Trip>();
+  readonly changeScheduledPickup = output<Trip>();
+
+  readonly selectedTrip = computed(
+    () =>
+      this.journey().trips.find((trip) => trip.id === this.selectedTripId()) ??
+      this.journey().firstTrip,
   );
 
-  readonly referenceTime = computed(() => tripReferenceTime(this.trip()));
+  readonly routeStops = computed(() => {
+    const route = journeyRoute(this.journey().trips);
 
-  readonly scheduledPickupSource = computed(() => {
-    const trip = this.trip();
-
-    this.language.language();
-
-    if (trip.manualPickupTime) {
-      return this.translate.instant('trips.manualTime');
+    // A reciprocal pair uses the same address as its first and last stop. Show the two
+    // distinct endpoints once in the compact card; individual legs remain below.
+    if (
+      this.journey().trips.length === 2 &&
+      route.length === 3 &&
+      addressKey(route[0]) === addressKey(route[2])
+    ) {
+      return route.slice(0, 2);
     }
 
-    if (trip.calculatedPickupTime) {
-      return this.translate.instant('trips.calculatedTime');
-    }
-
-    if (trip.returnPickupTime) {
-      return this.translate.instant('trips.brokerTime');
-    }
-
-    return trip.isWillCall ? this.translate.instant('trips.willCall') : '';
-  });
-
-  readonly driveEstimate = computed(() => {
-    this.language.language();
-    const trip = this.trip();
-
-    if (trip.estimatedTravelMinutes === null) {
-      return this.translate.instant('common.notAvailable');
-    }
-
-    if (trip.estimatedDistanceMeters === null) {
-      return this.translate.instant('trips.driveMinutes', { minutes: trip.estimatedTravelMinutes });
-    }
-
-    return this.translate.instant('trips.driveDistance', {
-      minutes: trip.estimatedTravelMinutes,
-      miles: metersToMiles(trip.estimatedDistanceMeters),
-    });
-  });
-
-  readonly brokerStatusLabel = computed(() => {
-    this.language.language();
-    const status = this.trip().brokerStatus;
-
-    if (!status) {
-      return this.translate.instant('common.notSupplied');
-    }
-
-    return status.toUpperCase() === 'VALID' ? this.translate.instant('trips.brokerValid') : status;
+    return route;
   });
 
   readonly directionsUrl = computed(() => {
-    const trip = this.trip();
-    const address = (value: Address) =>
-      [value.address, value.city, value.state, value.zip].filter(Boolean).join(', ');
+    const route = journeyRoute(this.journey().trips);
     const params = new URLSearchParams({
       api: '1',
-      origin: address(trip.pickup),
-      destination: address(trip.dropoff),
+      origin: formatFullAddress(route[0]),
+      destination: formatFullAddress(route.at(-1)!),
       travelmode: 'driving',
     });
+
+    if (route.length > 2) {
+      params.set('waypoints', route.slice(1, -1).map(formatFullAddress).join('|'));
+    }
+
     return `https://www.google.com/maps/dir/?${params}`;
   });
 
-  formatTime(value: string | null): string {
-    return this.language.formatTime(value);
+  status(trip: Trip) {
+    return tripStatus(trip);
+  }
+
+  assignmentSummary(trip: Trip) {
+    return tripAssignmentSummary(trip);
+  }
+
+  formatTime(value: string | null, fallback = 'common.notSupplied'): string {
+    return this.language.formatTime(value, fallback);
   }
 
   formatAddress(address: Address): string {
@@ -127,6 +120,25 @@ export default class TripDetail {
   }
 }
 
-function metersToMiles(meters: number): string {
-  return (meters / 1609.344).toFixed(1);
+function journeyRoute(trips: Trip[]): Address[] {
+  const route: Address[] = [];
+
+  for (const trip of trips) {
+    if (!route.length || addressKey(route.at(-1)!) !== addressKey(trip.pickup)) {
+      route.push(trip.pickup);
+    }
+    if (addressKey(route.at(-1)!) !== addressKey(trip.dropoff)) {
+      route.push(trip.dropoff);
+    }
+  }
+
+  return route;
+}
+
+function addressKey(address: Address): string {
+  return formatFullAddress(address).toLocaleUpperCase();
+}
+
+function formatFullAddress(address: Address): string {
+  return [address.address, address.city, address.state, address.zip].filter(Boolean).join(', ');
 }

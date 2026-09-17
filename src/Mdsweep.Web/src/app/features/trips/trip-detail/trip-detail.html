@@ -1,297 +1,396 @@
-<div class="flex h-full min-h-0 flex-col overflow-hidden">
-  <!-- Header -->
-  <header class="shrink-0 border-b px-6 pt-5">
+<hlm-tabs tab="overview" class="flex h-full min-h-0 flex-col gap-0 overflow-hidden">
+  <header class="shrink-0 border-b px-5 pt-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <h2 class="truncate text-2xl font-semibold tracking-tight">
-          <bdi>{{ passengerName() }}</bdi>
-        </h2>
-
-        <p class="text-muted-foreground mt-0.5 text-sm">
-          MTM <bdi>{{ trip().brokerTripNumber }}</bdi>
-        </p>
-
-        <div class="mt-2 flex items-center gap-2 text-sm">
-          <ng-icon name="lucidePhone" class="text-muted-foreground size-4" aria-hidden="true" />
-
-          <bdi dir="ltr">(602) 555-0198</bdi>
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="type-panel-title truncate">
+            <bdi>{{ journey().passengerName }}</bdi>
+          </h2>
+          <span hlmBadge [variant]="journey().status.variant">
+            {{ journey().status.key | translate: journey().status.params }}
+          </span>
         </div>
+        <p class="type-meta mt-1">
+          {{ 'trips.journeySummary' | translate: { count: journey().trips.length } }}
+        </p>
       </div>
 
-      <div class="flex shrink-0 items-center gap-2">
-        <button
-          hlmBtn
-          variant="ghost"
-          size="icon"
-          type="button"
-          [attr.aria-label]="'trips.closeDetails' | translate"
-          (click)="closed.emit()"
-        >
-          <ng-icon name="lucideX" class="size-5" aria-hidden="true" />
-        </button>
-      </div>
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        class="text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30"
+        type="button"
+        [attr.aria-label]="'trips.closeDetails' | translate"
+        (click)="closed.emit()"
+      >
+        <ng-icon name="lucideX" class="text-[--spacing(5)]" aria-hidden="true" />
+      </button>
     </div>
 
-    <nav class="mt-4 flex gap-6">
-      <button type="button" class="text-primary border-primary border-b-2 px-2 pb-2.5 font-medium">
+    <hlm-tabs-list variant="line" class="mt-4 grid w-full grid-cols-5 gap-0 p-0">
+      <button hlmTabsTrigger="overview" class="min-w-0 px-1 text-xs">
         {{ 'trips.overview' | translate }}
       </button>
-
-      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">
+      <button hlmTabsTrigger="trips" class="min-w-0 px-1 text-xs">
+        {{ 'trips.tabs.trips' | translate: { count: journey().trips.length } }}
+      </button>
+      <button hlmTabsTrigger="passenger" class="min-w-0 px-1 text-xs">
+        {{ 'trips.tabs.passenger' | translate }}
+      </button>
+      <button hlmTabsTrigger="notes" class="min-w-0 px-1 text-xs">
         {{ 'trips.notes' | translate }}
       </button>
-
-      <button type="button" class="text-muted-foreground px-2 pb-2.5 font-medium">
+      <button hlmTabsTrigger="history" class="min-w-0 px-1 text-xs">
         {{ 'trips.history' | translate }}
       </button>
-    </nav>
+    </hlm-tabs-list>
   </header>
 
-  <!-- Scrollable body -->
-  <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-    <!-- Timing -->
-    <section hlmCard class="rounded-lg p-4 shadow-none">
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold">{{ 'trips.timing' | translate }}</h3>
-      </div>
-
-      <div class="mt-2 grid grid-cols-[1fr_auto] gap-3">
-        <div class="space-y-2">
-          <div class="flex items-start gap-3">
-            <ng-icon
-              name="lucideCalendarDays"
-              class="text-muted-foreground mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-
-            <div>
-              <p class="text-muted-foreground text-sm">
-                {{ referenceTime().labelKey | translate }}
-              </p>
-
-              <p class="font-semibold leading-tight">
-                {{ language.formatTime(referenceTime().value, referenceTime().fallbackKey) }}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-3">
-            <ng-icon
-              name="lucideCarFront"
-              class="text-muted-foreground mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-
-            <div>
-              <p class="text-muted-foreground text-sm">{{ 'trips.estimatedDrive' | translate }}</p>
-
-              <p class="font-semibold leading-tight">
-                {{ driveEstimate() }}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-3">
-            <ng-icon
-              name="lucideClock3"
-              class="text-muted-foreground mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-
-            <div>
-              <div class="flex items-center gap-1">
-                <p class="text-muted-foreground text-sm">
-                  {{ 'trips.calculatedPickup' | translate }}
-                </p>
-
-                <ng-icon
-                  name="lucideCircleHelp"
-                  class="text-muted-foreground size-3.5"
-                  aria-hidden="true"
-                />
-              </div>
-
-              <p class="font-semibold leading-tight">
-                {{ formatTime(trip().calculatedPickupTime) }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-muted/30 rounded-lg p-4">
-          <p class="text-muted-foreground text-sm">{{ 'trips.scheduledPickup' | translate }}</p>
-
-          <p class="mt-0.5 font-semibold">
-            {{
-              trip().isWillCall && !trip().scheduledPickupTime
-                ? ('trips.willCall' | translate)
-                : formatTime(trip().scheduledPickupTime)
-            }}
-          </p>
-
-          @if (scheduledPickupSource()) {
-            <p class="text-muted-foreground mt-1 text-sm">
-              {{ scheduledPickupSource() }}
-            </p>
-          }
-
-          <button
+  <div hlmTabsContent="overview" class="@container min-h-0 flex-1 overflow-y-auto p-4">
+    <div class="flex flex-col gap-3">
+      <section hlmCard size="sm" data-journey-card="">
+        <div hlmCardHeader>
+          <h3 hlmCardTitle>
+            {{ 'trips.journey' | translate }}
+          </h3>
+          <a
+            hlmCardAction
             hlmBtn
             variant="outline"
             size="sm"
-            type="button"
-            class="mt-2"
-            (click)="changeScheduledPickup.emit()"
+            [href]="directionsUrl()"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            {{ 'common.change' | translate }}
+            <ng-icon name="lucideMapPin" aria-hidden="true" />
+            {{ 'trips.viewMap' | translate }}
+          </a>
+        </div>
+        <div hlmCardContent class="grid gap-4 @xs:grid-cols-[minmax(0,1fr)_7.5rem]">
+          <div data-journey-route="" class="type-body flex min-w-0 flex-col">
+            @for (stop of routeStops(); track $index; let first = $first, last = $last) {
+              <div class="grid min-w-0 grid-cols-[1rem_minmax(0,1fr)] gap-x-3">
+                <div class="flex flex-col items-center" aria-hidden="true">
+                  <ng-icon
+                    name="lucideMapPin"
+                    class="shrink-0"
+                    [class.text-primary]="first"
+                    [class.text-destructive]="last && !first"
+                    [class.text-muted-foreground]="!first && !last"
+                  />
+                  @if (!last) {
+                    <span
+                      data-route-connector=""
+                      class="bg-muted-foreground/50 mt-0.5 w-px flex-1"
+                    ></span>
+                  }
+                </div>
+                <div class="min-w-0" [class.pb-3]="!last">
+                  <p class="wrap-break-word leading-snug">
+                    <bdi>{{ stop.address }}</bdi>
+                  </p>
+                  <p class="text-muted-foreground wrap-break-word leading-snug">
+                    <bdi>{{ formatAddress(stop) }}</bdi>
+                  </p>
+                </div>
+              </div>
+            }
+          </div>
+
+          <dl
+            class="type-body grid gap-3 border-t pt-3 @xs:content-start @xs:border-s @xs:border-t-0 @xs:ps-4 @xs:pt-0"
+          >
+            <div>
+              <dt class="type-meta">{{ 'trips.firstPickup' | translate }}</dt>
+              <dd class="text-base font-semibold tabular-nums">
+                {{
+                  formatTime(
+                    journey().displayPickupTime,
+                    journey().isEntirelyWillCall ? 'trips.willCall' : 'common.notSet'
+                  )
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt class="type-meta">{{ 'trips.totalTrips' | translate }}</dt>
+              <dd class="font-normal tabular-nums">{{ journey().trips.length }}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section hlmCard size="sm">
+        <div hlmCardHeader>
+          <h3 hlmCardTitle>
+            {{ 'trips.journeyTrips' | translate }}
+          </h3>
+          <div hlmCardAction class="flex items-center gap-2">
+            <button
+              hlmBtn
+              variant="outline"
+              size="sm"
+              type="button"
+              disabled
+              [title]="'trips.assignUnavailable' | translate"
+            >
+              <ng-icon name="lucideUserRound" aria-hidden="true" />
+              {{ 'trips.assignAll' | translate }}
+            </button>
+            <button
+              hlmBtn
+              variant="outline"
+              size="sm"
+              type="button"
+              disabled
+              [title]="'trips.addUnavailable' | translate"
+            >
+              <ng-icon name="lucidePlus" aria-hidden="true" />
+              {{ 'trips.addTrip' | translate }}
+            </button>
+          </div>
+        </div>
+        <div hlmCardContent class="px-0">
+          @for (trip of journey().trips; track trip.id; let sequence = $index) {
+            @let assignment = assignmentSummary(trip);
+            <div
+              class="grid grid-cols-[2rem_5rem_minmax(0,1fr)_6.25rem_2rem] items-center gap-x-2 border-t px-4 py-3 transition-colors"
+              [class.bg-accent]="trip.id === selectedTrip().id"
+              (click)="tripSelected.emit(trip)"
+            >
+              <button
+                data-trip-row=""
+                class="col-span-4 grid min-w-0 grid-cols-subgrid items-center gap-x-2 rounded-md text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="button"
+                [attr.aria-label]="'trips.openTrip' | translate: { trip: trip.brokerTripNumber }"
+                [attr.aria-pressed]="trip.id === selectedTrip().id"
+              >
+                <span
+                  class="border-border row-span-3 grid size-7 place-items-center rounded-full border text-sm font-medium"
+                  >{{ sequence + 1 }}</span
+                >
+                <span class="row-span-3 font-semibold whitespace-nowrap tabular-nums">
+                  {{
+                    formatTime(
+                      trip.scheduledPickupTime,
+                      trip.isWillCall ? 'trips.willCall' : 'common.notSet'
+                    )
+                  }}
+                </span>
+                <span
+                  data-trip-pickup=""
+                  class="type-body min-w-0 truncate"
+                  [title]="trip.pickup.address"
+                >
+                  <bdi>{{ trip.pickup.address }}</bdi>
+                </span>
+                <span
+                  data-trip-dropoff=""
+                  class="type-meta min-w-0 truncate"
+                  [title]="trip.dropoff.address"
+                >
+                  → <bdi>{{ trip.dropoff.address }}</bdi>
+                </span>
+                <span class="type-meta col-start-3 min-w-0 truncate">
+                  {{ assignment.key | translate: assignment.params }}
+                </span>
+                <span
+                  data-trip-status=""
+                  class="col-start-4 row-start-1 row-span-3 flex min-w-0 justify-end self-center"
+                >
+                  <span hlmBadge [variant]="status(trip).variant">
+                    {{ status(trip).key | translate: status(trip).params }}
+                  </span>
+                </span>
+              </button>
+              <div (click)="$event.stopPropagation()">
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon-sm"
+                  type="button"
+                  [hlmDropdownMenuTrigger]="tripActions"
+                  [attr.aria-label]="
+                    'trips.tripActions' | translate: { trip: trip.brokerTripNumber }
+                  "
+                >
+                  <ng-icon name="lucideEllipsisVertical" aria-hidden="true" />
+                </button>
+                <ng-template #tripActions>
+                  <hlm-dropdown-menu>
+                    <button hlmDropdownMenuItem disabled>
+                      <ng-icon name="lucidePen" />{{ 'trips.actions.edit' | translate }}
+                    </button>
+                    <button hlmDropdownMenuItem disabled>
+                      <ng-icon name="lucideMove" />{{ 'trips.actions.move' | translate }}
+                    </button>
+                    <button hlmDropdownMenuItem disabled>
+                      <ng-icon name="lucideUnlink" />{{ 'trips.actions.separate' | translate }}
+                    </button>
+                    <hlm-dropdown-menu-separator />
+                    <button hlmDropdownMenuItem variant="destructive" disabled>
+                      <ng-icon name="lucideTrash2" />{{ 'trips.actions.delete' | translate }}
+                    </button>
+                  </hlm-dropdown-menu>
+                </ng-template>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section hlmCard size="sm">
+        <div hlmCardHeader>
+          <h3 hlmCardTitle>
+            {{ 'trips.details' | translate }}
+          </h3>
+          <p hlmCardAction class="type-meta">
+            {{
+              'trips.tripPosition'
+                | translate
+                  : {
+                      current: journey().trips.indexOf(selectedTrip()) + 1,
+                      total: journey().trips.length,
+                    }
+            }}
+          </p>
+        </div>
+        <div hlmCardContent class="flex flex-col gap-4">
+          <dl class="type-body grid grid-cols-[1rem_7rem_minmax(0,1fr)] gap-x-3 gap-y-3">
+            <ng-icon name="lucideClock3" class="text-muted-foreground mt-0.5" aria-hidden="true" />
+            <dt class="type-meta">{{ 'trips.scheduledPickup' | translate }}</dt>
+            <dd class="flex flex-wrap items-center justify-between gap-2">
+              <span class="font-semibold tabular-nums">
+                {{
+                  formatTime(
+                    selectedTrip().scheduledPickupTime,
+                    selectedTrip().isWillCall ? 'trips.willCall' : 'common.notSet'
+                  )
+                }}
+              </span>
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                type="button"
+                (click)="changeScheduledPickup.emit(selectedTrip())"
+              >
+                {{ 'trips.changePickupTime' | translate }}
+              </button>
+            </dd>
+            <ng-icon
+              name="lucideCalendarDays"
+              class="text-muted-foreground mt-0.5"
+              aria-hidden="true"
+            />
+            <dt class="type-meta">{{ 'trips.appointment' | translate }}</dt>
+            <dd class="font-normal tabular-nums">{{ formatTime(selectedTrip().appointmentTime) }}</dd>
+            <ng-icon name="lucideMapPin" class="text-primary mt-0.5" aria-hidden="true" />
+            <dt class="type-meta">{{ 'trips.pickupAddress' | translate }}</dt>
+            <dd class="min-w-0 wrap-break-word text-start">
+              <bdi
+                >{{ selectedTrip().pickup.address }},
+                {{ formatAddress(selectedTrip().pickup) }}</bdi
+              >
+            </dd>
+            <ng-icon name="lucideMapPin" class="text-destructive mt-0.5" aria-hidden="true" />
+            <dt class="type-meta">{{ 'trips.dropoffAddress' | translate }}</dt>
+            <dd class="min-w-0 wrap-break-word text-start">
+              <bdi
+                >{{ selectedTrip().dropoff.address }},
+                {{ formatAddress(selectedTrip().dropoff) }}</bdi
+              >
+            </dd>
+          </dl>
+          <div class="border-t pt-4" [attr.data-selected-trip-id]="selectedTrip().id">
+            <div class="flex items-center justify-between gap-3">
+              <h4 class="type-card-title">{{ 'trips.assignment' | translate }}</h4>
+              <button hlmBtn variant="outline" size="sm" type="button" disabled>
+                <ng-icon name="lucidePen" />{{ 'common.edit' | translate }}
+              </button>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-4">
+              <div class="flex items-center gap-3">
+                <ng-icon name="lucideUserRound" class="text-muted-foreground" />
+                <div>
+                  <p class="type-meta">{{ 'roles.Driver' | translate }}</p>
+                  <p class="type-body font-medium">
+                    <bdi>{{
+                      selectedTrip().assignment?.driverName || ('trips.unassigned' | translate)
+                    }}</bdi>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <ng-icon name="lucideCarFront" class="text-muted-foreground" />
+                <div>
+                  <p class="type-meta">{{ 'trips.vehicle' | translate }}</p>
+                  <p class="type-body font-medium">
+                    <bdi>{{
+                      selectedTrip().assignment?.vehicleName || ('common.notSupplied' | translate)
+                    }}</bdi>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section hlmCard size="sm">
+        <div hlmCardHeader>
+          <h3 hlmCardTitle>
+            {{ 'trips.notes' | translate }}
+          </h3>
+          <button hlmCardAction hlmBtn variant="outline" size="sm" type="button" disabled>
+            <ng-icon name="lucidePen" />{{ 'common.edit' | translate }}
           </button>
         </div>
-      </div>
-    </section>
-
-    <!-- Route -->
-    <section hlmCard class="rounded-lg p-4 shadow-none">
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold">{{ 'trips.route' | translate }}</h3>
-
-        <a
-          hlmBtn
-          variant="outline"
-          size="sm"
-          [href]="directionsUrl()"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ng-icon name="lucideMapPin" class="size-4" aria-hidden="true" />
-          {{ 'trips.viewMap' | translate }}
-        </a>
-      </div>
-
-      <div class="mt-2">
-        <div class="flex gap-3">
-          <div class="flex w-5 flex-col items-center">
-            <ng-icon name="lucideMapPin" class="text-primary size-4 shrink-0" aria-hidden="true" />
-
-            <div class="bg-border my-1 w-px flex-1"></div>
-          </div>
-
-          <div class="pb-2">
-            <p class="text-muted-foreground text-sm">{{ 'trips.pickupAddress' | translate }}</p>
-
-            <p class="mt-0.5 font-medium leading-tight">
-              <bdi>{{ trip().pickup.address }}</bdi>
-            </p>
-
-            <p class="text-muted-foreground mt-0.5 text-sm">
-              <bdi>{{ formatAddress(trip().pickup) }}</bdi>
-            </p>
-          </div>
+        <div hlmCardContent>
+          <p class="type-meta leading-relaxed">
+            {{ 'trips.noNotes' | translate }}
+          </p>
         </div>
+      </section>
+    </div>
+  </div>
 
-        <div class="flex gap-3">
-          <div class="flex w-5 justify-center">
-            <ng-icon name="lucideMapPin" class="text-destructive size-4" aria-hidden="true" />
-          </div>
-
-          <div>
-            <p class="text-muted-foreground text-sm">{{ 'trips.dropoffAddress' | translate }}</p>
-
-            <p class="mt-0.5 font-medium leading-tight">
-              <bdi>{{ trip().dropoff.address }}</bdi>
-            </p>
-
-            <p class="text-muted-foreground mt-0.5 text-sm">
-              <bdi>{{ formatAddress(trip().dropoff) }}</bdi>
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Assignment -->
-    <section hlmCard class="rounded-lg p-4 shadow-none">
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold">{{ 'trips.assignment' | translate }}</h3>
-
-        <button hlmBtn variant="outline" size="sm" type="button">
-          <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
-          {{ 'common.change' | translate }}
+  <div hlmTabsContent="trips" class="min-h-0 flex-1 overflow-y-auto p-4">
+    <h3 class="type-card-title">{{ 'trips.journeyTrips' | translate }}</h3>
+    <div class="mt-3 flex flex-col gap-2">
+      @for (trip of journey().trips; track trip.id; let sequence = $index) {
+        <button hlmBtn variant="outline" class="justify-start" (click)="tripSelected.emit(trip)">
+          {{ sequence + 1 }}. {{ trip.brokerTripNumber }} ·
+          {{ formatTime(trip.scheduledPickupTime) }}
         </button>
+      }
+    </div>
+  </div>
+  <div hlmTabsContent="passenger" class="min-h-0 flex-1 overflow-y-auto p-4">
+    <section hlmCard size="sm">
+      <div hlmCardHeader>
+        <h3 hlmCardTitle>{{ journey().passengerName }}</h3>
       </div>
-
-      <div class="mt-2 grid grid-cols-2 gap-4">
-        <div class="flex items-center gap-3">
-          <ng-icon name="lucideUserRound" class="text-muted-foreground size-4" aria-hidden="true" />
-
-          <div>
-            <p class="text-muted-foreground text-sm">{{ 'roles.Driver' | translate }}</p>
-
-            <p class="font-medium">{{ 'trips.placeholderDriver' | translate }}</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <ng-icon name="lucideCarFront" class="text-muted-foreground size-4" aria-hidden="true" />
-
-          <div>
-            <p class="text-muted-foreground text-sm">{{ 'trips.vehicle' | translate }}</p>
-
-            <p class="font-medium">{{ 'trips.placeholderVehicle' | translate }}</p>
-          </div>
-        </div>
+      <div hlmCardContent class="type-body grid gap-3">
+        <p>
+          <span class="type-meta">{{ 'trips.memberId' | translate }}:</span>
+          <bdi>{{ journey().memberId || ('common.notSupplied' | translate) }}</bdi>
+        </p>
+        <p>
+          <span class="type-meta">{{ 'trips.passengerType' | translate }}:</span>
+          <bdi>{{ selectedTrip().passengerType || ('common.notSupplied' | translate) }}</bdi>
+        </p>
+        <p>
+          <span class="type-meta">{{ 'trips.specialNeeds' | translate }}:</span>
+          <bdi>{{ selectedTrip().specialNeeds || ('common.notSupplied' | translate) }}</bdi>
+        </p>
       </div>
-    </section>
-
-    <!-- Trip details -->
-    <section hlmCard class="rounded-lg p-4 shadow-none">
-      <h3 class="font-semibold">{{ 'trips.details' | translate }}</h3>
-
-      <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
-        <div>
-          <dt class="text-muted-foreground text-sm">{{ 'trips.brokerStatus' | translate }}</dt>
-
-          <dd class="text-primary mt-0.5 font-medium">
-            {{ brokerStatusLabel() }}
-          </dd>
-        </div>
-
-        <div>
-          <dt class="text-muted-foreground text-sm">{{ 'trips.passengerType' | translate }}</dt>
-
-          <dd class="mt-0.5">
-            <bdi>{{ trip().passengerType || ('common.notSupplied' | translate) }}</bdi>
-          </dd>
-        </div>
-
-        <div>
-          <dt class="text-muted-foreground text-sm">{{ 'trips.tripType' | translate }}</dt>
-
-          <dd class="mt-0.5">{{ 'trips.regular' | translate }}</dd>
-        </div>
-
-        <div>
-          <dt class="text-muted-foreground text-sm">{{ 'trips.specialNeeds' | translate }}</dt>
-
-          <dd class="mt-0.5">
-            <bdi>{{ trip().specialNeeds || '—' }}</bdi>
-          </dd>
-        </div>
-      </dl>
-    </section>
-
-    <!-- Notes -->
-    <section hlmCard class="rounded-lg p-4 shadow-none">
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold">{{ 'trips.notes' | translate }}</h3>
-
-        <button hlmBtn variant="outline" size="sm" type="button">
-          <ng-icon name="lucidePen" class="size-4" aria-hidden="true" />
-
-          {{ 'common.edit' | translate }}
-        </button>
-      </div>
-
-      <p class="text-muted-foreground mt-1 text-sm">{{ 'trips.noNotes' | translate }}</p>
     </section>
   </div>
-</div>
+  <div hlmTabsContent="notes" class="min-h-0 flex-1 overflow-y-auto p-4">
+    <p class="type-meta leading-relaxed">{{ 'trips.noNotes' | translate }}</p>
+  </div>
+  <div hlmTabsContent="history" class="min-h-0 flex-1 overflow-y-auto p-4">
+    <p class="type-meta">{{ 'trips.historyUnavailable' | translate }}</p>
+  </div>
+</hlm-tabs>

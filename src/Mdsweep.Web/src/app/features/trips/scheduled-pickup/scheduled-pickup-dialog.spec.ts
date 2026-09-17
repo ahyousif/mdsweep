@@ -11,6 +11,7 @@ import ScheduledPickupDialog from './scheduled-pickup-dialog';
 
 const trip: Trip = {
   id: 'synthetic-trip',
+  journeyId: 'synthetic-journey',
   brokerTripNumber: 'SYN-1',
   passengerFirstName: 'Synthetic',
   passengerLastName: 'Passenger',

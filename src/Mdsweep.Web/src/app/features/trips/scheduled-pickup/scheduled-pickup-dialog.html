@@ -3,7 +3,7 @@
   variant="ghost"
   size="icon-sm"
   type="button"
-  class="absolute end-3 top-3 text-muted-foreground"
+  class="absolute inset-e-3 top-3 text-muted-foreground"
   [attr.aria-label]="'common.close' | translate"
   [disabled]="saving()"
   (click)="cancel()"
@@ -11,10 +11,10 @@
   <ng-icon name="lucideX" class="text-xl" aria-hidden="true" />
 </button>
 <hlm-dialog-header class="gap-1">
-  <h2 hlmDialogTitle class="pe-4 text-2xl font-bold leading-7 tracking-tight">
+  <h2 hlmDialogTitle class="pe-4">
     {{ 'scheduledPickup.title' | translate }}
   </h2>
-  <p hlmDialogDescription class="text-xs leading-5">{{ 'scheduledPickup.subtitle' | translate }}</p>
+  <p hlmDialogDescription class="type-meta">{{ 'scheduledPickup.subtitle' | translate }}</p>
 </hlm-dialog-header>
 
 <div
@@ -28,7 +28,7 @@
     />
     <div>
       <p class="text-muted-foreground">{{ referenceTime().labelKey | translate }}</p>
-      <p class="mt-0.5 font-semibold">
+      <p class="mt-0.5 font-medium">
         {{ language.formatTime(referenceTime().value, referenceTime().fallbackKey) }}
       </p>
     </div>
@@ -41,7 +41,7 @@
     />
     <div>
       <p class="text-muted-foreground">{{ 'trips.estimatedDrive' | translate }}</p>
-      <p class="mt-0.5 font-semibold">{{ driveEstimate() }}</p>
+      <p class="mt-0.5 font-medium">{{ driveEstimate() }}</p>
     </div>
   </div>
   <div class="flex min-w-0 flex-col items-start gap-1 border-s px-2 sm:flex-row sm:gap-2 sm:px-3">

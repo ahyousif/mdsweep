@@ -15,11 +15,18 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<TripAggregate>
         builder.Property(trip => trip.BrokerTripNumber).HasMaxLength(100).IsRequired();
 
         builder.HasIndex(trip => new { trip.TenantId, trip.BrokerTripNumber }).IsUnique();
+        builder.HasIndex(trip => trip.JourneyId);
 
         builder.Property(trip => trip.CalculatedPickupTime).HasColumnType("time");
         builder.Property(trip => trip.ManualPickupTime).HasColumnType("time");
         builder.Property(trip => trip.EstimatedTravelMinutes);
         builder.Property(trip => trip.EstimatedDistanceMeters);
+
+        builder
+            .HasOne<JourneyAggregate>()
+            .WithMany()
+            .HasForeignKey(trip => trip.JourneyId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder
             .HasOne<PassengerAggregate>()

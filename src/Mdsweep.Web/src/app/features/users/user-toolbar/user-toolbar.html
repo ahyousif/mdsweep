@@ -1,15 +1,15 @@
 <div class="flex flex-col gap-8 pb-4">
   <div class="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
     <div>
-      <h1 class="text-3xl font-semibold tracking-tight">{{ 'users.title' | translate }}</h1>
-      <p class="text-muted-foreground mt-1">{{ 'users.help' | translate }}</p>
+      <h1 class="type-page-title">{{ 'users.title' | translate }}</h1>
+      <p class="type-meta mt-1">{{ 'users.help' | translate }}</p>
     </div>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div class="relative sm:w-72">
         <ng-icon
           name="lucideSearch"
-          class="text-muted-foreground pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2"
+          class="text-muted-foreground pointer-events-none absolute top-1/2 inset-s-3 size-4 -translate-y-1/2"
           aria-hidden="true"
         />
         <input
@@ -41,7 +41,7 @@
     @for (filter of filters; track filter) {
       <button
         type="button"
-        class="relative flex shrink-0 items-center gap-2 px-3 pb-3 text-sm font-medium transition-colors"
+        class="type-button relative flex shrink-0 items-center gap-2 px-3 pb-3 transition-colors"
         [class.text-primary]="activeFilter() === filter"
         [class.text-muted-foreground]="activeFilter() !== filter"
         [attr.aria-pressed]="activeFilter() === filter"

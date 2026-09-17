@@ -6,6 +6,7 @@ namespace Mdsweep.Api.Features.Trips;
 
 public sealed record TripResponse(
     Guid Id,
+    Guid JourneyId,
     string BrokerTripNumber,
     string PassengerFirstName,
     string PassengerLastName,
@@ -32,6 +33,7 @@ public sealed record TripResponse(
     public static TripResponse FromModel(TripModel model) =>
         new(
             model.Id,
+            model.JourneyId,
             model.BrokerTripNumber,
             model.PassengerFirstName,
             model.PassengerLastName,

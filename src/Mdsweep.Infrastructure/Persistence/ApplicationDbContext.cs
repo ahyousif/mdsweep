@@ -12,6 +12,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
         IRepository
 {
     public DbSet<TripAggregate> Trips => Set<TripAggregate>();
+    public DbSet<JourneyAggregate> Journeys => Set<JourneyAggregate>();
     public DbSet<PassengerAggregate> Passengers => Set<PassengerAggregate>();
     public DbSet<TenantAggregate> Tenants => Set<TenantAggregate>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();

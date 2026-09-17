@@ -1,4 +1,4 @@
-using Mdsweep.Domain.Common.Abstractions;
+﻿using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Common.Extensions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Trips.Events;
@@ -10,15 +10,17 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
     private TripAggregate()
         : base(default) { }
 
-    private TripAggregate(Guid id, Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
+    private TripAggregate(Guid id, Guid journeyId, Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
         : base(id)
     {
+        JourneyId = journeyId;
         PassengerId = passengerId;
         BrokerTripNumber = brokerTripNumber;
         BrokerData = brokerData;
     }
 
     public string? TenantId { get; set; }
+    public Guid JourneyId { get; private set; }
     public Guid PassengerId { get; private set; }
     public PassengerAggregate Passenger { get; private set; } = null!;
     public string BrokerTripNumber { get; private set; } = null!;
@@ -32,14 +34,21 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
 
     public bool RequiresRouteEstimate => BrokerData.AppointmentTime is not null;
 
-    public static TripAggregate Create(Guid passengerId, string brokerTripNumber, BrokerTripData brokerData)
+    public static TripAggregate Create(
+        Guid journeyId,
+        Guid passengerId,
+        string brokerTripNumber,
+        BrokerTripData brokerData
+    )
     {
+        Guard.Against.Default(journeyId, nameof(journeyId));
         Guard.Against.Default(passengerId, nameof(passengerId));
         Guard.Against.NullOrWhiteSpace(brokerTripNumber, nameof(brokerTripNumber));
         Guard.Against.Null(brokerData, nameof(brokerData));
 
         var trip = new TripAggregate(
             Guid.CreateVersion7(),
+            journeyId,
             passengerId,
             brokerTripNumber.ToUpperInvariant(),
             brokerData
@@ -48,6 +57,32 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         trip.AddDomainEvent(new TripCreatedDomainEvent(trip.Id, trip.PassengerId, trip.BrokerTripNumber));
 
         return trip;
+    }
+
+    public void ChangeJourney(JourneyAggregate source, JourneyAggregate destination)
+    {
+        Guard.Against.Null(source);
+        Guard.Against.Null(destination);
+        Guard.Against.Invalid(source.Id != JourneyId, "The source Journey must contain this Trip.");
+        Guard.Against.Invalid(source.Id == destination.Id, "The destination Journey must differ from the source.");
+
+        source.MarkManual();
+        destination.MarkManual();
+        JourneyId = destination.Id;
+    }
+
+    public void RegroupAutomatically(JourneyAggregate source, JourneyAggregate destination)
+    {
+        Guard.Against.Null(source);
+        Guard.Against.Null(destination);
+        Guard.Against.Invalid(source.Id != JourneyId, "The source Journey must contain this Trip.");
+        Guard.Against.Invalid(
+            source.GroupingType != JourneyGroupingType.Automatic
+                || destination.GroupingType != JourneyGroupingType.Automatic,
+            "Automatic grouping can only move Trips between Automatic Journeys."
+        );
+
+        JourneyId = destination.Id;
     }
 
     public void OverridePickupTime(LocalTime pickupTime)

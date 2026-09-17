@@ -1,17 +1,22 @@
-<div class="space-y-4 pb-6">
-  <div class="flex items-center justify-between gap-4">
-    <h1 class="text-3xl font-semibold tracking-tight">{{ 'trips.title' | translate }}</h1>
+<div class="flex flex-col gap-4 pb-5">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex min-w-0 items-baseline gap-4">
+      <h1 class="type-page-title">{{ 'trips.title' | translate }}</h1>
+      <p class="type-meta hidden truncate lg:block">
+        {{ 'trips.subtitle' | translate: { date: formatServiceDate()(serviceDate()) } }}
+      </p>
+    </div>
 
-    <button
-      hlmBtn
-      type="button"
-      class="inline-flex items-center gap-2"
-      (click)="importTripsClicked.emit()"
-    >
-      <ng-icon name="lucideUpload" class="size-4" aria-hidden="true" />
-
-      {{ 'trips.import' | translate }}
-    </button>
+    <div class="flex items-center gap-2">
+      <button hlmBtn variant="outline" type="button" (click)="importTripsClicked.emit()">
+        <ng-icon name="lucideUpload" aria-hidden="true" />
+        {{ 'trips.import' | translate }}
+      </button>
+      <button hlmBtn type="button" disabled [attr.title]="'trips.addUnavailable' | translate">
+        <ng-icon name="lucidePlus" aria-hidden="true" />
+        {{ 'trips.addTrip' | translate }}
+      </button>
+    </div>
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
@@ -36,9 +41,8 @@
       [attr.aria-label]="'trips.previousDay' | translate"
       (click)="previousDayClicked.emit()"
     >
-      <ng-icon name="lucideChevronLeft" class="rtl:rotate-180 size-4" aria-hidden="true" />
+      <ng-icon name="lucideChevronLeft" class="rtl:rotate-180" aria-hidden="true" />
     </button>
-
     <button
       hlmBtn
       variant="outline"
@@ -47,43 +51,75 @@
       [attr.aria-label]="'trips.nextDay' | translate"
       (click)="nextDayClicked.emit()"
     >
-      <ng-icon name="lucideChevronRight" class="rtl:rotate-180 size-4" aria-hidden="true" />
+      <ng-icon name="lucideChevronRight" class="rtl:rotate-180" aria-hidden="true" />
     </button>
-
-    <button
-      hlmBtn
-      [variant]="isToday() ? 'secondary' : 'outline'"
-      type="button"
-      (click)="todayClicked.emit()"
-    >
+    <button hlmBtn [variant]="isToday() ? 'secondary' : 'outline'" (click)="todayClicked.emit()">
       {{ 'trips.today' | translate }}
     </button>
-
     <button
       hlmBtn
       [variant]="isTomorrow() ? 'secondary' : 'outline'"
-      type="button"
       (click)="tomorrowClicked.emit()"
     >
       {{ 'trips.tomorrow' | translate }}
     </button>
+    <button
+      hlmBtn
+      [variant]="weekSelected() ? 'secondary' : 'outline'"
+      (click)="thisWeekClicked.emit()"
+    >
+      {{ 'trips.thisWeek' | translate }}
+    </button>
+
+    <div class="relative min-w-64 max-w-2xl flex-1 lg:ms-4">
+      <ng-icon
+        name="lucideSearch"
+        class="text-muted-foreground pointer-events-none absolute top-1/2 inset-s-3 -translate-y-1/2"
+        aria-hidden="true"
+      />
+      <input
+        hlmInput
+        type="search"
+        class="w-full ps-9"
+        [attr.aria-label]="'trips.search' | translate"
+        [value]="search()"
+        [placeholder]="'trips.search' | translate"
+        (input)="onSearchInput($event)"
+      />
+    </div>
   </div>
 
-  <div class="relative max-w-xl">
-    <ng-icon
-      name="lucideSearch"
-      class="text-muted-foreground pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2"
-      aria-hidden="true"
-    />
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-2">
+      @for (filter of filters; track filter) {
+        <button
+          hlmBtn
+          size="sm"
+          [variant]="selectedFilter() === filter ? 'secondary' : 'outline'"
+          type="button"
+          [disabled]="(filter === 'inProgress' || filter === 'completed') && !lifecycleAvailable()"
+          [attr.title]="
+            (filter === 'inProgress' || filter === 'completed') && !lifecycleAvailable()
+              ? ('trips.lifecycleUnavailable' | translate)
+              : null
+          "
+          (click)="filterChange.emit(filter)"
+        >
+          {{ 'trips.filters.' + filter | translate }}
+          <span class="text-muted-foreground">
+            @if ((filter === 'inProgress' || filter === 'completed') && !lifecycleAvailable()) {
+              —
+            } @else {
+              {{ filterCounts()[filter] }}
+            }
+          </span>
+        </button>
+      }
+    </div>
 
-    <input
-      hlmInput
-      type="search"
-      [attr.aria-label]="'trips.search' | translate"
-      class="w-full ps-9"
-      [value]="search()"
-      (input)="onSearchInput($event)"
-      [placeholder]="'trips.search' | translate"
-    />
+    <p class="type-meta">
+      {{ 'trips.sortBy' | translate }}
+      <span class="text-foreground ms-1 font-medium">{{ 'trips.pickupEarliest' | translate }}</span>
+    </p>
   </div>
 </div>

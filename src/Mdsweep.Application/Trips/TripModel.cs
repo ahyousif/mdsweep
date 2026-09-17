@@ -4,6 +4,7 @@ namespace Mdsweep.Application.Trips;
 
 public sealed record TripModel(
     Guid Id,
+    Guid JourneyId,
     string BrokerTripNumber,
     string PassengerFirstName,
     string PassengerLastName,

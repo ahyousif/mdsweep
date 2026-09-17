@@ -1,75 +1,51 @@
-import { TranslateService } from '@ngx-translate/core';
 import { LanguageService } from '@app/core/i18n/language.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Component, computed, inject, input, output } from '@angular/core';
 
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideCalendarClock, lucideChevronRight, lucideMapPin } from '@ng-icons/lucide';
+import { lucideEllipsisVertical, lucideMapPin, lucidePlus } from '@ng-icons/lucide';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
-import { HlmCard } from '@spartan-ng/helm/card';
+import { HlmButton } from '@spartan-ng/helm/button';
+import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
+import { hlm } from '@spartan-ng/helm/utils';
 
-import { Trip } from '../trips-types';
+import { JOURNEY_ROW_LAYOUT } from '../journey-row-layout';
+import { JourneyViewModel } from '../journey-view-model';
 
 @Component({
   selector: 'app-trip-card',
-  imports: [TranslatePipe, NgIcon, HlmCard, ...HlmBadgeImports],
+  imports: [TranslatePipe, NgIcon, HlmButton, ...HlmBadgeImports, ...HlmDropdownMenuImports],
   providers: [
     provideIcons({
-      lucideCalendarClock,
-      lucideChevronRight,
+      lucideEllipsisVertical,
       lucideMapPin,
+      lucidePlus,
     }),
   ],
-  host: {
-    class: 'block',
-  },
+  host: { class: 'block' },
   templateUrl: './trip-card.html',
 })
 export default class TripCard {
+  readonly rowClasses = hlm(
+    JOURNEY_ROW_LAYOUT,
+    'relative grid rounded-lg border py-3 transition-colors',
+  );
   readonly language = inject(LanguageService);
-  private readonly translate = inject(TranslateService);
-  readonly trip = input.required<Trip>();
+  readonly journey = input.required<JourneyViewModel>();
   readonly selected = input(false);
 
-  readonly tripSelected = output<Trip>();
+  readonly journeySelected = output<JourneyViewModel>();
 
-  readonly passengerName = computed(
-    () => `${this.trip().passengerFirstName} ${this.trip().passengerLastName}`,
-  );
+  readonly pickupTime = computed(() => {
+    const journey = this.journey();
 
-  readonly pickupTime = computed(() =>
-    this.language.formatTime(this.trip().scheduledPickupTime, 'common.notSet'),
-  );
-
-  readonly brokerStatusLabel = computed(() => {
-    const status = this.trip().brokerStatus;
-
-    if (!status || status.toUpperCase() === 'VALID') {
-      return null;
-    }
-
-    return this.translate.instant('trips.brokerLabel', { status });
-  });
-
-  readonly timingLabel = computed(() => {
-    const trip = this.trip();
-
-    if (trip.direction === 'To') {
-      return this.translate.instant('trips.appointmentTime', {
-        time: this.language.formatTime(trip.appointmentTime),
-      });
-    }
-
-    if (trip.isWillCall) {
-      return this.translate.instant('trips.willCall');
-    }
-
-    return this.translate.instant('trips.returnTime', {
-      time: this.language.formatTime(trip.returnPickupTime),
-    });
+    return this.language.formatTime(
+      journey.displayPickupTime,
+      journey.isEntirelyWillCall ? 'trips.willCall' : 'common.notSet',
+    );
   });
 
   select(): void {
-    this.tripSelected.emit(this.trip());
+    this.journeySelected.emit(this.journey());
   }
 }
