@@ -4,6 +4,7 @@ using Mdsweep.Domain.Trips;
 
 namespace Mdsweep.Application.Trips.Import;
 
+// TODO: revisit this nonsense
 public static class JourneyGroupingReconciler
 {
     public static async Task<IReadOnlyDictionary<string, Guid>> ReconcileAsync(
@@ -19,23 +20,26 @@ public static class JourneyGroupingReconciler
         }
 
         var affectedJourneyIds = groupingChangedTrips.Select(trip => trip.JourneyId).Distinct().ToArray();
-        var affectedJourneys = affectedJourneyIds.Length == 0
-            ? []
-            : await repository.ListAsync(new JourneysSpecification().WithIds(affectedJourneyIds).Build(), ct);
+
+        var affectedJourneys =
+            affectedJourneyIds.Length == 0
+                ? []
+                : await repository.ListAsync(new JourneysSpecification().WithIds(affectedJourneyIds).Build(), ct);
+
         var affectedAutomaticIds = affectedJourneys
             .Where(journey => journey.GroupingType == JourneyGroupingType.Automatic)
             .Select(journey => journey.Id)
             .ToHashSet();
-        var affectedTrips = affectedAutomaticIds.Count == 0
-            ? []
-            : await repository.ListAsync(
-                new TripsSpecification().WithJourneyIds(affectedAutomaticIds.ToArray()).Build(),
-                ct
-            );
 
-        var searchTrips = newTrips
-            .Concat(affectedTrips.Select(trip => Candidate(trip)))
-            .ToArray();
+        var affectedTrips =
+            affectedAutomaticIds.Count == 0
+                ? []
+                : await repository.ListAsync(
+                    new TripsSpecification().WithJourneyIds(affectedAutomaticIds.ToArray()).Build(),
+                    ct
+                );
+
+        var searchTrips = newTrips.Concat(affectedTrips.Select(trip => Candidate(trip))).ToArray();
         if (searchTrips.Length == 0)
         {
             return new Dictionary<string, Guid>();
@@ -48,21 +52,29 @@ public static class JourneyGroupingReconciler
                 .Build(),
             ct
         );
+
         var candidateJourneyIds = nearbyTrips
             .Select(trip => trip.JourneyId)
             .Concat(affectedAutomaticIds)
             .Distinct()
             .ToArray();
-        var journeys = candidateJourneyIds.Length == 0
-            ? []
-            : await repository.ListAsync(new JourneysSpecification().WithIds(candidateJourneyIds).Build(), ct);
-        var journeyTrips = candidateJourneyIds.Length == 0
-            ? []
-            : await repository.ListAsync(new TripsSpecification().WithJourneyIds(candidateJourneyIds).Build(), ct);
+
+        var journeys =
+            candidateJourneyIds.Length == 0
+                ? []
+                : await repository.ListAsync(new JourneysSpecification().WithIds(candidateJourneyIds).Build(), ct);
+
+        var journeyTrips =
+            candidateJourneyIds.Length == 0
+                ? []
+                : await repository.ListAsync(new TripsSpecification().WithJourneyIds(candidateJourneyIds).Build(), ct);
+
         var journeysById = journeys.ToDictionary(journey => journey.Id);
+
         var membersByJourneyId = journeyTrips
             .GroupBy(trip => trip.JourneyId)
             .ToDictionary(group => group.Key, group => group.ToArray());
+
         var changedIds = groupingChangedTrips.Select(trip => trip.Id).ToHashSet();
 
         var brokenJourneyIds = affectedAutomaticIds
@@ -70,20 +82,27 @@ public static class JourneyGroupingReconciler
             {
                 var members = membersByJourneyId[journeyId];
                 return members.Length > 1
-                    && (members.Length != 2 || JourneyGroupingPolicy.FindPairs(members.Select(Candidate).ToArray()).Count != 2);
+                    && (
+                        members.Length != 2
+                        || JourneyGroupingPolicy.FindPairs(members.Select(Candidate).ToArray()).Count != 2
+                    );
             })
             .ToHashSet();
+
         var freeTrips = journeyTrips
             .Where(trip =>
                 journeysById[trip.JourneyId].GroupingType == JourneyGroupingType.Automatic
                 && (membersByJourneyId[trip.JourneyId].Length == 1 || brokenJourneyIds.Contains(trip.JourneyId))
             )
             .ToArray();
+
         var originalFreeJourneyIds = freeTrips.Select(trip => trip.JourneyId).Distinct().ToArray();
         var freeTripsByNumber = freeTrips.ToDictionary(trip => trip.BrokerTripNumber);
         var allCandidates = freeTrips.Select(Candidate).Concat(newTrips).ToArray();
         var pairs = JourneyGroupingPolicy.FindPairs(allCandidates);
-        var activeNumbers = newTrips.Select(trip => trip.TripNumber)
+
+        var activeNumbers = newTrips
+            .Select(trip => trip.TripNumber)
             .Concat(
                 freeTrips
                     .Where(trip => brokenJourneyIds.Contains(trip.JourneyId) || changedIds.Contains(trip.Id))
@@ -93,6 +112,7 @@ public static class JourneyGroupingReconciler
 
         var groups = new List<List<string>>();
         var groupByNumber = new Dictionary<string, int>();
+
         foreach (var candidate in allCandidates.OrderBy(trip => trip.TripNumber, StringComparer.Ordinal))
         {
             if (groupByNumber.ContainsKey(candidate.TripNumber))
@@ -101,8 +121,10 @@ public static class JourneyGroupingReconciler
             }
 
             var group = new List<string> { candidate.TripNumber };
-            if (pairs.TryGetValue(candidate.TripNumber, out var partner)
-                && (activeNumbers.Contains(candidate.TripNumber) || activeNumbers.Contains(partner)))
+            if (
+                pairs.TryGetValue(candidate.TripNumber, out var partner)
+                && (activeNumbers.Contains(candidate.TripNumber) || activeNumbers.Contains(partner))
+            )
             {
                 group.Add(partner);
             }
@@ -130,9 +152,11 @@ public static class JourneyGroupingReconciler
 
         foreach (var journeyId in brokenJourneyIds.Order())
         {
-            foreach (var member in membersByJourneyId[journeyId]
-                .OrderBy(trip => changedIds.Contains(trip.Id))
-                .ThenBy(trip => trip.BrokerTripNumber, StringComparer.Ordinal))
+            foreach (
+                var member in membersByJourneyId[journeyId]
+                    .OrderBy(trip => changedIds.Contains(trip.Id))
+                    .ThenBy(trip => trip.BrokerTripNumber, StringComparer.Ordinal)
+            )
             {
                 var groupIndex = groupByNumber[member.BrokerTripNumber];
                 if (groupJourneyIds[groupIndex] is null)
@@ -177,7 +201,10 @@ public static class JourneyGroupingReconciler
             }
         }
 
-        return newTrips.ToDictionary(trip => trip.TripNumber, trip => groupJourneyIds[groupByNumber[trip.TripNumber]]!.Value);
+        return newTrips.ToDictionary(
+            trip => trip.TripNumber,
+            trip => groupJourneyIds[groupByNumber[trip.TripNumber]]!.Value
+        );
     }
 
     private static JourneyGroupingCandidate Candidate(TripAggregate trip) =>

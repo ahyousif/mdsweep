@@ -1,5 +1,6 @@
 ﻿namespace Mdsweep.Domain.Trips;
 
+// TODO: revisit this nonsense
 public static class JourneyGroupingPolicy
 {
     public static IReadOnlyDictionary<string, JourneyGroupingDecision> Group(
@@ -23,7 +24,10 @@ public static class JourneyGroupingPolicy
             .ToArray();
         var pairs = FindPairs(candidates);
         var newTripNumbers = newTrips.Select(trip => trip.TripNumber).ToHashSet();
-        var existingJourneyByTripNumber = existingTrips.ToDictionary(trip => trip.BrokerTripNumber, trip => trip.JourneyId);
+        var existingJourneyByTripNumber = existingTrips.ToDictionary(
+            trip => trip.BrokerTripNumber,
+            trip => trip.JourneyId
+        );
 
         var decisions = newTrips.ToDictionary(
             trip => trip.TripNumber,
@@ -43,7 +47,10 @@ public static class JourneyGroupingPolicy
             }
             else
             {
-                decisions[trip.TripNumber] = new JourneyGroupingDecision(existingJourneyByTripNumber[partnerNumber], null);
+                decisions[trip.TripNumber] = new JourneyGroupingDecision(
+                    existingJourneyByTripNumber[partnerNumber],
+                    null
+                );
             }
         }
 
@@ -59,12 +66,13 @@ public static class JourneyGroupingPolicy
 
         foreach (var partition in trips.GroupBy(trip => (trip.PassengerId, trip.BrokerData.ServiceDate)))
         {
-            var candidates = partition
-                .Select(trip => new Candidate(trip.TripNumber, Facts(trip.BrokerData)))
-                .ToArray();
+            var candidates = partition.Select(trip => new Candidate(trip.TripNumber, Facts(trip.BrokerData))).ToArray();
             var matches = candidates.ToDictionary(
                 candidate => candidate.TripNumber,
-                candidate => candidates.Where(other => other.TripNumber != candidate.TripNumber && IsReciprocal(candidate, other)).ToArray()
+                candidate =>
+                    candidates
+                        .Where(other => other.TripNumber != candidate.TripNumber && IsReciprocal(candidate, other))
+                        .ToArray()
             );
 
             foreach (var candidate in candidates)
