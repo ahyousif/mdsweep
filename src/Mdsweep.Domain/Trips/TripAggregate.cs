@@ -71,6 +71,20 @@ public sealed class TripAggregate : AggregateRoot<Guid>, ITenanted
         JourneyId = destination.Id;
     }
 
+    public void RegroupAutomatically(JourneyAggregate source, JourneyAggregate destination)
+    {
+        Guard.Against.Null(source);
+        Guard.Against.Null(destination);
+        Guard.Against.Invalid(source.Id != JourneyId, "The source Journey must contain this Trip.");
+        Guard.Against.Invalid(
+            source.GroupingType != JourneyGroupingType.Automatic
+                || destination.GroupingType != JourneyGroupingType.Automatic,
+            "Automatic grouping can only move Trips between Automatic Journeys."
+        );
+
+        JourneyId = destination.Id;
+    }
+
     public void OverridePickupTime(LocalTime pickupTime)
     {
         ManualPickupTime = pickupTime;

@@ -1,5 +1,4 @@
-﻿using Mdsweep.Application.Trips.Import;
-using Mdsweep.Domain.Trips;
+﻿using Mdsweep.Domain.Trips;
 using NodaTime;
 
 namespace Mdsweep.Api.IntegrationTests;
@@ -151,7 +150,6 @@ public sealed class JourneyGroupingPolicyTests
     public void Manual_reciprocal_candidate_does_not_prevent_an_unambiguous_automatic_match()
     {
         var manualJourney = JourneyAggregate.Create(JourneyGroupingType.Manual);
-        ;
         var automaticJourney = JourneyAggregate.Create(JourneyGroupingType.Automatic);
         var manualTrip = Existing(manualJourney.Id, "1001", PassengerOne, TripDirection.To, "Home", "Clinic");
         var automaticTrip = Existing(automaticJourney.Id, "1002", PassengerOne, TripDirection.To, "Home", "Clinic");
@@ -164,6 +162,48 @@ public sealed class JourneyGroupingPolicyTests
         )[added.TripNumber];
 
         Assert.Equal(automaticJourney.Id, decision.ExistingJourneyId);
+    }
+
+    [Fact]
+    public void Grouping_fact_change_ignores_unrelated_broker_metadata_and_normalized_address_spelling()
+    {
+        var original = BrokerData(ServiceDate, TripDirection.To, "Home", "Clinic");
+        var metadataOnly = original with
+        {
+            Status = "UPDATED",
+            Cost = 42,
+            Mileage = 8,
+            PassengerType = "Synthetic type",
+            SpecialNeeds = "Synthetic note",
+            AppointmentTime = new LocalTime(10, 0),
+            PickupAddress = " HOME ",
+        };
+
+        Assert.False(JourneyGroupingPolicy.GroupingFactsChanged(original, metadataOnly));
+        Assert.True(JourneyGroupingPolicy.GroupingFactsChanged(original, original with { ServiceDate = ServiceDate.PlusDays(1) }));
+        Assert.True(JourneyGroupingPolicy.GroupingFactsChanged(original, original with { DropoffCity = "Tucson" }));
+    }
+
+    [Fact]
+    public void Matching_many_unrelated_passenger_and_date_partitions_preserves_each_pair()
+    {
+        var candidates = new List<JourneyGroupingCandidate>();
+        for (var index = 0; index < 30; index++)
+        {
+            var passengerId = Guid.CreateVersion7();
+            var date = ServiceDate.PlusDays(index % 5);
+            candidates.Add(Candidate($"OUT-{index}", passengerId, date, TripDirection.To, "Home", "Clinic"));
+            candidates.Add(Candidate($"BACK-{index}", passengerId, date, TripDirection.From, "Clinic", "Home"));
+        }
+
+        var pairs = JourneyGroupingPolicy.FindPairs(candidates);
+
+        Assert.Equal(60, pairs.Count);
+        for (var index = 0; index < 30; index++)
+        {
+            Assert.Equal($"BACK-{index}", pairs[$"OUT-{index}"]);
+            Assert.Equal($"OUT-{index}", pairs[$"BACK-{index}"]);
+        }
     }
 
     private static JourneyGroupingCandidate Candidate(

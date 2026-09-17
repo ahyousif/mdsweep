@@ -164,6 +164,212 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task Automatic_pair_splits_when_service_date_changes()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        var original = await JourneyIdsAsync();
+
+        var changedRow = Outbound("1001").Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal);
+        using var changed = await Upload(client, Manifest(changedRow));
+        changed.EnsureSuccessStatusCode();
+
+        var split = await JourneyIdsAsync();
+        Assert.NotEqual(split["1001"], split["1002"]);
+        Assert.Equal(original["1002"], split["1002"]);
+
+        using var repeat = await Upload(client, Manifest(changedRow));
+        repeat.EnsureSuccessStatusCode();
+        var repeated = await JourneyIdsAsync();
+        Assert.Equal(split["1001"], repeated["1001"]);
+        Assert.Equal(split["1002"], repeated["1002"]);
+    }
+
+    [Fact]
+    public async Task Unchanged_pair_reimport_keeps_trip_and_journey_ids()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        await using var firstDb = CreateDbContext();
+        var original = await firstDb.Trips.IgnoreQueryFilters()
+            .ToDictionaryAsync(trip => trip.BrokerTripNumber, trip => (trip.Id, trip.JourneyId));
+
+        using var repeat = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        repeat.EnsureSuccessStatusCode();
+
+        await using var verification = CreateDbContext();
+        var repeated = await verification.Trips.IgnoreQueryFilters()
+            .ToDictionaryAsync(trip => trip.BrokerTripNumber, trip => (trip.Id, trip.JourneyId));
+        Assert.Equal(2, repeated.Count);
+        Assert.Equal(original["1001"], repeated["1001"]);
+        Assert.Equal(original["1002"], repeated["1002"]);
+        Assert.Single(await verification.Journeys.IgnoreQueryFilters().ToListAsync());
+    }
+
+    [Fact]
+    public async Task Automatic_pair_splits_when_route_changes()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+
+        using var changed = await Upload(
+            client,
+            Manifest(Outbound("1001").Replace("100 Home St", "101 Other Home St", StringComparison.Ordinal))
+        );
+        changed.EnsureSuccessStatusCode();
+
+        var journeys = await JourneyIdsAsync();
+        Assert.NotEqual(journeys["1001"], journeys["1002"]);
+    }
+
+    [Fact]
+    public async Task Non_grouping_change_preserves_automatic_journey()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        var original = await JourneyIdsAsync();
+
+        using var changed = await Upload(
+            client,
+            Manifest(Outbound("1001").Replace(",VALID,", ",UPDATED,", StringComparison.Ordinal))
+        );
+        changed.EnsureSuccessStatusCode();
+
+        var after = await JourneyIdsAsync();
+        Assert.Equal(original["1001"], after["1001"]);
+        Assert.Equal(original["1002"], after["1002"]);
+    }
+
+    [Fact]
+    public async Task Reciprocal_grouping_changes_preserve_a_still_valid_automatic_pair()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        var original = await JourneyIdsAsync();
+
+        var changedRows = new[] { Outbound("1001"), Inbound("1002") }
+            .Select(row => row.Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal))
+            .ToArray();
+        using var changed = await Upload(client, Manifest(changedRows));
+        changed.EnsureSuccessStatusCode();
+
+        var after = await JourneyIdsAsync();
+        Assert.Equal(original["1001"], after["1001"]);
+        Assert.Equal(original["1002"], after["1002"]);
+    }
+
+    [Fact]
+    public async Task Manual_journey_is_not_regrouped_after_manifest_change()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        var original = await JourneyIdsAsync();
+        await using (var db = CreateDbContext())
+        {
+            var journey = await db.Journeys.IgnoreQueryFilters().SingleAsync();
+            journey.MarkManual();
+            await db.SaveChangesAsync();
+        }
+
+        using var changed = await Upload(
+            client,
+            Manifest(Outbound("1001").Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal))
+        );
+        changed.EnsureSuccessStatusCode();
+
+        var after = await JourneyIdsAsync();
+        Assert.Equal(original["1001"], after["1001"]);
+        Assert.Equal(original["1002"], after["1002"]);
+    }
+
+    [Fact]
+    public async Task Invalidated_trip_can_join_existing_automatic_singleton()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        var singletonRow = Inbound("1003")
+            .Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal)
+            .Replace("100 Home St", "101 Other Home St", StringComparison.Ordinal);
+        using var singleton = await Upload(client, Manifest(singletonRow));
+        singleton.EnsureSuccessStatusCode();
+        var before = await JourneyIdsAsync();
+
+        var changedRow = Outbound("1001")
+            .Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal)
+            .Replace("100 Home St", "101 Other Home St", StringComparison.Ordinal);
+        using var changed = await Upload(client, Manifest(changedRow));
+        changed.EnsureSuccessStatusCode();
+
+        var after = await JourneyIdsAsync();
+        Assert.Equal(before["1003"], after["1001"]);
+        Assert.Equal(before["1002"], after["1002"]);
+    }
+
+    [Fact]
+    public async Task Ambiguous_changed_trip_matches_remain_separate()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        first.EnsureSuccessStatusCode();
+        var candidateRows = new[] { Inbound("1003"), Inbound("1004") }
+            .Select(row => row.Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal))
+            .ToArray();
+        using var candidates = await Upload(client, Manifest(candidateRows));
+        candidates.EnsureSuccessStatusCode();
+
+        using var changed = await Upload(
+            client,
+            Manifest(Outbound("1001").Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal))
+        );
+        changed.EnsureSuccessStatusCode();
+
+        var journeys = await JourneyIdsAsync();
+        Assert.Equal(4, journeys.Values.Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Regrouping_does_not_leave_empty_automatic_journeys()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, Manifest(Outbound("1001")));
+        first.EnsureSuccessStatusCode();
+        using var second = await Upload(
+            client,
+            Manifest(Inbound("1002").Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal))
+        );
+        second.EnsureSuccessStatusCode();
+        var before = await JourneyIdsAsync();
+
+        using var changed = await Upload(
+            client,
+            Manifest(Outbound("1001").Replace("09/15/2026", "09/16/2026", StringComparison.Ordinal))
+        );
+        changed.EnsureSuccessStatusCode();
+
+        var after = await JourneyIdsAsync();
+        Assert.Equal(after["1001"], after["1002"]);
+        Assert.Equal(before["1002"], after["1002"]);
+        await using var db = CreateDbContext();
+        Assert.Single(await db.Journeys.IgnoreQueryFilters().ToListAsync());
+    }
+
+    [Fact]
     public async Task Later_reciprocal_trip_does_not_join_a_manual_singleton()
     {
         using var client = Application.CreateClient();
@@ -221,7 +427,6 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             var trips = await db.Trips.IgnoreQueryFilters().OrderBy(trip => trip.BrokerTripNumber).ToListAsync();
             var source = await db.Journeys.IgnoreQueryFilters().SingleAsync();
             var destination = JourneyAggregate.Create(JourneyGroupingType.Automatic);
-            ;
             destination.TenantId = source.TenantId;
             db.Journeys.Add(destination);
             var unrelated = TripAggregate.Create(
@@ -274,7 +479,6 @@ public sealed class TripImportTests : MdsweepIntegrationTest
             var trip = await db.Trips.IgnoreQueryFilters().SingleAsync();
             var sourceJourney = await db.Journeys.IgnoreQueryFilters().SingleAsync();
             var manualJourney = JourneyAggregate.Create(JourneyGroupingType.Manual);
-            ;
             manualJourney.TenantId = trip.TenantId;
             db.Journeys.Add(manualJourney);
             trip.ChangeJourney(sourceJourney, manualJourney);
@@ -435,6 +639,20 @@ public sealed class TripImportTests : MdsweepIntegrationTest
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string csv) =>
         Upload(client, "trips.csv", System.Text.Encoding.UTF8.GetBytes(csv));
+
+    private ApplicationDbContext CreateDbContext() =>
+        new(
+            new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseNpgsql(DatabaseConnectionString, npgsql => npgsql.UseNodaTime())
+                .UseSnakeCaseNamingConvention()
+                .Options
+        );
+
+    private async Task<Dictionary<string, Guid>> JourneyIdsAsync()
+    {
+        await using var db = CreateDbContext();
+        return await db.Trips.IgnoreQueryFilters().ToDictionaryAsync(trip => trip.BrokerTripNumber, trip => trip.JourneyId);
+    }
 
     private static Task<HttpResponseMessage> Upload(HttpClient client, string name, byte[] content) =>
         client.PostAsync(
