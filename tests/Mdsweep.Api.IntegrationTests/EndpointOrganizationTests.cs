@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
 
 namespace Mdsweep.Api.IntegrationTests;
@@ -9,8 +9,8 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
     [Fact]
     public void Oidc_authentication_persists_the_id_token_needed_for_Keycloak_sign_out()
     {
-        var oidc = Application.Services
-            .GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
+        var oidc = Application
+            .Services.GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>()
             .Get(OpenIdConnectDefaults.AuthenticationScheme);
 
         Assert.True(oidc.SaveTokens);
@@ -42,8 +42,11 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
             "GET /api/auth/antiforgery",
             "POST /api/auth/logout",
             "POST /api/passengers",
+            "POST /api/passengers/{id:guid}/disable",
+            "POST /api/passengers/{id:guid}/enable",
             "GET /api/passengers/{id:guid}",
             "GET /api/passengers",
+            "PUT /api/passengers/{id:guid}",
             "POST /api/trips/import",
             "GET /api/trips/{id:guid}",
             "GET /api/trips",
