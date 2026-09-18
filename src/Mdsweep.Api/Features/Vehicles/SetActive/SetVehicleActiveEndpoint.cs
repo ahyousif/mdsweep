@@ -14,5 +14,9 @@ public sealed class SetVehicleActiveEndpoint
         SetVehicleActiveRequest request,
         IMessageBus bus,
         CancellationToken ct
-    ) => (await bus.SendAsync(request.ToCommand(id), ct)).ToEndpointResult();
+    )
+    {
+        var result = await bus.SendAsync(request.ToCommand(id), ct);
+        return result.ToEndpointResult();
+    }
 }

@@ -18,6 +18,8 @@ VIN uniqueness applies within the selected Tenant and includes inactive Vehicles
 
 Vehicles follows the Passengers module's endpoint/request/validator, command/query/handler, aggregate, specification, and persistence conventions. Commands and queries do not accept a Tenant ID. Existing authorization and conjoined tenancy supply the active Tenant.
 
+Creation returns the new Vehicle model from its command handler without a follow-up query. The POST endpoint returns that model with `201 Created` and a Location header; GET remains a separate endpoint. Create and update endpoints translate concurrent VIN conflicts explicitly, using the same validation feedback as the handler's duplicate check.
+
 | Method | Endpoint | Operation |
 | --- | --- | --- |
 | GET | `/api/vehicles` | List the Tenant's records |
