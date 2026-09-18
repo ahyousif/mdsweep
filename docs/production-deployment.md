@@ -85,19 +85,19 @@ az containerapp job start \
   --resource-group rg-mdsweep-prod \
   --args \
     database reset \
-    --confirm mdsweep
+    confirm mdsweep
 ```
 
 Reset never targets the `keycloak` database.
 
 ## Reset the synthetic demo environment
 
-`demo reset --confirm RESET-DEMO` is a separate, destructive, synthetic-only operation. It uses the permanent Keycloak automation service account in `master` to delete and recreate only the `mdsweep` realm, recreates `mdsweep-api` with the existing `OIDC_CLIENT_SECRET`, and creates `demo.admin@mdsweep.test`. It then resets and migrates only the `mdsweep` application database and creates the MDSweep Demo Tenant, local User, and active Administrator Tenant Membership linked to that new Keycloak user. It never drops or resets `keycloak-db`.
+`demo reset confirm RESET-DEMO` is a separate, destructive, synthetic-only operation. It uses the permanent Keycloak automation service account in `master` to delete and recreate only the `mdsweep` realm, recreates `mdsweep-api` with the existing `OIDC_CLIENT_SECRET`, and creates `developer@mdsweep.com`. It then resets and migrates only the `mdsweep` application database and creates the MDSweep Demo Tenant, local User, and active Administrator Tenant Membership linked to that new Keycloak user. It never drops or resets `keycloak-db`.
 
 Run it only with the manually dispatched **Reset Demo Environment** GitHub Actions workflow. The workflow requires the literal `RESET-DEMO` input, uses the protected `production` environment, serializes reset requests, logs in through the existing GitHub OIDC identity, discovers the deployed Utility job, and waits for its execution to succeed:
 
 ```text
-demo reset --confirm RESET-DEMO
+demo reset confirm RESET-DEMO
 ```
 
 The reset is intentionally not part of `ci-deploy.yml`, so an ordinary `main` deployment cannot invoke it. The demo administrator password is a production-environment secret and is never printed by the Utility or workflow. Treat all resulting data as synthetic.
@@ -160,7 +160,7 @@ Add these environment secrets using the existing production values; do not gener
 - `SMTP_USERNAME`
 - `SMTP_PASSWORD`
 - `KEYCLOAK_AUTOMATION_CLIENT_SECRET`: secret for the permanent `master`-realm `mdsweep-demo-automation` service-account client
-- `DEMO_ADMIN_PASSWORD`: password assigned to the synthetic `demo.admin@mdsweep.test` user whenever the demo environment is reset
+- `DEMO_ADMIN_PASSWORD`: password assigned to the synthetic `developer@mdsweep.com` user whenever the demo environment is reset
 
 The AppHost injects the public origin as `Web__BaseUrl` and configures the production SMTP connection as the API and utility job's named `smtp` connection string. Production invitation delivery uses STARTTLS. Keep these settings synthetic until deployment readiness is accepted, and verify the selected SMTP provider is covered by the required agreement before any patient-linked use.
 

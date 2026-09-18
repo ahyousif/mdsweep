@@ -44,7 +44,7 @@ public sealed class KeycloakAdminClientTests
             request =>
             {
                 Assert.Equal("admin/realms/mdsweep/users", request.Path);
-                Assert.Contains("demo.admin@mdsweep.test", request.Body);
+                Assert.Contains("developer@mdsweep.com", request.Body);
             }
         );
     }
@@ -73,7 +73,10 @@ public sealed class KeycloakAdminClientTests
                 3 or 4 => new HttpResponseMessage(HttpStatusCode.Created),
                 5 => new HttpResponseMessage(HttpStatusCode.Created)
                 {
-                    Headers = { Location = new Uri("https://keycloak.mdsweep.test/admin/realms/mdsweep/users/new-demo-user-id") },
+                    Headers =
+                    {
+                        Location = new Uri("https://keycloak.mdsweep.test/admin/realms/mdsweep/users/new-demo-user-id"),
+                    },
                 },
                 _ => throw new InvalidOperationException("Unexpected Keycloak request."),
             };
