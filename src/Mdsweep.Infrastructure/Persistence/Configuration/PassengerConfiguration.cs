@@ -19,6 +19,7 @@ public sealed class PassengerConfiguration : IEntityTypeConfiguration<PassengerA
         builder.Property(passenger => passenger.PassengerType).HasMaxLength(200);
         builder.Property(passenger => passenger.SpecialNeeds).HasMaxLength(500);
         builder.Property(passenger => passenger.Notes).HasMaxLength(2000);
+        builder.Property(passenger => passenger.IsActive).HasDefaultValue(true);
         builder.HasIndex(passenger => new { passenger.TenantId, passenger.BrokerMemberId }).IsUnique();
     }
 }

@@ -39,7 +39,8 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     alternate_phone_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     passenger_type = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     special_needs = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true)
+                    notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {

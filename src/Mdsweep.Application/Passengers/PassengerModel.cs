@@ -14,6 +14,7 @@ public sealed record PassengerModel
     public string? PassengerType { get; init; }
     public string? SpecialNeeds { get; init; }
     public string? Notes { get; init; }
+    public bool IsActive { get; init; }
 
     public static PassengerModel FromAggregate(PassengerAggregate passenger) =>
         new()
@@ -28,5 +29,6 @@ public sealed record PassengerModel
             PassengerType = passenger.PassengerType,
             SpecialNeeds = passenger.SpecialNeeds,
             Notes = passenger.Notes,
+            IsActive = passenger.IsActive,
         };
 }

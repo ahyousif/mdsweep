@@ -20,6 +20,7 @@ internal sealed class PassengerModelProjection : Specification<PassengerAggregat
             PassengerType = passenger.PassengerType,
             SpecialNeeds = passenger.SpecialNeeds,
             Notes = passenger.Notes,
+            IsActive = passenger.IsActive,
         });
     }
 }

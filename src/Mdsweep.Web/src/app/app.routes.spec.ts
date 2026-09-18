@@ -7,4 +7,8 @@ describe('application routes', () => {
     expect(invitationRoute).toBeDefined();
     expect(invitationRoute?.redirectTo).toBeUndefined();
   });
+
+  it('loads the Passenger workspace at its stable route', () => {
+    expect(routes.find((route) => route.path === 'passengers')?.loadComponent).toBeDefined();
+  });
 });

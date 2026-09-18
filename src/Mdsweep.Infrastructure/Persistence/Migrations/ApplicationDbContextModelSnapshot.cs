@@ -56,6 +56,12 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("last_name");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasDefaultValue(true)
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")

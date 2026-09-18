@@ -43,6 +43,7 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
     public string? PassengerType { get; private set; }
     public string? SpecialNeeds { get; private set; }
     public string? Notes { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     public static PassengerAggregate Create(
         string? brokerMemberId,
@@ -137,4 +138,52 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
     }
 
     public void UpdateNotes(string? notes) => Notes = notes;
+
+    public void UpdateDetails(
+        string? brokerMemberId,
+        string firstName,
+        string lastName,
+        LocalDate? dateOfBirth,
+        string? phoneNumber,
+        string? alternatePhoneNumber,
+        string? passengerType,
+        string? specialNeeds,
+        string? notes
+    )
+    {
+        Guard.Against.Invalid(
+            brokerMemberId is not null && string.IsNullOrWhiteSpace(brokerMemberId),
+            "Broker member ID cannot be blank when supplied."
+        );
+
+        BrokerMemberId = brokerMemberId?.ToUpperInvariant();
+        FirstName = Guard.Against.NullOrWhiteSpace(firstName, nameof(firstName));
+        LastName = Guard.Against.NullOrWhiteSpace(lastName, nameof(lastName));
+        DateOfBirth = dateOfBirth;
+        PhoneNumber = phoneNumber;
+        AlternatePhoneNumber = alternatePhoneNumber;
+        PassengerType = passengerType;
+        SpecialNeeds = specialNeeds;
+        Notes = notes;
+    }
+
+    public void Disable()
+    {
+        if (!IsActive)
+        {
+            return;
+        }
+
+        IsActive = false;
+    }
+
+    public void Enable()
+    {
+        if (IsActive)
+        {
+            return;
+        }
+
+        IsActive = true;
+    }
 }

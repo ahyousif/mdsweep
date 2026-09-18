@@ -12,7 +12,8 @@ public sealed record PassengerResponse(
     string? AlternatePhoneNumber,
     string? PassengerType,
     string? SpecialNeeds,
-    string? Notes
+    string? Notes,
+    bool IsActive
 )
 {
     public static PassengerResponse FromModel(PassengerModel model)
@@ -27,7 +28,8 @@ public sealed record PassengerResponse(
             model.AlternatePhoneNumber,
             model.PassengerType,
             model.SpecialNeeds,
-            model.Notes
+            model.Notes,
+            model.IsActive
         );
     }
 }
