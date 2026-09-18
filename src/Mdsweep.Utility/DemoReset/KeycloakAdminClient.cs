@@ -53,11 +53,20 @@ public sealed class KeycloakAdminClient(HttpClient httpClient, IOptions<Keycloak
 
     private async Task CreateRealmAsync(string accessToken, CancellationToken cancellationToken)
     {
-        var realm = new { realm = RealmName, enabled = true, registrationAllowed = true };
+        var realm = new
+        {
+            realm = RealmName,
+            enabled = true,
+            registrationAllowed = true,
+        };
         await SendJsonAsync(HttpMethod.Post, "admin/realms", accessToken, realm, cancellationToken);
     }
 
-    private async Task CreateServerClientAsync(string accessToken, string webBaseUrl, CancellationToken cancellationToken)
+    private async Task CreateServerClientAsync(
+        string accessToken,
+        string webBaseUrl,
+        CancellationToken cancellationToken
+    )
     {
         var baseUrl = webBaseUrl.TrimEnd('/');
         var client = new
@@ -75,20 +84,34 @@ public sealed class KeycloakAdminClient(HttpClient httpClient, IOptions<Keycloak
                 ["post.logout.redirect.uris"] = $"{baseUrl}/signout-callback-oidc",
             },
         };
-        await SendJsonAsync(HttpMethod.Post, $"admin/realms/{RealmName}/clients", accessToken, client, cancellationToken);
+        await SendJsonAsync(
+            HttpMethod.Post,
+            $"admin/realms/{RealmName}/clients",
+            accessToken,
+            client,
+            cancellationToken
+        );
     }
 
     private async Task<string> CreateDemoAdministratorAsync(string accessToken, CancellationToken cancellationToken)
     {
         var user = new
         {
-            username = "demo.admin@mdsweep.test",
-            email = "demo.admin@mdsweep.test",
+            username = "developer@mdsweep.com",
+            email = "developer@mdsweep.com",
             firstName = "Demo",
             lastName = "Administrator",
             enabled = true,
             emailVerified = true,
-            credentials = new[] { new { type = "password", value = configuration.DemoAdminPassword, temporary = false } },
+            credentials = new[]
+            {
+                new
+                {
+                    type = "password",
+                    value = configuration.DemoAdminPassword,
+                    temporary = false,
+                },
+            },
         };
 
         using var request = Authorized(HttpMethod.Post, $"admin/realms/{RealmName}/users", accessToken);

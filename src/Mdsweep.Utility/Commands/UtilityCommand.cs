@@ -27,9 +27,9 @@ internal static class UtilityArguments
     public const string Usage = """
         Usage:
           tenant provision --tenant-id <id> --tenant-name <name> --admin-email <email> --admin-first-name <name> --admin-last-name <name> [--admin-display-name <name>]
-          demo reset --confirm RESET-DEMO
+          demo reset confirm RESET-DEMO
           database migrate
-          database reset --confirm mdsweep
+          database reset confirm mdsweep
         """;
 
     public static bool TryParse(string[] args, out UtilityCommand? command, out string? error)
@@ -43,13 +43,13 @@ internal static class UtilityArguments
             return true;
         }
 
-        if (args is ["database", "reset", "--confirm", "mdsweep"])
+        if (args is ["database", "reset", "confirm", "mdsweep"])
         {
             command = new UtilityCommand.DatabaseReset();
             return true;
         }
 
-        if (args is ["demo", "reset", "--confirm", "RESET-DEMO"])
+        if (args is ["demo", "reset", "confirm", "RESET-DEMO"])
         {
             command = new UtilityCommand.DemoReset();
             return true;

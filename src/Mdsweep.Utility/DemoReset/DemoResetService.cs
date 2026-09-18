@@ -13,7 +13,7 @@ public sealed class DemoResetService(
 )
 {
     private const string TenantId = "dema-dema-2222";
-    private const string Email = "demo.admin@mdsweep.test";
+    private const string Email = "developer@mdsweep.com";
 
     public Task<string> RecreateKeycloakRealmAsync(CancellationToken cancellationToken = default) =>
         keycloak.RecreateDemoRealmAsync(webOptions.Value.BaseUrl, cancellationToken);

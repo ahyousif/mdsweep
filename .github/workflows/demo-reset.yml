@@ -54,7 +54,7 @@ jobs:
           EXECUTION_NAME="$(az containerapp job start \
             --name "${JOB_NAMES[0]}" \
             --resource-group "$RESOURCE_GROUP" \
-            --args demo reset --confirm RESET-DEMO \
+            --args demo reset confirm RESET-DEMO \
             --query name \
             --output tsv)"
           if [ -z "$EXECUTION_NAME" ]; then
