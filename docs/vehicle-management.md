@@ -12,13 +12,13 @@ Open **Vehicles** in the sidebar to manage the selected Tenant's Vehicle records
 
 Display labels are required and limited to 100 characters. VINs are required and must be exactly 17 ASCII letters or digits, excluding I, O, and Q. Lowercase input is accepted and converted to uppercase at the API boundary. Spaces and punctuation are rejected. The aggregate validates canonical values without silently changing them. There is no VIN checksum or MTM registration check.
 
-VIN uniqueness applies within the selected Tenant and includes inactive Vehicles. Other Tenants may independently record the same VIN. A database unique index prevents concurrent duplicate creation or editing; both the pre-check and persistence conflict produce the localized `vehicleVinExists` business feedback with English diagnostics.
+VIN uniqueness applies within the selected Tenant and includes inactive Vehicles. Other Tenants may independently record the same VIN. A database unique index prevents concurrent duplicate creation or editing. The handler's duplicate pre-check returns localized `vehicleVinExists` business feedback with English diagnostics. A concurrent conflict that passes the pre-check remains an unhandled database error; it does not receive the localized duplicate feedback.
 
 ## Implementation
 
 Vehicles follows the Passengers module's endpoint/request/validator, command/query/handler, aggregate, specification, and persistence conventions. Commands and queries do not accept a Tenant ID. Existing authorization and conjoined tenancy supply the active Tenant.
 
-Creation returns the new Vehicle model from its command handler without a follow-up query. The POST endpoint returns that model with `201 Created` and a Location header; GET remains a separate endpoint. Create and update endpoints translate concurrent VIN conflicts explicitly, using the same validation feedback as the handler's duplicate check.
+Creation returns the new Vehicle model from its command handler without a follow-up query. The POST endpoint returns that model with `201 Created` and a Location header; GET remains a separate endpoint. Create and update endpoints map the handler's result directly without catching persistence exceptions.
 
 | Method | Endpoint | Operation |
 | --- | --- | --- |

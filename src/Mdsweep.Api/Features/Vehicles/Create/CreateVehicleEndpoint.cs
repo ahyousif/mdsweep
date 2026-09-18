@@ -12,15 +12,8 @@ public sealed class CreateVehicleEndpoint
     [WolverinePost(VehicleConstants.Route)]
     public static async Task<IResult> Post(CreateVehicleRequest request, IMessageBus bus, CancellationToken ct)
     {
-        try
-        {
-            var result = await bus.SendAsync(request.ToCommand(), ct);
-            return result.ToEndpointResult(CreatedResponse);
-        }
-        catch (VehicleVinConflictException)
-        {
-            return Result.Invalid(VehicleErrors.DuplicateVin()).ToEndpointResult();
-        }
+        var result = await bus.SendAsync(request.ToCommand(), ct);
+        return result.ToEndpointResult(CreatedResponse);
     }
 
     private static IResult CreatedResponse(VehicleModel vehicle)

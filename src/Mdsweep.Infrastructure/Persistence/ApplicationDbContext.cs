@@ -1,13 +1,10 @@
 ﻿using Mdsweep.Application.Common.Abstractions;
-using Mdsweep.Application.Vehicles;
 using Mdsweep.Domain.Common.Abstractions;
 using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Domain.Users;
 using Mdsweep.Domain.Vehicles;
-using Mdsweep.Infrastructure.Persistence.Configuration;
-using Npgsql;
 
 namespace Mdsweep.Infrastructure.Persistence;
 
@@ -23,25 +20,6 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<UserAggregate> Users => Set<UserAggregate>();
     public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
     public DbSet<VehicleAggregate> Vehicles => Set<VehicleAggregate>();
-
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await base.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException exception)
-            when (exception.InnerException
-                    is PostgresException
-                    {
-                        SqlState: PostgresErrorCodes.UniqueViolation,
-                        ConstraintName: VehicleConfiguration.VinUniqueIndex
-                    }
-            )
-        {
-            throw new VehicleVinConflictException(exception);
-        }
-    }
 
     // Single
     public Task<TAggregate?> GetByIdAsync<TAggregate, TId>(TId id, CancellationToken ct)

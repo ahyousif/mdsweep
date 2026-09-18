@@ -5,6 +5,7 @@ using Mdsweep.Api.Features.Vehicles;
 using Mdsweep.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql;
 
 namespace Mdsweep.Api.IntegrationTests;
 
@@ -128,21 +129,44 @@ public sealed class VehicleManagementTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public async Task Concurrent_creates_leave_one_vehicle_and_return_actionable_duplicate_feedback()
+    public async Task Concurrent_creates_leave_one_vehicle_with_database_uniqueness_enforced()
     {
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
         var responses = await Task.WhenAll(
             Enumerable
                 .Range(0, 6)
-                .Select(index =>
-                    client.PostAsJsonAsync("/api/vehicles", new { displayLabel = $"Synthetic van {index}", vin = Vin })
-                )
+                .Select(async index =>
+                {
+                    try
+                    {
+                        return await client.PostAsJsonAsync(
+                            "/api/vehicles",
+                            new { displayLabel = $"Synthetic van {index}", vin = Vin }
+                        );
+                    }
+                    catch (DbUpdateException exception)
+                        when (exception.InnerException
+                                is PostgresException
+                                {
+                                    SqlState: PostgresErrorCodes.UniqueViolation,
+                                    ConstraintName: "ix_vehicles_tenant_id_vin"
+                                }
+                        )
+                    {
+                        // TestServer propagates unhandled save failures instead of producing an HTTP 500.
+                        return null;
+                    }
+                })
         );
         try
         {
-            Assert.Single(responses, response => response.StatusCode == HttpStatusCode.Created);
-            foreach (var response in responses.Where(response => response.StatusCode != HttpStatusCode.Created))
+            Assert.Single(responses, response => response?.StatusCode == HttpStatusCode.Created);
+            foreach (
+                var response in responses
+                    .OfType<HttpResponseMessage>()
+                    .Where(response => response.StatusCode != HttpStatusCode.Created)
+            )
             {
                 Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
                 using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -156,7 +180,7 @@ public sealed class VehicleManagementTests : MdsweepIntegrationTest
         finally
         {
             foreach (var response in responses)
-                response.Dispose();
+                response?.Dispose();
         }
     }
 
