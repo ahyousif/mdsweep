@@ -49,12 +49,13 @@
 
   @if (selectedUser(); as user) {
     <aside
-      class="bg-background absolute inset-0 z-10 h-full w-full shrink-0 overflow-hidden border-s xl:static xl:w-136"
+      class="bg-background absolute inset-0 h-full w-full shrink-0 overflow-hidden border-s lg:static lg:w-112 xl:w-136"
     >
       <app-user-detail
         [user]="user"
         [editing]="editing()"
         [busy]="mutation.isPending()"
+        [error]="error()"
         (closed)="closeUserDetail()"
         (editClicked)="editing.set(true)"
         (editCancelled)="editing.set(false)"
@@ -97,5 +98,19 @@
       (saved)="save($event)"
       (cancelled)="inviting.set(false)"
     />
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<hlm-dialog [state]="confirmingDisable() ? 'open' : 'closed'" (stateChanged)="confirmingDisable.set($event === 'open')" [disableClose]="mutation.isPending()">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md" [showCloseButton]="!mutation.isPending()" [closeLabel]="'common.close' | translate">
+    <hlm-dialog-header>
+      <h2 hlmDialogTitle>{{ 'users.disableConfirmTitle' | translate }}</h2>
+      <p hlmDialogDescription>{{ 'users.disableConfirmDescription' | translate }}</p>
+    </hlm-dialog-header>
+    @if (error()) { <div hlmAlert variant="destructive" role="alert"><p hlmAlertDescription>{{ error() | uiMessage }}</p></div> }
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" [disabled]="mutation.isPending()" (click)="confirmingDisable.set(false); pendingDisable.set(null)">{{ 'common.cancel' | translate }}</button>
+      <button hlmBtn variant="destructive" type="button" [disabled]="mutation.isPending()" (click)="confirmDisable()">@if (mutation.isPending()) { <hlm-spinner aria-hidden="true" /> }{{ 'users.disable' | translate }}</button>
+    </hlm-dialog-footer>
   </hlm-dialog-content>
 </hlm-dialog>

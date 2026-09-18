@@ -9,6 +9,7 @@ using Mdsweep.Infrastructure.Identity;
 using Mdsweep.Infrastructure.Persistence;
 using Mdsweep.Utility.Commands;
 using Mdsweep.Utility.Database;
+using Mdsweep.Utility.DemoReset;
 using Mdsweep.Utility.TenantProvisioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +53,20 @@ builder
     .ValidateOnStart();
 builder.Services.AddScoped<SendEmailWhenInvitationCreatedHandler>();
 builder.Services.AddScoped<TenantProvisioningService>();
+builder
+    .Services.AddOptions<KeycloakAdministrationOptions>()
+    .Bind(builder.Configuration.GetSection(KeycloakAdministrationOptions.SectionName))
+    .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "Keycloak base URL must be absolute.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.AutomationClientId), "Keycloak automation client ID is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.AutomationClientSecret), "Keycloak automation client secret is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.OidcClientSecret), "OIDC client secret is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.DemoAdminPassword), "Demo administrator password is required.");
+builder.Services.AddHttpClient<KeycloakAdminClient>((services, client) =>
+{
+    var keycloak = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<KeycloakAdministrationOptions>>().Value;
+    client.BaseAddress = new Uri($"{keycloak.BaseUrl.TrimEnd('/')}/");
+});
+builder.Services.AddScoped<DemoResetService>();
 
 using var host = builder.Build();
 using var httpClient = new HttpClient();
@@ -70,6 +85,22 @@ try
         case UtilityCommand.DatabaseReset:
             await databaseOperations.ResetAsync();
             Console.WriteLine("The mdsweep database was reset and migrated. The keycloak database was not modified.");
+            return 0;
+
+        case UtilityCommand.DemoReset:
+            string keycloakUserId;
+            await using (var scope = host.Services.CreateAsyncScope())
+            {
+                keycloakUserId = await scope
+                    .ServiceProvider.GetRequiredService<DemoResetService>()
+                    .RecreateKeycloakRealmAsync();
+            }
+            await databaseOperations.ResetAsync();
+            await using (var scope = host.Services.CreateAsyncScope())
+            {
+                await scope.ServiceProvider.GetRequiredService<DemoResetService>().CreateApplicationDataAsync(keycloakUserId);
+            }
+            Console.WriteLine("The synthetic MDSweep demo realm and application database were reset. The keycloak database was not modified.");
             return 0;
 
         case UtilityCommand.TenantProvision provision:

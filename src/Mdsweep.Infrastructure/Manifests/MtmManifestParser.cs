@@ -65,6 +65,9 @@ internal static class MtmManifestParser
             var memberId = Identifier(Cell(row, headers, "Medicaid Number"));
             var firstName = Cell(row, headers, "Member's First Name");
             var lastName = Cell(row, headers, "Member's Last Name");
+            var dateOfBirth = ParseOptionalDate(Cell(row, headers, "Date of Birth"), rowNumber, tripNumber, "DateOfBirth", problems);
+            var phoneNumber = Cell(row, headers, "Member's Phone Number");
+            var alternatePhoneNumber = Cell(row, headers, "Member's Alt Phone");
             var pickupAddress = Cell(row, headers, "Pickup Address");
             var pickupCity = Cell(row, headers, "Pickup City");
             var dropoffAddress = Cell(row, headers, "Delivery Address");
@@ -139,6 +142,11 @@ internal static class MtmManifestParser
                         MemberId: memberId!,
                         FirstName: firstName!,
                         LastName: lastName!,
+                        DateOfBirth: dateOfBirth,
+                        PhoneNumber: phoneNumber,
+                        AlternatePhoneNumber: alternatePhoneNumber,
+                        PassengerType: passengerType,
+                        SpecialNeeds: specialNeeds,
                         ServiceDate: serviceDate!.Value,
                         Time: time,
                         Direction: direction!.Value,
@@ -152,8 +160,6 @@ internal static class MtmManifestParser
                         DropoffState: dropoffState,
                         DropoffZip: dropoffZip,
                         BrokerStatus: brokerStatus,
-                        PassengerType: passengerType,
-                        SpecialNeeds: specialNeeds,
                         TripCost: tripCost,
                         TripMileage: tripMileage
                     )
@@ -255,6 +261,42 @@ internal static class MtmManifestParser
                 tripNumber,
                 "ServiceDate",
                 $"Appointment date '{value}' is invalid.",
+                "manifest.dateInvalid"
+            )
+        );
+
+        return null;
+    }
+
+    private static LocalDate? ParseOptionalDate(
+        string? value,
+        int rowNumber,
+        string? tripNumber,
+        string field,
+        List<MtmManifestProblem> problems
+    )
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        foreach (var format in _dateFormats)
+        {
+            var result = LocalDatePattern.CreateWithInvariantCulture(format).Parse(value);
+
+            if (result.Success)
+            {
+                return result.Value;
+            }
+        }
+
+        problems.Add(
+            new MtmManifestProblem(
+                rowNumber,
+                tripNumber,
+                field,
+                $"Date '{value}' is invalid.",
                 "manifest.dateInvalid"
             )
         );

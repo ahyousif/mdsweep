@@ -15,7 +15,7 @@
         @for (user of users(); track key(user)) {
           <tr
             hlmTr
-            class="group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            class="group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[state=selected]:border-s-2 data-[state=selected]:border-s-primary data-[state=selected]:bg-primary/10"
             [attr.data-state]="key(user) === selectedUserKey() ? 'selected' : null"
             [attr.aria-selected]="key(user) === selectedUserKey()"
             tabindex="0"

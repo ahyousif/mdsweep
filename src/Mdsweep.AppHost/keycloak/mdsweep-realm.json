@@ -53,7 +53,7 @@
   ],
   "clients": [
     {
-      "clientId": "mdsweep-server",
+      "clientId": "mdsweep-api",
       "enabled": true,
       "publicClient": false,
       "secret": "Development-only-secret",

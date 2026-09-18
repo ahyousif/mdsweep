@@ -1,0 +1,107 @@
+name: Reset Demo Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type RESET-DEMO to reset the synthetic demo realm and application database.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: demo-environment-reset
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Verify confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$CONFIRMATION" != "RESET-DEMO" ]; then
+            echo "Confirmation must be RESET-DEMO." >&2
+            exit 1
+          fi
+
+      - name: Azure login with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run the Utility demo reset job
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          mapfile -t JOB_NAMES < <(az containerapp job list \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "[?contains(name, 'utility')].name" \
+            --output tsv)
+
+          if [ "${#JOB_NAMES[@]}" -ne 1 ]; then
+            echo "Expected one deployed Utility Container Apps Job; found ${#JOB_NAMES[@]}." >&2
+            exit 1
+          fi
+
+          JOB_NAME="${JOB_NAMES[0]}"
+
+          az containerapp job show \
+            --name "$JOB_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.template" \
+            --output json \
+            > /tmp/utility-template.json
+
+          jq \
+            '.containers[0].args = ["demo", "reset", "confirm", "RESET-DEMO"]' \
+            /tmp/utility-template.json \
+            > /tmp/utility-reset-template.json
+
+          EXECUTION_NAME="$(az containerapp job start \
+            --name "$JOB_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --yaml /tmp/utility-reset-template.json \
+            --query name \
+            --output tsv)"
+
+          if [ -z "$EXECUTION_NAME" ]; then
+            echo "The Utility job did not return an execution name." >&2
+            exit 1
+          fi
+
+          echo "Waiting for Utility execution $EXECUTION_NAME."
+
+          for attempt in {1..120}; do
+            STATUS="$(az containerapp job execution show \
+              --name "$JOB_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --job-execution-name "$EXECUTION_NAME" \
+              --query properties.status \
+              --output tsv 2>/dev/null || true)"
+
+            case "$STATUS" in
+              Succeeded)
+                echo "Utility demo reset succeeded."
+                exit 0
+                ;;
+              Failed)
+                echo "Utility demo reset failed. Inspect Container Apps Job execution $EXECUTION_NAME logs." >&2
+                exit 1
+                ;;
+            esac
+
+            sleep 5
+          done
+
+          echo "Timed out waiting for Utility execution $EXECUTION_NAME." >&2
+          exit 1

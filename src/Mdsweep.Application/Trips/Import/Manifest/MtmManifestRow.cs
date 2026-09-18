@@ -8,6 +8,11 @@ public sealed record MtmManifestRow(
     string MemberId,
     string FirstName,
     string LastName,
+    LocalDate? DateOfBirth,
+    string? PhoneNumber,
+    string? AlternatePhoneNumber,
+    string? PassengerType,
+    string? SpecialNeeds,
     LocalDate ServiceDate,
     LocalTime? Time,
     TripDirection Direction,
@@ -21,8 +26,6 @@ public sealed record MtmManifestRow(
     string? DropoffState,
     string? DropoffZip,
     string? BrokerStatus,
-    string? PassengerType,
-    string? SpecialNeeds,
     decimal? TripCost,
     decimal? TripMileage
 );

@@ -85,10 +85,22 @@ az containerapp job start \
   --resource-group rg-mdsweep-prod \
   --args \
     database reset \
-    --confirm mdsweep
+    confirm mdsweep
 ```
 
 Reset never targets the `keycloak` database.
+
+## Reset the synthetic demo environment
+
+`demo reset confirm RESET-DEMO` is a separate, destructive, synthetic-only operation. It uses the permanent Keycloak automation service account in `master` to delete and recreate only the `mdsweep` realm, recreates `mdsweep-api` with the existing `OIDC_CLIENT_SECRET`, and creates `developer@mdsweep.com`. It then resets and migrates only the `mdsweep` application database and creates the MDSweep Demo Tenant, local User, and active Administrator Tenant Membership linked to that new Keycloak user. It never drops or resets `keycloak-db`.
+
+Run it only with the manually dispatched **Reset Demo Environment** GitHub Actions workflow. The workflow requires the literal `RESET-DEMO` input, uses the protected `production` environment, serializes reset requests, logs in through the existing GitHub OIDC identity, discovers the deployed Utility job, and waits for its execution to succeed:
+
+```text
+demo reset confirm RESET-DEMO
+```
+
+The reset is intentionally not part of `ci-deploy.yml`, so an ordinary `main` deployment cannot invoke it. The demo administrator password is a production-environment secret and is never printed by the Utility or workflow. Treat all resulting data as synthetic.
 
 ## One-time GitHub OIDC setup
 
@@ -147,6 +159,8 @@ Add these environment secrets using the existing production values; do not gener
 - `SMTP_CONNECTION_STRING`: SMTP endpoint in the form `Endpoint=smtp://host:port`
 - `SMTP_USERNAME`
 - `SMTP_PASSWORD`
+- `KEYCLOAK_AUTOMATION_CLIENT_SECRET`: secret for the permanent `master`-realm `mdsweep-demo-automation` service-account client
+- `DEMO_ADMIN_PASSWORD`: password assigned to the synthetic `developer@mdsweep.com` user whenever the demo environment is reset
 
 The AppHost injects the public origin as `Web__BaseUrl` and configures the production SMTP connection as the API and utility job's named `smtp` connection string. Production invitation delivery uses STARTTLS. Keep these settings synthetic until deployment readiness is accepted, and verify the selected SMTP provider is covered by the required agreement before any patient-linked use.
 
@@ -163,7 +177,13 @@ Create the administrator with Keycloak's Admin Console rather than adding creden
 
 The production AppHost intentionally does not set `KC_BOOTSTRAP_ADMIN_USERNAME` or `KC_BOOTSTRAP_ADMIN_PASSWORD`. Local `aspire run` still creates the synthetic `admin` bootstrap user and imports the development realm. If production must be recovered onto a fresh database, use Keycloak's native `bootstrap-admin user` recovery command during a controlled maintenance window, then remove that temporary recovery account after a named administrator is restored.
 
-The production `mdsweep-server` client is administered in Keycloak rather than imported by the AppHost. Its Valid Post Logout Redirect URIs must include the deployed public application's `/signout-callback-oidc` URI before enabling RP-initiated logout.
+## One-time Keycloak demo-reset automation setup
+
+The demo reset job authenticates with client credentials, not a shared human administrator. In the `master` realm, create a confidential OIDC client named `mdsweep-demo-automation`, enable **Client authentication** and **Service accounts roles**, and retain its generated client secret in the `KEYCLOAK_AUTOMATION_CLIENT_SECRET` production-environment secret. On that client's service-account user, assign the `realm-management` client role `realm-admin` in `master`. This is required to delete and create the `mdsweep` realm; it does not require or use Keycloak database credentials.
+
+Verify the client can obtain a token from `/realms/master/protocol/openid-connect/token` with `grant_type=client_credentials` before enabling the workflow. Restrict access to the `production` GitHub environment, rotate the client secret through the environment secret when needed, and record its owner and recovery procedure in the deployment-readiness issue.
+
+The production `mdsweep-api` client is administered in Keycloak rather than imported by the AppHost. Its Valid Post Logout Redirect URIs must include the deployed public application's `/signout-callback-oidc` URI before enabling RP-initiated logout.
 The production `mdsweep` realm must also have **User registration** enabled in Realm settings; the development realm import does not configure the production database.
 
 ## Deployment security notes

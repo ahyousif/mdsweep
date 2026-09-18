@@ -10,9 +10,10 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v7
@@ -22,6 +23,27 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Restore dependencies
+        run: dotnet restore Mdsweep.slnx
+
+      - name: Build
+        run: dotnet build Mdsweep.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test Mdsweep.slnx
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=tests.trx"
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -29,36 +51,79 @@ jobs:
           cache: npm
           cache-dependency-path: src/Mdsweep.Web/package-lock.json
 
-      - name: Restore .NET dependencies
-        run: dotnet restore Mdsweep.slnx
-
-      - name: Restore web dependencies
+      - name: Restore dependencies
         working-directory: src/Mdsweep.Web
         run: npm ci
 
-      - name: Build
-        run: dotnet build Mdsweep.slnx --configuration Release --no-restore
+      - name: Test
+        working-directory: src/Mdsweep.Web
+        run: npm test -- --watch=false
+
+  browser:
+    name: Browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: npm
+          cache-dependency-path: src/Mdsweep.Web/package-lock.json
+
+      - name: Restore dependencies
+        working-directory: src/Mdsweep.Web
+        run: npm ci
 
       - name: Build web
         working-directory: src/Mdsweep.Web
         run: npm run build
 
-      - name: Test .NET
-        run: dotnet test Mdsweep.slnx --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
-
-      - name: Test web
+      - name: Install Chromium
         working-directory: src/Mdsweep.Web
-        run: npm test -- --watch=false
+        run: npx playwright install --with-deps chromium
 
-      - name: Test web workflows in the browser
+      - name: Test web workflows
         working-directory: src/Mdsweep.Web
+        run: npx playwright test --workers=2
+
+      - name: Test localization in installed PWA
+        working-directory: src/Mdsweep.Web
+        run: >
+          npx playwright test
+          --config playwright.pwa.config.ts
+          --workers=1
+
+  # Keep the existing "verify" status check for branch protection.
+  verify:
+    name: verify
+    if: ${{ always() }}
+    needs:
+      - backend
+      - web
+      - browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify all checks passed
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          WEB_RESULT: ${{ needs.web.result }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
         run: |
-          npx playwright install --with-deps chromium
-          npm run test:e2e -- --workers=1
+          echo "Backend: $BACKEND_RESULT"
+          echo "Web: $WEB_RESULT"
+          echo "Browser: $BROWSER_RESULT"
 
-      - name: Test localization in the installed PWA
-        working-directory: src/Mdsweep.Web
-        run: npm run test:e2e:pwa -- --workers=1
+          if [[ "$BACKEND_RESULT" != "success" ||
+                "$WEB_RESULT" != "success" ||
+                "$BROWSER_RESULT" != "success" ]]; then
+            exit 1
+          fi
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -83,11 +148,18 @@ jobs:
 
       Parameters__custom_domain: ${{ vars.CUSTOM_DOMAIN }}
       Parameters__certificate_name: ${{ vars.CUSTOM_DOMAIN_CERTIFICATE_NAME }}
+
       Parameters__postgres_username: ${{ secrets.POSTGRES_USERNAME }}
       Parameters__postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
+
       Parameters__oidc_client_secret: ${{ secrets.OIDC_CLIENT_SECRET }}
+      Parameters__keycloak_automation_client_secret: ${{ secrets.KEYCLOAK_AUTOMATION_CLIENT_SECRET }}
+      Parameters__demo_admin_password: ${{ secrets.DEMO_ADMIN_PASSWORD }}
+
       Parameters__google_routes_api_key: ${{ secrets.GOOGLE_ROUTES_API_KEY }}
+
       Parameters__web_base_url: ${{ vars.WEB_BASE_URL }}
+
       ConnectionStrings__smtp: ${{ secrets.SMTP_CONNECTION_STRING }}
       Parameters__smtp_username: ${{ secrets.SMTP_USERNAME }}
       Parameters__smtp_password: ${{ secrets.SMTP_PASSWORD }}
@@ -108,8 +180,8 @@ jobs:
           cache: npm
           cache-dependency-path: src/Mdsweep.Web/package-lock.json
 
-      - name: Install Aspire CLI 13.5.3
-        run: dotnet tool install --global Aspire.Cli --version 13.5.3
+      - name: Install Aspire CLI
+        run: dotnet tool install --global Aspire.Cli --version 13.5.4
 
       - name: Restore dependencies
         run: |
@@ -123,11 +195,13 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Inspect deployment plan
-        run: |
-          aspire ls
-          aspire publish --list-steps --non-interactive
-          aspire deploy --list-steps --non-interactive
+      - name: Inspect application
+        run: aspire ls
 
       - name: Deploy with Aspire
-        run: aspire deploy --apphost src/Mdsweep.AppHost/Mdsweep.AppHost.csproj --environment Production --non-interactive
+        run: >
+          aspire deploy
+          --apphost src/Mdsweep.AppHost/Mdsweep.AppHost.csproj
+          --environment Production
+          --non-interactive
+          --clear-cache

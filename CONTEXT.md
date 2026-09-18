@@ -47,6 +47,9 @@ The Vehicle attributed to a performed Trip for billing, normally derived from th
 The person for whom transportation is arranged and performed. A Passenger belongs to one Tenant and may be created independently of a Trip. A broker-specific member identifier distinguishes the Passenger within broker records. For the initial MTM template, the `Medicaid Number` identifies that Passenger.
 _Avoid_: Patient, Client, Member
 
+**Passenger Operational Status**:
+A Tenant-owned Active or Inactive state for a Passenger. Inactive retains the Passenger, its broker identity, and its Trip history; it is not deletion or account access control.
+
 **Trip**:
 A broker-authorized passenger movement from one pickup location to one drop-off location at an expected time.
 _Avoid_: Ride, job

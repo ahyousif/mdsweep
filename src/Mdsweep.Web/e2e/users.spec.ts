@@ -162,44 +162,62 @@ test('manages active, invited, and disabled users in one selectable list', async
   await page.getByRole('row', { name: /Casey Disabled/ }).click();
   const detailPanel = page.locator('aside');
   await expect(detailPanel.getByRole('heading', { name: 'Details' })).toBeVisible();
-  await expect(detailPanel.locator('dl').getByText('Disabled', { exact: true })).toBeVisible();
-  await expect(detailPanel.getByRole('heading', { name: 'Re-enable access' })).toBeVisible();
-  await expect(detailPanel.getByRole('button', { name: 'Re-enable user' })).toBeVisible();
-  await detailPanel.getByRole('button', { name: 'Close user details' }).click();
+  await expect(detailPanel.locator('header').getByText('Disabled', { exact: true })).toBeVisible();
+  await expect(detailPanel.locator('dl').getByText('Disabled', { exact: true })).toHaveCount(0);
+  await expect(detailPanel.getByRole('button', { name: 'Enable', exact: true })).toBeVisible();
+  await expect(detailPanel.getByRole('button', { name: 'User actions' })).toHaveCount(0);
   await page.getByRole('button', { name: /All 3/ }).click();
 
   const invitedRow = page.getByRole('row', { name: /Omar Hassan/ });
   await invitedRow.click();
   await expect(invitedRow).toHaveAttribute('aria-selected', 'true');
   await expect(detailPanel.getByText('Expires', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Resend invitation' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Cancel invitation' })).toBeVisible();
+  await detailPanel.getByRole('button', { name: 'Invitation actions' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Resend invitation' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Cancel invitation' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Resend invitation' }).click();
+  await page.getByRole('menuitem', { name: 'Resend invitation' }).click();
   await expect(page.getByRole('status')).toHaveText('Invitation resent to omar@example.test');
-  await page.getByRole('button', { name: 'Close user details' }).click();
-  await expect(invitedRow).toHaveAttribute('aria-selected', 'false');
+  await expect(invitedRow).toHaveAttribute('aria-selected', 'true');
 
   const activeRow = page.getByRole('row', { name: /Taylor Example/ });
   await activeRow.click();
   await expect(activeRow).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: 'Cancel invitation' })).toHaveCount(0);
+  await expect(detailPanel.getByRole('button', { name: 'Close user details' })).toBeVisible();
+  await expect(detailPanel.getByRole('button', { name: 'Close user details' })).not.toHaveClass(/text-destructive/);
+  await expect(page.getByRole('menuitem', { name: 'Cancel invitation' })).toHaveCount(0);
   await expect(detailPanel.getByRole('heading', { name: 'Details', exact: true })).toBeVisible();
   await expect(detailPanel.getByText('Roles', { exact: true })).toBeVisible();
-  await expect(detailPanel.getByText('Status', { exact: true })).toBeVisible();
-  await expect(
-    detailPanel.getByText('Prevent this user from accessing this tenant.'),
-  ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Disable user' })).toBeVisible();
+  await expect(detailPanel.locator('dl').getByText('Status', { exact: true })).toHaveCount(0);
+  await expect(detailPanel.locator('dl [data-slot="badge"]')).toHaveCount(0);
+  await expect(detailPanel.getByRole('button', { name: 'Disable', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(detailPanel.getByRole('heading', { name: 'Edit user' })).toBeVisible();
+  await expect(detailPanel.getByRole('checkbox', { name: 'Active access' })).toHaveCount(0);
+  await detailPanel.getByRole('button', { name: 'Back to details' }).click();
+  await expect(activeRow).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Dispatcher', exact: true }).click();
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(activeRow).toContainText('Dispatcher');
   expect(user.roles).toEqual(['Driver', 'Dispatcher']);
-  await page.getByRole('button', { name: 'Disable user' }).click();
+  await expect(detailPanel.locator('dl').locator('dd').filter({ hasText: 'Driver, Dispatcher' })).toBeVisible();
+  await detailPanel.getByRole('button', { name: 'Disable', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Disable user?' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Disable user' }).click();
   await expect(activeRow).toContainText('Disabled');
-  await page.getByRole('button', { name: 'Re-enable user' }).click();
+  await detailPanel.getByRole('button', { name: 'Enable', exact: true }).click();
   await expect(activeRow).toContainText('Active');
+
+  await page.setViewportSize({ width: 390, height: 700 });
+  await expect(detailPanel.getByRole('button', { name: 'Close user details' })).toHaveCount(0);
+  await expect(detailPanel.getByRole('button', { name: 'Back to users' })).toBeVisible();
+  await detailPanel.getByRole('button', { name: 'Edit' }).click();
+  await expect(detailPanel.getByRole('heading', { name: 'Edit user' })).toBeVisible();
+  await detailPanel.getByRole('button', { name: 'Back to details' }).click();
+  await detailPanel.getByRole('button', { name: 'Back to users' }).click();
+  await expect(detailPanel).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 800 });
 
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: /Active 1/ }).click();
@@ -231,9 +249,10 @@ test('manages active, invited, and disabled users in one selectable list', async
   await page.getByRole('button', { name: /Invited 2/ }).click();
   await expect(newInvitation).toContainText('Invited');
   await newInvitation.click();
-  await page.getByRole('button', { name: 'Cancel invitation' }).click();
+  await detailPanel.getByRole('button', { name: 'Invitation actions' }).click();
+  await page.getByRole('menuitem', { name: 'Cancel invitation' }).click();
   await expect(newInvitation).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Close user details' })).toHaveCount(0);
+  await expect(detailPanel).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('users.png'), fullPage: true });
 });
 
@@ -339,6 +358,12 @@ for (const language of ['en', 'ar'] as const) {
     await expect.poll(() => submittedRoles).toHaveLength(3);
     expect(submittedRoles.sort()).toEqual(['Administrator', 'Dispatcher', 'Driver']);
     await expect(page.getByRole('row').filter({ hasText: user.email })).toContainText(labels.admin);
+    const roleValue = page.locator('aside dl > div')
+      .filter({ has: page.locator('dt').filter({ hasText: language === 'en' ? /^Roles$/ : /^الأدوار$/ }) })
+      .locator('dd');
+    await expect(roleValue).toContainText(labels.admin);
+    await expect(roleValue).toContainText(language === 'en' ? ',' : '،');
+    await expect(roleValue.locator('[data-slot="badge"]')).toHaveCount(0);
     await page.reload();
     await page.getByRole('row').filter({ hasText: user.email }).click();
     await page.getByRole('button', { name: labels.edit, exact: true }).click();

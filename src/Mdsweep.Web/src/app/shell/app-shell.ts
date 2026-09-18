@@ -13,6 +13,7 @@ import {
   lucideMoon,
   lucideRoute,
   lucideSun,
+  lucideUserRound,
   lucideUsers,
 } from '@ng-icons/lucide';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
@@ -31,7 +32,15 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
     ...HlmSidebarImports,
   ],
   providers: [
-    provideIcons({ lucideCar, lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUsers }),
+    provideIcons({
+      lucideCar,
+      lucideMonitor,
+      lucideMoon,
+      lucideRoute,
+      lucideSun,
+      lucideUserRound,
+      lucideUsers,
+    }),
   ],
   templateUrl: './app-shell.html',
 })
@@ -49,6 +58,9 @@ export class AppShell {
     { label: 'trips.title', route: '/trips', icon: 'lucideRoute' },
     ...(this.session().roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
       ? [{ label: 'vehicles.title', route: '/vehicles', icon: 'lucideCar' }]
+      : []),
+    ...(this.session().roles.some((role) => role === 'Dispatcher' || role === 'Administrator')
+      ? [{ label: 'passengers.title', route: '/passengers', icon: 'lucideUserRound' }]
       : []),
     ...(this.session().roles.includes('Administrator')
       ? [{ label: 'users.title', route: '/users', icon: 'lucideUsers' }]

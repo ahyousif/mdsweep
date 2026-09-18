@@ -1,0 +1,52 @@
+<div class="overflow-hidden rounded-lg border">
+  <div hlmTableContainer>
+    <table hlmTable>
+      <thead hlmTHead class="bg-muted/40 hidden md:table-header-group">
+        <tr hlmTr>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'passengers.name' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'passengers.memberId' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'passengers.primaryPhone' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 px-4">{{ 'passengers.passengerType' | translate }}</th>
+          <th hlmTh scope="col" class="h-12 w-12 px-4"><span class="sr-only">{{ 'passengers.openDetails' | translate }}</span></th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (passenger of passengers(); track passenger.id) {
+          <tr
+            hlmTr
+            class="group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[state=selected]:border-s-2 data-[state=selected]:border-s-primary data-[state=selected]:bg-primary/10"
+            [attr.data-state]="passenger.id === selectedPassengerId() ? 'selected' : null"
+            [attr.aria-selected]="passenger.id === selectedPassengerId()"
+            tabindex="0"
+            (click)="select(passenger)"
+            (keydown.enter)="select(passenger)"
+            (keydown.space)="$event.preventDefault(); select(passenger)"
+          >
+            <td hlmTd class="px-4 py-4">
+              <div class="flex items-center gap-3">
+                <span
+                  class="bg-secondary text-secondary-foreground grid size-10 shrink-0 place-items-center rounded-full text-sm font-semibold"
+                  aria-hidden="true"
+                >
+                  {{ initials(passenger) }}
+                </span>
+                <span class="min-w-0">
+                  <span class="type-entity-name block truncate"><bdi>{{ fullName(passenger) }}</bdi></span>
+                  <span class="type-meta block truncate">
+                    <bdi>{{ passenger.brokerMemberId }}</bdi>
+                  </span>
+                </span>
+              </div>
+            </td>
+            <td hlmTd class="type-meta hidden px-4 py-4 md:table-cell"><bdi>{{ passenger.brokerMemberId }}</bdi></td>
+            <td hlmTd class="type-meta hidden px-4 py-4 md:table-cell"><bdi>{{ formatPhone(passenger.phoneNumber) }}</bdi></td>
+            <td hlmTd class="type-meta hidden px-4 py-4 md:table-cell"><bdi>{{ passenger.passengerType }}</bdi></td>
+            <td hlmTd class="px-4 py-4 text-end">
+              <ng-icon name="lucideChevronRight" class="rtl:rotate-180 text-muted-foreground size-5 group-hover:translate-x-0.5" aria-hidden="true" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

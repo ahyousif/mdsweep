@@ -133,7 +133,16 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
                 {
                     if (passenger is null)
                     {
-                        passenger = PassengerAggregate.Create(row.MemberId, row.FirstName, row.LastName);
+                        passenger = PassengerAggregate.Create(
+                            row.MemberId,
+                            row.FirstName,
+                            row.LastName,
+                            row.DateOfBirth,
+                            row.PhoneNumber,
+                            row.AlternatePhoneNumber,
+                            row.PassengerType,
+                            row.SpecialNeeds
+                        );
 
                         await repository.AddAsync(passenger, ct);
 
@@ -189,12 +198,18 @@ public sealed class TripImportHandler(IMtmManifestReader manifestReader, IReposi
         CancellationToken ct
     )
     {
-        if (passenger.FirstName == row.FirstName && passenger.LastName == row.LastName)
+        if (!passenger.UpdateMtmDetails(
+            row.FirstName,
+            row.LastName,
+            row.DateOfBirth,
+            row.PhoneNumber,
+            row.AlternatePhoneNumber,
+            row.PassengerType,
+            row.SpecialNeeds
+        ))
         {
             return;
         }
-
-        passenger.UpdateDetails(row.FirstName, row.LastName);
 
         await repository.UpdateAsync(passenger, ct);
     }

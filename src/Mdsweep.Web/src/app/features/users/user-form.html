@@ -50,17 +50,10 @@
           <hlm-field-error>{{ 'users.displayNameRequired' | translate }}</hlm-field-error>
         }
       </div>
-      <p hlmFieldDescription>
-        {{
-          'users.profile'
-            | translate
-              : {
-                  firstName: value()?.firstName,
-                  lastName: value()?.lastName,
-                  email: value()?.email,
-                }
-        }}
-      </p>
+      <div hlmField>
+        <label hlmFieldLabel [for]="prefix() + '-email-readonly'">{{ 'users.email' | translate }}</label>
+        <input hlmInput [id]="prefix() + '-email-readonly'" [value]="value()?.email ?? ''" readonly />
+      </div>
     }
     @if (inviting()) {
       <div hlmField>
@@ -116,17 +109,6 @@
         }}</hlm-field-error>
       }
     </div>
-    @if (!inviting()) {
-      <div hlmField orientation="horizontal">
-        <hlm-checkbox [inputId]="prefix() + '-active'" formControlName="isActive" />
-        <div hlmFieldContent>
-          <label hlmFieldLabel [for]="prefix() + '-active'">{{
-            'users.activeAccess' | translate
-          }}</label>
-          <p hlmFieldDescription>{{ 'users.deactivateHelp' | translate }}</p>
-        </div>
-      </div>
-    }
     <div hlmField orientation="horizontal">
       <button hlmBtn type="submit" [disabled]="busy()">
         @if (busy()) {
