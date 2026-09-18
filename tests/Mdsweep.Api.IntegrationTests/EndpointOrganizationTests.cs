@@ -17,61 +17,78 @@ public sealed class EndpointOrganizationTests : MdsweepIntegrationTest
     }
 
     [Fact]
-    public void Identity_and_dispatch_routes_are_registered_once_with_expected_authorization()
+    public void Api_routes_are_registered_once()
     {
-        var dataSource = Application.Services.GetRequiredService<EndpointDataSource>();
-        var routeEndpoints = dataSource.Endpoints.OfType<RouteEndpoint>().ToList();
-        var identityEndpoints = routeEndpoints
-            .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/api/auth/") == true)
-            .ToDictionary(endpoint => endpoint.RoutePattern.RawText!);
+        var routes = GetApiRoutes();
 
-        Assert.Equal(6, identityEndpoints.Count);
-        Assert.True(IsAnonymous(identityEndpoints["/api/auth/login"]));
-        Assert.True(IsAnonymous(identityEndpoints["/api/auth/register"]));
-        AssertProtected(identityEndpoints["/api/auth/session"]);
-        AssertProtected(identityEndpoints["/api/auth/tenant-context"]);
-        AssertProtected(identityEndpoints["/api/auth/antiforgery"]);
-        AssertProtected(identityEndpoints["/api/auth/logout"]);
-
-        var expectedRoutes = new[]
-        {
-            "GET /api/auth/login",
-            "GET /api/auth/register",
-            "GET /api/auth/session",
-            "POST /api/auth/tenant-context",
-            "GET /api/auth/antiforgery",
-            "POST /api/auth/logout",
-            "POST /api/passengers",
-            "POST /api/passengers/{id:guid}/disable",
-            "POST /api/passengers/{id:guid}/enable",
-            "GET /api/passengers/{id:guid}",
-            "GET /api/passengers",
-            "PUT /api/passengers/{id:guid}",
-            "POST /api/trips/import",
-            "GET /api/trips/{id:guid}",
-            "GET /api/trips",
-            "PUT /api/trips/{id:guid}/scheduled-pickup-time",
-        };
-        var expectedPaths = expectedRoutes
-            .Select(route => route[(route.IndexOf(' ') + 1)..])
-            .ToHashSet(StringComparer.Ordinal);
-        var actualRoutes = routeEndpoints
-            .Where(endpoint => expectedPaths.Contains(endpoint.RoutePattern.RawText!))
-            .SelectMany(endpoint =>
-                endpoint
-                    .Metadata.GetRequiredMetadata<HttpMethodMetadata>()
-                    .HttpMethods.Select(method => $"{method} {endpoint.RoutePattern.RawText}")
-            )
-            .Order(StringComparer.Ordinal)
+        var duplicates = routes
+            .GroupBy(route => (route.Method, route.Path))
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key.Method} {group.Key.Path}")
             .ToList();
 
-        Assert.Equal(expectedRoutes.Order(StringComparer.Ordinal), actualRoutes.Order(StringComparer.Ordinal));
+        Assert.Empty(duplicates);
     }
 
-    private static bool IsAnonymous(RouteEndpoint endpoint) =>
+    [Fact]
+    public void Api_routes_require_authorization_except_known_public_endpoints()
+    {
+        var routes = GetApiRoutes();
+
+        var publicRoutes = new HashSet<(string Method, string Path)>
+        {
+            ("GET", "/api/auth/login"),
+            ("GET", "/api/auth/register"),
+        };
+
+        foreach (var route in routes)
+        {
+            if (publicRoutes.Contains((route.Method, route.Path)))
+            {
+                Assert.True(IsUnprotected(route.Endpoint), $"Expected {route.Method} {route.Path} to be anonymous.");
+            }
+            else
+            {
+                Assert.True(
+                    IsProtected(route.Endpoint),
+                    $"Expected {route.Method} {route.Path} to require authorization."
+                );
+            }
+        }
+    }
+
+    private IReadOnlyList<RegisteredRoute> GetApiRoutes()
+    {
+        var dataSource = Application.Services.GetRequiredService<EndpointDataSource>();
+
+        return
+        [
+            .. dataSource
+                .Endpoints.OfType<RouteEndpoint>()
+                .Where(endpoint => endpoint.RoutePattern.RawText?.StartsWith("/api/", StringComparison.Ordinal) == true)
+                .SelectMany(endpoint =>
+                {
+                    var httpMethods = endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods;
+
+                    if (httpMethods is null)
+                        return [];
+
+                    return httpMethods.Select(method => new RegisteredRoute(
+                        method,
+                        endpoint.RoutePattern.RawText!,
+                        endpoint
+                    ));
+                }),
+        ];
+    }
+
+    private static bool IsProtected(RouteEndpoint endpoint) =>
+        endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Count > 0
+        && endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null;
+
+    private static bool IsUnprotected(RouteEndpoint endpoint) =>
         endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null
         || endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Count == 0;
 
-    private static void AssertProtected(RouteEndpoint endpoint) =>
-        Assert.NotEmpty(endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>());
+    private sealed record RegisteredRoute(string Method, string Path, RouteEndpoint Endpoint);
 }
