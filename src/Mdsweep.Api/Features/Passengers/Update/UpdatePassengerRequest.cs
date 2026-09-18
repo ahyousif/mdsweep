@@ -2,6 +2,7 @@ using Mdsweep.Application.Passengers.Update;
 
 namespace Mdsweep.Api.Features.Passengers.Update;
 
+// TODO: what heck is this
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record UpdatePassengerRequest(
     string? BrokerMemberId,

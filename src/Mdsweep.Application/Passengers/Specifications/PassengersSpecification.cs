@@ -17,6 +17,7 @@ public sealed class PassengersSpecification : SpecificationBuilder<PassengerAggr
         return this;
     }
 
+    // TODO: clean up search
 #pragma warning disable CA1862 // EF Core does not translate StringComparison overloads.
     public PassengersSpecification WithSearch(string? search)
     {

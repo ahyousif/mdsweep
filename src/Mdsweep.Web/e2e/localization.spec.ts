@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
 
 async function mockApplication(page: Page) {
   await page.route('**/api/auth/**', (route) =>
@@ -132,24 +132,44 @@ test('retains unfinished forms and translates an already-visible server error', 
       },
     });
   });
-  await page.goto('/users');
-  await page.getByRole('row').filter({ hasText: 'synthetic@example.test' }).click();
-  await page.getByRole('button', { name: 'Edit', exact: true }).click();
-  await page.getByLabel('Display name', { exact: true }).fill('Unfinished synthetic name');
-  await page.getByRole('button', { name: 'Save changes' }).click();
-  await expect(page.getByRole('alert')).toContainText('You cannot deactivate yourself');
-  await switchLanguage(page, 'ar');
-  await expect(page.getByLabel('اسم العرض', { exact: true })).toHaveValue(
-    'Unfinished synthetic name',
-  );
-  await expect(page.getByRole('alert')).toContainText('لا يمكنك تعطيل حسابك');
-  await switchLanguage(page, 'en');
-  await expect(page.getByLabel('Display name', { exact: true })).toHaveValue(
-    'Unfinished synthetic name',
-  );
-  await expect(page.getByRole('alert')).toContainText('You cannot deactivate yourself');
-  expect(saveRequests).toBe(1);
-});
+  
+await page.goto('/users');
+await page.getByRole('row').filter({ hasText: 'synthetic@example.test' }).click();
+
+const inspector = page.getByRole('complementary');
+
+await inspector.getByRole('button', { name: 'Edit', exact: true }).click();
+await inspector
+  .getByLabel('Display name', { exact: true })
+  .fill('Unfinished synthetic name');
+
+await inspector.getByRole('button', { name: 'Save changes' }).click();
+
+await expect(inspector.getByRole('alert')).toContainText(
+  'You cannot deactivate yourself',
+);
+
+await switchLanguage(page, 'ar');
+
+await expect(
+  inspector.getByLabel('اسم العرض', { exact: true }),
+).toHaveValue('Unfinished synthetic name');
+
+await expect(inspector.getByRole('alert')).toContainText(
+  'لا يمكنك تعطيل حسابك',
+);
+
+await switchLanguage(page, 'en');
+
+await expect(
+  inspector.getByLabel('Display name', { exact: true }),
+).toHaveValue('Unfinished synthetic name');
+
+await expect(inspector.getByRole('alert')).toContainText(
+  'You cannot deactivate yourself',
+);
+
+expect(saveRequests).toBe(1);
 
 test('Arabic import feedback preserves the filename and required broker column names', async ({
   page,

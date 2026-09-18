@@ -8,9 +8,14 @@ public sealed class DisablePassengerHandler(IRepository repository)
     public async Task<Result> Handle(DisablePassengerCommand command, CancellationToken ct)
     {
         var passenger = await repository.GetByIdAsync<PassengerAggregate, Guid>(command.PassengerId, ct);
-        if (passenger is null) return Result.NotFound();
+
+        if (passenger is null)
+        {
+            return Result.NotFound();
+        }
 
         passenger.Disable();
+
         return Result.Success();
     }
 }

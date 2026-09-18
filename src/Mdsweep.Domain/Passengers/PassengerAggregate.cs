@@ -78,6 +78,7 @@ public sealed class PassengerAggregate : AggregateRoot<Guid>, ITenanted
         return passenger;
     }
 
+    // TODO: revisit the two updates
     public bool UpdateMtmDetails(
         string firstName,
         string lastName,
