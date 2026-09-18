@@ -12,6 +12,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/users/users-page'),
   },
   {
+    path: 'passengers',
+    loadComponent: () => import('./features/passengers/passengers-page'),
+  },
+  {
     path: 'trips',
     loadChildren: () => import('./features/trips/trips.routes'),
   },

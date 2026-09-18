@@ -33,7 +33,14 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     tenant_id = table.Column<string>(type: "text", nullable: false),
                     broker_member_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     first_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false)
+                    last_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    date_of_birth = table.Column<LocalDate>(type: "date", nullable: true),
+                    phone_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    alternate_phone_number = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    passenger_type = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    special_needs = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {

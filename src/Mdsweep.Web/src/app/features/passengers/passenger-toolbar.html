@@ -1,0 +1,38 @@
+<div class="flex flex-col gap-8 pb-4">
+  <div class="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+    <div>
+      <h1 class="type-page-title">{{ 'passengers.title' | translate }}</h1>
+      <p class="type-meta mt-1">{{ 'passengers.help' | translate }}</p>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="relative sm:w-72">
+        <ng-icon
+          name="lucideSearch"
+          class="text-muted-foreground pointer-events-none absolute top-1/2 inset-s-3 size-4 -translate-y-1/2"
+          aria-hidden="true"
+        />
+        <input
+          hlmInput
+          id="passenger-search"
+          type="search"
+          class="w-full ps-9"
+          [value]="search()"
+          (input)="onSearchInput($event)"
+          [placeholder]="'passengers.searchPlaceholder' | translate"
+          [attr.aria-label]="'passengers.search' | translate"
+        />
+      </div>
+      <button
+        hlmBtn
+        type="button"
+        class="inline-flex items-center gap-2"
+        [disabled]="busy()"
+        (click)="addClicked.emit()"
+      >
+        <ng-icon name="lucidePlus" class="size-4" aria-hidden="true" />
+        {{ 'passengers.add' | translate }}
+      </button>
+    </div>
+  </div>
+</div>

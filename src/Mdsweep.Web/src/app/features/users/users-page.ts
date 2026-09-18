@@ -53,6 +53,8 @@ export default class UsersPage {
   readonly selectedUserKey = signal<string | null>(null);
   readonly inviting = signal(false);
   readonly editing = signal(false);
+  readonly confirmingDisable = signal(false);
+  readonly pendingDisable = signal<UserDetails | null>(null);
   readonly message = signal<UiFeedback | null>(null);
   readonly error = signal<UiFeedback | null>(null);
 
@@ -100,6 +102,8 @@ export default class UsersPage {
     onSuccess: async (_: void, action: Action) => {
       this.inviting.set(false);
       this.editing.set(false);
+      this.confirmingDisable.set(false);
+      this.pendingDisable.set(null);
       this.message.set(
         action.kind === 'invite'
           ? { key: 'users.invitationSent', params: { email: action.details.email } }
@@ -132,10 +136,12 @@ export default class UsersPage {
 
   setSearch(value: string): void {
     this.search.set(value);
+    this.closeUserDetail();
   }
 
   setFilter(filter: UserStatusFilter): void {
     this.activeFilter.set(filter);
+    this.closeUserDetail();
   }
 
   startInvite(): void {
@@ -158,6 +164,12 @@ export default class UsersPage {
   save(details: UserDetails): void {
     const user = this.selectedUser();
 
+    if (user?.type === 'User' && user.status === 'Active' && !details.isActive) {
+      this.pendingDisable.set(details);
+      this.confirmingDisable.set(true);
+      return;
+    }
+
     this.run(
       user && this.editing() ? { kind: 'update', user, details } : { kind: 'invite', details },
     );
@@ -170,18 +182,26 @@ export default class UsersPage {
       return;
     }
 
-    this.run({
-      kind: 'update',
-      user,
-      details: {
-        displayName: user.displayName,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        roles: user.roles,
-        isActive,
-      },
-    });
+    const details: UserDetails = {
+      displayName: user.displayName,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      roles: user.roles,
+      isActive,
+    };
+    if (!isActive) {
+      this.pendingDisable.set(details);
+      this.confirmingDisable.set(true);
+    } else {
+      this.run({ kind: 'update', user, details });
+    }
+  }
+
+  confirmDisable(): void {
+    const user = this.selectedUser();
+    const details = this.pendingDisable();
+    if (user?.type === 'User' && details) this.run({ kind: 'update', user, details });
   }
 
   cancelInvitation(): void {

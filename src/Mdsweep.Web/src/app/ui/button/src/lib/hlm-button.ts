@@ -13,6 +13,10 @@ export const buttonVariants = cva(
         default: 'bg-primary text-primary-foreground hover:bg-primary/80',
         outline:
           'border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 aria-expanded:bg-muted aria-expanded:text-foreground shadow-xs',
+        'outline-destructive':
+          'border-destructive/40 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:border-destructive/50 focus-visible:ring-destructive/20 dark:hover:bg-destructive/20 dark:focus-visible:ring-destructive/40 shadow-xs',
+        'outline-success':
+          'border-success/40 bg-transparent text-success hover:bg-success/10 hover:text-success focus-visible:border-success/50 focus-visible:ring-success/20 dark:hover:bg-success/20 dark:focus-visible:ring-success/40 shadow-xs',
         secondary:
           'bg-secondary text-secondary-foreground aria-expanded:bg-secondary aria-expanded:text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]',
         ghost:

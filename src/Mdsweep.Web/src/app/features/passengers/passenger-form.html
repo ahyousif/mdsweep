@@ -1,0 +1,38 @@
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div hlmFieldGroup>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div hlmField>
+        <label hlmFieldLabel for="passenger-first-name">{{ 'passengers.firstName' | translate }}</label>
+        <input hlmInput id="passenger-first-name" formControlName="firstName" autocomplete="given-name" maxlength="200" required />
+        @if (form.controls.firstName.invalid && form.controls.firstName.touched) { <hlm-field-error>{{ 'passengers.firstNameRequired' | translate }}</hlm-field-error> }
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="passenger-last-name">{{ 'passengers.lastName' | translate }}</label>
+        <input hlmInput id="passenger-last-name" formControlName="lastName" autocomplete="family-name" maxlength="200" required />
+        @if (form.controls.lastName.invalid && form.controls.lastName.touched) { <hlm-field-error>{{ 'passengers.lastNameRequired' | translate }}</hlm-field-error> }
+      </div>
+    </div>
+    <div hlmField>
+      <label hlmFieldLabel for="passenger-member-id">{{ 'passengers.memberId' | translate }}</label>
+      <input hlmInput id="passenger-member-id" formControlName="brokerMemberId" maxlength="200" />
+      <p hlmFieldDescription>{{ 'passengers.memberIdHelp' | translate }}</p>
+    </div>
+    @if (editing()) {
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div hlmField><label hlmFieldLabel for="passenger-dob">{{ 'passengers.dateOfBirth' | translate }}</label><input hlmInput id="passenger-dob" type="date" formControlName="dateOfBirth" /></div>
+        <div hlmField><label hlmFieldLabel for="passenger-type">{{ 'passengers.passengerType' | translate }}</label><input hlmInput id="passenger-type" formControlName="passengerType" maxlength="200" /></div>
+        <div hlmField><label hlmFieldLabel for="passenger-phone">{{ 'passengers.primaryPhone' | translate }}</label><input hlmInput id="passenger-phone" type="tel" formControlName="phoneNumber" maxlength="50" /></div>
+        <div hlmField><label hlmFieldLabel for="passenger-alternate-phone">{{ 'passengers.alternatePhone' | translate }}</label><input hlmInput id="passenger-alternate-phone" type="tel" formControlName="alternatePhoneNumber" maxlength="50" /></div>
+      </div>
+      <div hlmField><label hlmFieldLabel for="passenger-special-needs">{{ 'passengers.specialNeeds' | translate }}</label><textarea hlmTextarea id="passenger-special-needs" formControlName="specialNeeds" maxlength="500"></textarea></div>
+      <div hlmField><label hlmFieldLabel for="passenger-notes">{{ 'passengers.notes' | translate }}</label><textarea hlmTextarea id="passenger-notes" formControlName="notes" maxlength="2000"></textarea></div>
+    }
+    <div hlmField orientation="horizontal">
+      <button hlmBtn type="submit" [disabled]="busy()">
+        @if (busy()) { <hlm-spinner aria-hidden="true" /> }
+        {{ (busy() ? 'common.saving' : editing() ? 'passengers.saveChanges' : 'passengers.create') | translate }}
+      </button>
+      <button hlmBtn variant="outline" type="button" [disabled]="busy()" (click)="cancelled.emit()">{{ 'common.cancel' | translate }}</button>
+    </div>
+  </div>
+</form>

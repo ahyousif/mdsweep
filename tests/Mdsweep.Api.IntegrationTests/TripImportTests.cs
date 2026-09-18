@@ -93,6 +93,171 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     }
 
     [Fact]
+    public async Task Import_creates_passenger_with_mtm_profile_data()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var response = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,555-0199,Wheel Chair,Cannot Transfer,46")
+        );
+        response.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal("MED-PROFILE", passenger.BrokerMemberId);
+        Assert.Equal("Synthetic", passenger.FirstName);
+        Assert.Equal("Passenger", passenger.LastName);
+        Assert.Equal(new LocalDate(1980, 1, 2), passenger.DateOfBirth);
+        Assert.Equal("555-0100", passenger.PhoneNumber);
+        Assert.Equal("555-0199", passenger.AlternatePhoneNumber);
+        Assert.Equal("Wheel Chair", passenger.PassengerType);
+        Assert.Equal("Cannot Transfer", passenger.SpecialNeeds);
+    }
+
+    [Fact]
+    public async Task Reimport_updates_changed_mtm_passenger_fields()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,555-0199,Ambulatory,None,46")
+        );
+        first.EnsureSuccessStatusCode();
+        using var repeat = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Updated,Member,Phoenix,Mesa,N,T,03/04/1981,555-0200,555-0299,Wheel Chair,Cannot Transfer,45")
+        );
+        repeat.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal("Updated", passenger.FirstName);
+        Assert.Equal("Member", passenger.LastName);
+        Assert.Equal(new LocalDate(1981, 3, 4), passenger.DateOfBirth);
+        Assert.Equal("555-0200", passenger.PhoneNumber);
+        Assert.Equal("555-0299", passenger.AlternatePhoneNumber);
+        Assert.Equal("Wheel Chair", passenger.PassengerType);
+        Assert.Equal("Cannot Transfer", passenger.SpecialNeeds);
+    }
+
+    [Fact]
+    public async Task Reimport_with_blank_optional_profile_fields_retains_existing_values()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,555-0199,Wheel Chair,Cannot Transfer,46")
+        );
+        first.EnsureSuccessStatusCode();
+        using var repeat = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,,,,,,46")
+        );
+        repeat.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(new LocalDate(1980, 1, 2), passenger.DateOfBirth);
+        Assert.Equal("555-0100", passenger.PhoneNumber);
+        Assert.Equal("555-0199", passenger.AlternatePhoneNumber);
+        Assert.Equal("Wheel Chair", passenger.PassengerType);
+        Assert.Equal("Cannot Transfer", passenger.SpecialNeeds);
+    }
+
+    [Fact]
+    public async Task Reimport_with_populated_optional_profile_fields_updates_an_earlier_blank_row()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,,,,,,46")
+        );
+        first.EnsureSuccessStatusCode();
+        using var repeat = await Upload(
+            client,
+            ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-PROFILE,MED-PROFILE,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,555-0199,Wheel Chair,Cannot Transfer,46")
+        );
+        repeat.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal(new LocalDate(1980, 1, 2), passenger.DateOfBirth);
+        Assert.Equal("555-0100", passenger.PhoneNumber);
+        Assert.Equal("555-0199", passenger.AlternatePhoneNumber);
+        Assert.Equal("Wheel Chair", passenger.PassengerType);
+        Assert.Equal("Cannot Transfer", passenger.SpecialNeeds);
+    }
+
+    [Fact]
+    public async Task Reimport_preserves_mdsweep_owned_passenger_notes()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var first = await Upload(client, ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-NOTES,MED-NOTES,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0100,,None,,46"));
+        first.EnsureSuccessStatusCode();
+
+        await using (var db = CreateDbContext())
+        {
+            var passenger = await db.Passengers.IgnoreQueryFilters().SingleAsync();
+            passenger.UpdateNotes("Call from the east entrance.");
+            await db.SaveChangesAsync();
+        }
+
+        using var repeat = await Upload(client, ProfileCsv("09/15/2026,200 Synthetic Way,100 Sample St,09:15,TRIP-NOTES,MED-NOTES,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T,01/02/1980,555-0200,,Wheel Chair,Needs ramp,46"));
+        repeat.EnsureSuccessStatusCode();
+
+        await using var verification = Application.Services.CreateAsyncScope();
+        var savedPassenger = await verification.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal("Call from the east entrance.", savedPassenger.Notes);
+    }
+
+    [Fact]
+    public async Task Missing_optional_passenger_fields_do_not_block_import()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var response = await Upload(client, Csv());
+        var result = await response.Content.ReadFromJsonAsync<ImportTripsResponse>();
+        Assert.NotNull(result);
+        Assert.Equal(1, result.ReadyCount);
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var passenger = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().SingleAsync();
+        Assert.Null(passenger.DateOfBirth);
+        Assert.Null(passenger.PhoneNumber);
+        Assert.Null(passenger.AlternatePhoneNumber);
+        Assert.Null(passenger.PassengerType);
+        Assert.Null(passenger.SpecialNeeds);
+    }
+
+    [Fact]
+    public async Task Multiple_manifest_trips_for_one_member_share_a_passenger()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var response = await Upload(client, Manifest(Outbound("1001"), Inbound("1002")));
+        response.EnsureSuccessStatusCode();
+
+        await using var scope = Application.Services.CreateAsyncScope();
+        var trips = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Trips.IgnoreQueryFilters().ToListAsync();
+        Assert.Equal(2, trips.Count);
+        Assert.Single(trips.Select(trip => trip.PassengerId).Distinct());
+        Assert.Single(await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
+            .Passengers.IgnoreQueryFilters().ToListAsync());
+    }
+
+    [Fact]
     public async Task Changed_broker_data_preserves_scheduled_pickup_time()
     {
         using var client = Application.CreateClient();
@@ -670,6 +835,10 @@ public sealed class TripImportTests : MdsweepIntegrationTest
     private static string Manifest(params string[] rows) =>
         "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Trip Type\n"
         + string.Join('\n', rows);
+
+    private static string ProfileCsv(string row) =>
+        "Appointment Date,Delivery Address,Pickup Address,Time,Trip Number,Medicaid Number,Trip Status,Member's First Name,Member's Last Name,Pickup City,Delivery City,Will Call Flag,Trip Type,Date of Birth,Member's Phone Number,Member's Alt Phone,Passenger Type,Special Needs,Member's Age\n"
+        + row;
 
     private static string Outbound(string tripNumber) =>
         $"09/15/2026,200 Clinic Ave,100 Home St,09:15,{tripNumber},MED-100,VALID,Synthetic,Passenger,Phoenix,Mesa,N,T";
