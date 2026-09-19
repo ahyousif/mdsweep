@@ -97,8 +97,12 @@ for (const language of ['en', 'ar'] as const) {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).not.toBeVisible();
     await expect(edit).toBeFocused();
-    await page.setViewportSize({ width: 1536, height: 1000 });
+    await page.setViewportSize({ width: 1279, height: 1000 });
+    await expect(page.locator('app-vehicles-page section')).toHaveJSProperty('inert', true);
+    await expect(page.locator('#vehicle-detail')).toHaveCSS('position', 'absolute');
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await expect(page.locator('app-vehicles-page section')).toHaveJSProperty('inert', false);
+    await expect(page.locator('#vehicle-detail')).toHaveCSS('position', 'static');
     await page.getByRole('searchbox').focus();
     await expect(page.getByRole('searchbox')).toBeFocused();
     await page.setViewportSize({ width: 390, height: 844 });

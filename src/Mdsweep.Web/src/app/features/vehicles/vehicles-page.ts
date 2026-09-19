@@ -10,8 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { BreakpointObserver } from '@angular/cdk/layout';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { LayoutService } from '@app/core/layout/layout.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -60,10 +59,11 @@ export default class VehiclesPage {
   readonly #queries = inject(QueryClient);
   readonly #document = inject(DOCUMENT);
   readonly #injector = inject(Injector);
-  readonly #desktop = toSignal(inject(BreakpointObserver).observe('(min-width: 80rem)'));
-  #detailTrigger: HTMLElement | null = null;
+  readonly #layout = inject(LayoutService);
+  // Restore keyboard focus here when details close; use search if the row disappeared.
+  #detailsReturnFocusTarget: HTMLElement | null = null;
   readonly searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
-  readonly mobileDetails = computed(() => !this.#desktop()?.matches && !!this.selectedVehicle());
+  readonly mobileDetails = computed(() => !this.#layout.isDesktop() && !!this.selectedVehicle());
   readonly listing = injectQuery(() => vehiclesQueryOptions(this.#api));
   readonly filters: Filter[] = ['All', 'Active', 'Inactive'];
   readonly search = signal('');
@@ -130,7 +130,7 @@ export default class VehiclesPage {
     this.formOpen.set(true);
   }
   select(vehicle: Vehicle): void {
-    this.#detailTrigger = this.#document.activeElement as HTMLElement | null;
+    this.#detailsReturnFocusTarget = this.#document.activeElement as HTMLElement | null;
     this.selectedId.set(vehicle.id);
     this.error.set(null);
     this.message.set(null);
@@ -141,8 +141,8 @@ export default class VehiclesPage {
     afterNextRender(
       () => {
         // A status change can remove the original row from the current filter.
-        const target = this.#detailTrigger?.isConnected
-          ? this.#detailTrigger
+        const target = this.#detailsReturnFocusTarget?.isConnected
+          ? this.#detailsReturnFocusTarget
           : this.searchInput().nativeElement;
         target.focus();
       },
