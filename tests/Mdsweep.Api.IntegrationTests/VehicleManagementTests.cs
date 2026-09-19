@@ -20,7 +20,7 @@ public sealed class VehicleManagementTests : MdsweepIntegrationTest
         using var client = Application.CreateClient();
         await AddAntiforgeryToken(client);
         var vehicle = await Create(client, "Van 1", Vin.ToLowerInvariant());
-        Assert.Equal(Vin, vehicle.Vin);
+        Assert.Equal(Vin.ToLowerInvariant(), vehicle.Vin);
         Assert.True(vehicle.IsActive);
         Assert.Equal(7, vehicle.Id.Version);
 
@@ -114,9 +114,7 @@ public sealed class VehicleManagementTests : MdsweepIntegrationTest
             new { isActive = false }
         );
         Assert.Equal(HttpStatusCode.NoContent, deactivate.StatusCode);
-        await Duplicate(
-            client.PostAsJsonAsync("/api/vehicles", new { displayLabel = "Duplicate", vin = Vin.ToLowerInvariant() })
-        );
+        await Duplicate(client.PostAsJsonAsync("/api/vehicles", new { displayLabel = "Duplicate", vin = Vin }));
         await Duplicate(
             client.PutAsJsonAsync($"/api/vehicles/{second.Id}", new { displayLabel = "Duplicate", vin = Vin })
         );

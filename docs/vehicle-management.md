@@ -10,9 +10,9 @@ Open **Vehicles** in the sidebar to manage the selected Tenant's Vehicle records
 - Choose **Deactivate vehicle** or **Reactivate vehicle** to change its active state. These actions preserve the record and can be reversed. There is no delete operation.
 - Search and filters remain after changes. Failed saves preserve the form draft and provide actionable feedback. Duplicate-VIN feedback directs the user to locate and edit or reactivate the existing record.
 
-Display labels are required and limited to 100 characters. VINs are required and must be exactly 17 ASCII letters or digits, excluding I, O, and Q. Lowercase input is accepted and converted to uppercase at the API boundary. Spaces and punctuation are rejected. The aggregate validates canonical values without silently changing them. There is no VIN checksum or MTM registration check.
+Display labels are required and limited to 100 characters. VINs are required and must be exactly 17 ASCII letters or digits, excluding I, O, and Q. Input casing is preserved. Spaces and punctuation are rejected by API validation, with matching frontend feedback. The aggregate retains required-value guards without duplicating format rules. There is no VIN checksum or MTM registration check.
 
-VIN uniqueness applies within the selected Tenant and includes inactive Vehicles. Other Tenants may independently record the same VIN. A database unique index prevents concurrent duplicate creation or editing. The handler's duplicate pre-check returns localized `vehicleVinExists` business feedback with English diagnostics. A concurrent conflict that passes the pre-check remains an unhandled database error; it does not receive the localized duplicate feedback.
+VIN uniqueness is case-sensitive and applies within the selected Tenant and includes inactive Vehicles. Other Tenants may independently record the same VIN. A database unique index prevents concurrent duplicate creation or editing. The handler's duplicate pre-check returns localized `vehicleVinExists` business feedback with English diagnostics. A concurrent conflict that passes the pre-check remains an unhandled database error; it does not receive the localized duplicate feedback.
 
 ## Implementation
 

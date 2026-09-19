@@ -135,7 +135,7 @@ for (const language of ['en', 'ar'] as const) {
     await expect(dialog).not.toBeVisible();
     await page.getByRole('searchbox', { name: labels.search }).fill('Van 1');
     await page.getByRole('button', { name: 'Van 1', exact: true }).click();
-    await expect(page.locator('#vehicle-detail')).toContainText(vin);
+    await expect(page.locator('#vehicle-detail')).toContainText(vin.toLowerCase());
     await page.screenshot({
       path: testInfo.outputPath(`vehicles-${language}.png`),
       fullPage: true,

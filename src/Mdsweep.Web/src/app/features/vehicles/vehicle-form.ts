@@ -36,6 +36,6 @@ export class VehicleForm {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     const details = this.form.getRawValue();
-    this.saved.emit({ ...details, vin: details.vin.toUpperCase() });
+    this.saved.emit(details);
   }
 }

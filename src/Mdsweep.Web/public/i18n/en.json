@@ -70,7 +70,7 @@
     "saveChanges": "Save changes",
     "formHelp": "Enter a display label and a valid 17-character VIN.",
     "vinPlaceholder": "Enter 17-character VIN",
-    "vinHelp": "17 letters and digits. I, O and Q are not allowed.",
+    "vinHelp": "17 letters and digits. Uppercase and lowercase are accepted and preserved. I, O and Q are not allowed.",
     "vinInvalid": "Enter a 17-character VIN using letters and digits, excluding I, O and Q.",
     "labelInvalid": "Enter a display label of up to 100 characters.",
     "activeByDefault": "New vehicles are active.",

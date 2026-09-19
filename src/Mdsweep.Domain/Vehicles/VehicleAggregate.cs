@@ -1,5 +1,4 @@
 using Mdsweep.Domain.Common.Abstractions;
-using Mdsweep.Domain.Common.Extensions;
 
 namespace Mdsweep.Domain.Vehicles;
 
@@ -28,18 +27,7 @@ public sealed class VehicleAggregate : AggregateRoot<Guid>, ITenanted
     public void UpdateDetails(string displayLabel, string vin)
     {
         Guard.Against.NullOrWhiteSpace(displayLabel, nameof(displayLabel));
-        Guard.Against.Invalid(
-            displayLabel.Length > MaxDisplayLabelLength,
-            "Display label must be 100 characters or fewer."
-        );
         Guard.Against.NullOrWhiteSpace(vin, nameof(vin));
-        Guard.Against.Invalid(
-            vin.Length != 17
-                || vin.Any(character =>
-                    !(character is >= 'A' and <= 'Z' or >= '0' and <= '9') || character is 'I' or 'O' or 'Q'
-                ),
-            "VIN must contain 17 uppercase letters or digits, excluding I, O and Q."
-        );
         DisplayLabel = displayLabel;
         Vin = vin;
     }
