@@ -8,7 +8,7 @@ public sealed class SetVehicleActiveEndpoint
 {
     [Tags(VehicleConstants.Tag)]
     [Authorize(Policy = AuthorizationPolicies.VehiclesManage)]
-    [WolverinePut(VehicleConstants.IdRoute + "/active")]
+    [WolverinePut(VehicleConstants.Active)]
     public static async Task<IResult> Put(
         Guid id,
         SetVehicleActiveRequest request,
