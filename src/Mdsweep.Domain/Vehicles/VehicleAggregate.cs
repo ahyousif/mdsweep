@@ -4,8 +4,6 @@ namespace Mdsweep.Domain.Vehicles;
 
 public sealed class VehicleAggregate : AggregateRoot<Guid>, ITenanted
 {
-    public const int MaxDisplayLabelLength = 100;
-
     private VehicleAggregate()
         : base(default) { }
 

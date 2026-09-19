@@ -11,10 +11,7 @@ public sealed class VehicleConfiguration : IEntityTypeConfiguration<VehicleAggre
         builder.ToTable("vehicles");
         builder.HasKey(vehicle => vehicle.Id);
         builder.Property(vehicle => vehicle.TenantId).IsRequired();
-        builder
-            .Property(vehicle => vehicle.DisplayLabel)
-            .HasMaxLength(VehicleAggregate.MaxDisplayLabelLength)
-            .IsRequired();
+        builder.Property(vehicle => vehicle.DisplayLabel).HasMaxLength(100).IsRequired();
         builder.Property(vehicle => vehicle.Vin).HasMaxLength(17).IsRequired();
         builder.Property(vehicle => vehicle.Make).HasMaxLength(100);
         builder.Property(vehicle => vehicle.Model).HasMaxLength(100);
