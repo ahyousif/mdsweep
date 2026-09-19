@@ -130,12 +130,26 @@ for (const language of ['en', 'ar'] as const) {
     await dialog.getByRole('button', { name: labels.add, exact: true }).click();
     await expect(dialog.getByRole('alert')).toContainText(en ? 'already exists' : 'توجد مركبة');
     await expect(dialog.locator('#vehicle-label')).toHaveValue('Van 1');
+    await dialog.locator('#vehicle-year').fill('1899');
+    await dialog.getByRole('button', { name: labels.add, exact: true }).click();
+    await expect(dialog.locator('#vehicle-year-error')).not.toBeEmpty();
+    await dialog.locator('#vehicle-year').fill('2022');
+    await dialog.locator('#vehicle-make').fill('Toyota');
+    await dialog.locator('#vehicle-model').fill('Sienna');
     await dialog.locator('#vehicle-vin').fill(vin.toLowerCase());
     await dialog.getByRole('button', { name: labels.add, exact: true }).click();
     await expect(dialog).not.toBeVisible();
     await page.getByRole('searchbox', { name: labels.search }).fill('Van 1');
     await page.getByRole('button', { name: 'Van 1', exact: true }).click();
     await expect(page.locator('#vehicle-detail')).toContainText(vin.toLowerCase());
+    await expect(page.locator('#vehicle-detail')).toContainText('2022');
+    await expect(page.locator('#vehicle-detail')).toContainText('Toyota');
+    await expect(page.locator('#vehicle-detail')).toContainText('Sienna');
+    for (const term of ['2022', 'Toyota', 'Sienna']) {
+      await page.getByRole('searchbox', { name: labels.search }).fill(term);
+      await expect(page.getByRole('button', { name: 'Van 1', exact: true })).toBeVisible();
+    }
+    await page.getByRole('searchbox', { name: labels.search }).fill('Van 1');
     await page.screenshot({
       path: testInfo.outputPath(`vehicles-${language}.png`),
       fullPage: true,
@@ -144,11 +158,18 @@ for (const language of ['en', 'ar'] as const) {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await page.getByRole('button', { name: labels.edit, exact: true }).click();
+    await expect(dialog.locator('#vehicle-year')).toHaveValue('2022');
+    await expect(dialog.locator('#vehicle-make')).toHaveValue('Toyota');
+    await expect(dialog.locator('#vehicle-model')).toHaveValue('Sienna');
+    await dialog.locator('#vehicle-year').fill('');
+    await dialog.locator('#vehicle-make').fill('');
+    await dialog.locator('#vehicle-model').fill('');
     await dialog.locator('#vehicle-label').fill('Van 1 updated');
     await dialog.getByRole('button', { name: labels.save, exact: true }).click();
     await expect(dialog).not.toBeVisible();
     await expect(page.getByRole('searchbox')).toHaveValue('Van 1');
     await expect(page.locator('#vehicle-detail')).toContainText('Van 1 updated');
+    await expect(page.locator('#vehicle-detail')).not.toContainText('Toyota');
     await page.getByRole('button', { name: labels.deactivate, exact: true }).click();
     await expect(page.getByRole('button', { name: labels.reactivate, exact: true })).toBeVisible();
     await page.getByRole('button', { name: labels.reactivate, exact: true }).click();

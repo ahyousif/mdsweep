@@ -85,7 +85,10 @@ export default class VehiclesPage {
       (v) =>
         (!search ||
           v.displayLabel.toLowerCase().includes(search) ||
-          v.vin.toLowerCase().includes(search)) &&
+          v.vin.toLowerCase().includes(search) ||
+          (v.make ?? '').toLowerCase().includes(search) ||
+          (v.model ?? '').toLowerCase().includes(search) ||
+          String(v.year ?? '').includes(search)) &&
         (this.filter() === 'All' || v.isActive === (this.filter() === 'Active')),
     );
   });

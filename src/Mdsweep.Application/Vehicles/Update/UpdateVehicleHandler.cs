@@ -19,7 +19,7 @@ public sealed class UpdateVehicleHandler(IRepository repository)
         )
             return Result.Invalid(VehicleErrors.DuplicateVin());
 
-        vehicle.UpdateDetails(command.DisplayLabel, command.Vin);
+        vehicle.UpdateDetails(command.DisplayLabel, command.Vin, command.Year, command.Make, command.Model);
         return Result.Success();
     }
 }

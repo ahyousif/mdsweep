@@ -57,6 +57,24 @@
         }}
       </dd>
     </div>
+    @if (vehicle().year) {
+      <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+        <dt class="type-meta">{{ 'vehicles.year' | translate }}</dt>
+        <dd class="min-w-0 break-words"><bdi>{{ vehicle().year }}</bdi></dd>
+      </div>
+    }
+    @if (vehicle().make) {
+      <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+        <dt class="type-meta">{{ 'vehicles.make' | translate }}</dt>
+        <dd class="min-w-0 break-words"><bdi>{{ vehicle().make }}</bdi></dd>
+      </div>
+    }
+    @if (vehicle().model) {
+      <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+        <dt class="type-meta">{{ 'vehicles.model' | translate }}</dt>
+        <dd class="min-w-0 break-words"><bdi>{{ vehicle().model }}</bdi></dd>
+      </div>
+    }
   </dl>
   <div class="border-t pt-6">
     <button

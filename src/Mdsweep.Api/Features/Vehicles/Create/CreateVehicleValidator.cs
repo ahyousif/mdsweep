@@ -4,12 +4,17 @@ namespace Mdsweep.Api.Features.Vehicles.Create;
 
 public sealed class CreateVehicleValidator : AbstractValidator<CreateVehicleRequest>
 {
-    public CreateVehicleValidator()
+    public CreateVehicleValidator(IClock clock)
     {
         RuleFor(x => x.DisplayLabel)
             .NotEmpty()
             .MaximumLength(VehicleAggregate.MaxDisplayLabelLength)
             .OverridePropertyName("displayLabel");
+        RuleFor(x => x.Year)
+            .InclusiveBetween(1900, clock.GetCurrentInstant().InUtc().Year + 1)
+            .OverridePropertyName("year");
+        RuleFor(x => x.Make).MaximumLength(100).OverridePropertyName("make");
+        RuleFor(x => x.Model).MaximumLength(100).OverridePropertyName("model");
         RuleFor(x => x.Vin)
             .NotEmpty()
             .Length(17)

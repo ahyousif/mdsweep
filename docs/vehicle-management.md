@@ -4,11 +4,13 @@ Open **Vehicles** in the sidebar to manage the selected Tenant's Vehicle records
 
 ## Workflow
 
-- Search by display label or VIN, and filter by All, Active, or Inactive. Counts describe the complete Tenant list. The small reference list is fetched through a typed query and filtered locally, matching the Users page.
+- Search by display label, VIN, Year, Make, or Model, and filter by All, Active, or Inactive. Counts describe the complete Tenant list. The small reference list is fetched through a typed query and filtered locally, matching the Users page.
 - Choose **Add vehicle**, enter a display label and VIN, and save. New Vehicles are active.
 - Select a Vehicle to open its details. Choose **Edit** to change the label or VIN. An inactive Vehicle may be edited without reactivating it.
 - Choose **Deactivate vehicle** or **Reactivate vehicle** to change its active state. These actions preserve the record and can be reversed. There is no delete operation.
 - Search and filters remain after changes. Failed saves preserve the form draft and provide actionable feedback. Duplicate-VIN feedback directs the user to locate and edit or reactivate the existing record.
+
+Year is optional and must be a whole number between 1900 and next year. Make and Model are optional and limited to 100 characters each. Omitting or clearing these fields on update clears their values. Search includes Year, Make, and Model. The existing `AddVehicles` migration includes these nullable columns for fresh databases.
 
 Display labels are required and limited to 100 characters. VINs are required and must be exactly 17 ASCII letters or digits, excluding I, O, and Q. Input casing is preserved. Spaces and punctuation are rejected by API validation, with matching frontend feedback. The aggregate retains required-value guards without duplicating format rules. There is no VIN checksum or MTM registration check.
 
@@ -24,8 +26,8 @@ Creation returns the new Vehicle model from its command handler without a follow
 | --- | --- | --- |
 | GET | `/api/vehicles` | List the Tenant's records |
 | GET | `/api/vehicles/{id}` | Inspect one record |
-| POST | `/api/vehicles` | Create using `displayLabel` and `vin` |
-| PUT | `/api/vehicles/{id}` | Edit `displayLabel` and `vin` |
+| POST | `/api/vehicles` | Create using `displayLabel`, `vin`, and optional `year`, `make`, `model` |
+| PUT | `/api/vehicles/{id}` | Edit `displayLabel`, `vin`, `year`, `make`, and `model` |
 | PUT | `/api/vehicles/{id}/active` | Set explicit `isActive` |
 
 Cross-Tenant IDs return 404. Drivers and inactive memberships are denied. Cookie-authenticated writes require the existing antiforgery token.
@@ -42,7 +44,7 @@ On narrow screens, opening Vehicle details moves keyboard focus into the panel a
 
 ## Scope and verification
 
-This module manages only Vehicle records. Driver Primary Vehicles, assignments, Vehicle exceptions, Performed Vehicle snapshots, and billing remain future Trips integration. No existing Trips behavior is removed or changed. There are no make/model, license plate, insurance, maintenance, capacity, or location fields.
+This module manages only Vehicle records. Driver Primary Vehicles, assignments, Vehicle exceptions, Performed Vehicle snapshots, and billing remain future Trips integration. No existing Trips behavior is removed or changed. Year, Make, and Model are optional descriptive fields. License plate, insurance, maintenance, capacity, and location fields remain outside scope.
 
 PostgreSQL HTTP tests cover lifecycle operations, validation, duplicate handling including concurrent requests, Tenant isolation, authorization, antiforgery, and schema upgrades. Playwright tests use synthetic API fixtures to verify management in both languages, draft preservation after duplicate rejection, filters, live language switching, mobile layouts, accessibility, load recovery, and Driver exclusion. Run the normal repository build/test checks and `npm run test:e2e -- vehicles.spec.ts --workers=1` in the web project.
 

@@ -15,6 +15,94 @@ public sealed class VehicleManagementTests : MdsweepIntegrationTest
     private const string OtherVin = "1M8GDM9AXKP042789";
 
     [Fact]
+    public async Task Optional_vehicle_attributes_can_be_created_updated_validated_and_cleared()
+    {
+        using var client = Application.CreateClient();
+        await AddAntiforgeryToken(client);
+        using var created = await client.PostAsJsonAsync(
+            "/api/vehicles",
+            new
+            {
+                displayLabel = "Family van",
+                vin = Vin,
+                year = 2022,
+                make = "Toyota",
+                model = "Sienna",
+            }
+        );
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var vehicle = (await created.Content.ReadFromJsonAsync<VehicleResponse>())!;
+        Assert.Equal(2022, vehicle.Year);
+        Assert.Equal("Toyota", vehicle.Make);
+        Assert.Equal("Sienna", vehicle.Model);
+        var fetched = (await client.GetFromJsonAsync<VehicleResponse>($"/api/vehicles/{vehicle.Id}"))!;
+        Assert.Equal(vehicle, fetched);
+        foreach (var year in new[] { 1899, DateTime.UtcNow.Year + 2 })
+        {
+            await Invalid(
+                client.PostAsJsonAsync(
+                    "/api/vehicles",
+                    new
+                    {
+                        displayLabel = "Invalid",
+                        vin = OtherVin,
+                        year,
+                    }
+                ),
+                "year"
+            );
+            await Invalid(
+                client.PutAsJsonAsync(
+                    $"/api/vehicles/{vehicle.Id}",
+                    new
+                    {
+                        displayLabel = "Invalid",
+                        vin = Vin,
+                        year,
+                    }
+                ),
+                "year"
+            );
+        }
+        foreach (var field in new[] { "make", "model" })
+        {
+            var invalid = new Dictionary<string, object>
+            {
+                ["displayLabel"] = "Invalid",
+                ["vin"] = OtherVin,
+                [field] = new string('x', 101),
+            };
+            await Invalid(client.PostAsJsonAsync("/api/vehicles", invalid), field);
+            await Invalid(client.PutAsJsonAsync($"/api/vehicles/{vehicle.Id}", invalid), field);
+        }
+        using var updated = await client.PutAsJsonAsync(
+            $"/api/vehicles/{vehicle.Id}",
+            new
+            {
+                displayLabel = "Updated van",
+                vin = Vin,
+                year = 2023,
+                make = "Ford",
+                model = "Transit",
+            }
+        );
+        Assert.Equal(HttpStatusCode.NoContent, updated.StatusCode);
+        var listed = Assert.Single((await client.GetFromJsonAsync<List<VehicleResponse>>("/api/vehicles"))!);
+        Assert.Equal(2023, listed.Year);
+        Assert.Equal("Ford", listed.Make);
+        Assert.Equal("Transit", listed.Model);
+        using var cleared = await client.PutAsJsonAsync(
+            $"/api/vehicles/{vehicle.Id}",
+            new { displayLabel = "Cleared van", vin = Vin }
+        );
+        Assert.Equal(HttpStatusCode.NoContent, cleared.StatusCode);
+        fetched = (await client.GetFromJsonAsync<VehicleResponse>($"/api/vehicles/{vehicle.Id}"))!;
+        Assert.Null(fetched.Year);
+        Assert.Null(fetched.Make);
+        Assert.Null(fetched.Model);
+    }
+
+    [Fact]
     public async Task Dispatcher_can_manage_vehicles_without_trips()
     {
         using var client = Application.CreateClient();

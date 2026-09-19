@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -19,6 +19,9 @@ namespace Mdsweep.Infrastructure.Persistence.Migrations
                     tenant_id = table.Column<string>(type: "text", nullable: false),
                     display_label = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     vin = table.Column<string>(type: "character varying(17)", maxLength: 17, nullable: false),
+                    year = table.Column<int>(type: "integer", nullable: true),
+                    make = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    model = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>

@@ -2,7 +2,7 @@ import { inject, Service } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiClient } from '@app/core/api/api-client';
 
-export type VehicleDetails = { displayLabel: string; vin: string };
+export type VehicleDetails = { displayLabel: string; vin: string; year?: number | null; make?: string | null; model?: string | null };
 export type Vehicle = VehicleDetails & { id: string; isActive: boolean };
 
 @Service()

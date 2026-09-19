@@ -34,7 +34,7 @@ The Tenant-owned operational record that makes a User eligible for Assignment an
 
 **Vehicle**:
 The Tenant's means of transportation registered with MTM and identified by its VIN. MTM remains authoritative for the Vehicle's registration.
-The Vehicles module owns the local reference record: a required display label, required 17-character VIN, and active state. VINs are unique within a Tenant, including inactive records. Local VIN validation does not verify MTM registration. Vehicle management is independent of Trip Assignment and billing.
+The Vehicles module owns the local reference record: a required display label, required 17-character VIN, optional Year/Make/Model, and active state. VINs are unique within a Tenant, including inactive records. Local VIN validation does not verify MTM registration. Vehicle management is independent of Trip Assignment and billing.
 _Avoid_: Car
 
 **Primary Vehicle**:

@@ -16,6 +16,8 @@ public sealed class VehicleConfiguration : IEntityTypeConfiguration<VehicleAggre
             .HasMaxLength(VehicleAggregate.MaxDisplayLabelLength)
             .IsRequired();
         builder.Property(vehicle => vehicle.Vin).HasMaxLength(17).IsRequired();
+        builder.Property(vehicle => vehicle.Make).HasMaxLength(100);
+        builder.Property(vehicle => vehicle.Model).HasMaxLength(100);
         builder.HasIndex(vehicle => new { vehicle.TenantId, vehicle.Vin }).IsUnique().HasDatabaseName(VinUniqueIndex);
     }
 }

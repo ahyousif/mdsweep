@@ -13,7 +13,13 @@ public sealed class CreateVehicleHandler(IRepository repository)
             return Result.Invalid(VehicleErrors.DuplicateVin());
         }
 
-        var vehicle = VehicleAggregate.Create(command.DisplayLabel, command.Vin);
+        var vehicle = VehicleAggregate.Create(
+            command.DisplayLabel,
+            command.Vin,
+            command.Year,
+            command.Make,
+            command.Model
+        );
         await repository.AddAsync(vehicle, ct);
         return Result.Success(VehicleModel.FromAggregate(vehicle));
     }

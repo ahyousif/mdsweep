@@ -8,4 +8,4 @@ The module follows the existing Passengers patterns: feature endpoints and Fluen
 
 Administrators and Dispatchers manage Vehicles in their selected Tenant; Drivers cannot. VINs are required, preserved as entered, and validated at the API boundary to contain exactly 17 ASCII letters/digits excluding I, O, and Q. A database constraint enforces case-sensitive uniqueness within each Tenant, including inactive Vehicles. Deactivation preserves the record. Checksum validation and MTM registration/eligibility verification are outside scope.
 
-The dedicated page follows the existing Users design and ships in English and Arabic. Broader fleet management, permanent deletion, and additional vehicle attributes remain excluded.
+The dedicated page follows the existing Users design and ships in English and Arabic. Broader fleet management, permanent deletion, and vehicle attributes beyond optional Year, Make, and Model remain excluded.
