@@ -16,7 +16,7 @@
       variant="ghost"
       size="icon"
       type="button"
-      [disabled]="busy()"
+      [disabled]="mutationPending()"
       [attr.aria-label]="'vehicles.closeDetails' | translate"
       (click)="closed.emit()"
     >
@@ -30,7 +30,7 @@
       variant="outline"
       size="sm"
       type="button"
-      [disabled]="busy()"
+      [disabled]="mutationPending()"
       (click)="editClicked.emit()"
     >
       <ng-icon name="lucidePen" aria-hidden="true" />{{ 'common.edit' | translate }}
@@ -83,7 +83,7 @@
       type="button"
       class="w-full"
       [class.text-destructive]="vehicle().isActive"
-      [disabled]="busy()"
+      [disabled]="mutationPending()"
       (click)="activeChanged.emit(!vehicle().isActive)"
     >
       <ng-icon [name]="vehicle().isActive ? 'lucideBan' : 'lucideRotateCcw'" aria-hidden="true" />

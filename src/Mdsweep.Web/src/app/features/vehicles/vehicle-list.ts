@@ -15,7 +15,7 @@ import { type Vehicle } from './vehicles.api';
 export class VehicleList {
   readonly vehicles = input.required<Vehicle[]>();
   readonly selectedId = input<string | null>(null);
-  readonly busy = input(false);
+  readonly mutationPending = input(false);
   readonly filtered = input(false);
   readonly selected = output<Vehicle>();
 }

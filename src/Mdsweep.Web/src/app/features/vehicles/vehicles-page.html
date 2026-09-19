@@ -82,7 +82,7 @@
         <app-vehicle-list
           [vehicles]="vehicles()"
           [selectedId]="selectedId()"
-          [busy]="mutation.isPending()"
+          [mutationPending]="mutation.isPending()"
           [filtered]="!!search().trim() || filter() !== 'All'"
           (selected)="select($event)"
         />
@@ -105,7 +105,7 @@
       }
       <app-vehicle-detail
         [vehicle]="vehicle"
-        [busy]="mutation.isPending()"
+        [mutationPending]="mutation.isPending()"
         (closed)="closeDetails()"
         (editClicked)="startEdit()"
         (activeChanged)="setActive($event)"
@@ -136,7 +136,7 @@
     }
     <app-vehicle-form
       [value]="editing()"
-      [busy]="mutation.isPending()"
+      [mutationPending]="mutation.isPending()"
       (saved)="save($event)"
       (cancelled)="formOpen.set(false)"
     />

@@ -20,7 +20,7 @@
               <button
                 type="button"
                 class="type-entity-name flex items-center gap-3 rounded-sm text-start focus-visible:outline-2 focus-visible:outline-ring"
-                [disabled]="busy()"
+                [disabled]="mutationPending()"
                 [attr.aria-expanded]="selectedId() === vehicle.id"
                 aria-controls="vehicle-detail"
                 (click)="selected.emit(vehicle)"

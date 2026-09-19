@@ -14,7 +14,8 @@ import { type Vehicle } from './vehicles.api';
 })
 export class VehicleDetail {
   readonly vehicle = input.required<Vehicle>();
-  readonly busy = input(false);
+  // The page supplies its mutation state to prevent conflicting actions during a save.
+  readonly mutationPending = input(false);
   readonly closed = output();
   readonly editClicked = output();
   readonly activeChanged = output<boolean>();
