@@ -1,0 +1,96 @@
+<form (submit)="onSubmit($event)" novalidate>
+  <fieldset [disabled]="mutationPending()" class="min-w-0">
+    <div hlmFieldGroup>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-label"
+          >{{ 'vehicles.label' | translate }} <span aria-hidden="true">*</span></label
+        >
+        <input
+          hlmInput
+          id="vehicle-label"
+          [formField]="form.displayLabel"
+          [attr.aria-invalid]="
+            form.displayLabel().touched() && form.displayLabel().invalid()
+          "
+          aria-describedby="vehicle-label-error"
+        />
+        <div id="vehicle-label-error">
+          @if (form.displayLabel().touched() && form.displayLabel().invalid()) {
+            <hlm-field-error>{{ 'vehicles.labelInvalid' | translate }}</hlm-field-error>
+          }
+        </div>
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-vin"
+          >{{ 'vehicles.vin' | translate }} <span aria-hidden="true">*</span></label
+        >
+        <input
+          hlmInput
+          id="vehicle-vin"
+          class="font-mono uppercase"
+          dir="ltr"
+          [formField]="form.vin"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          [placeholder]="'vehicles.vinPlaceholder' | translate"
+          [attr.aria-invalid]="form.vin().touched() && form.vin().invalid()"
+          aria-describedby="vehicle-vin-help vehicle-vin-error"
+        />
+        <p hlmFieldDescription id="vehicle-vin-help">{{ 'vehicles.vinHelp' | translate }}</p>
+        <div id="vehicle-vin-error">
+          @if (form.vin().touched() && form.vin().invalid()) {
+            <hlm-field-error>{{ 'vehicles.vinInvalid' | translate }}</hlm-field-error>
+          }
+        </div>
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-year">{{ 'vehicles.year' | translate }}</label>
+        <input hlmInput id="vehicle-year" [formField]="form.year" type="number" step="1" dir="ltr"
+          [attr.aria-invalid]="form.year().touched() && form.year().invalid()"
+          aria-describedby="vehicle-year-error" />
+        <div id="vehicle-year-error">
+          @if (form.year().touched() && form.year().invalid()) {
+            <hlm-field-error>{{ 'vehicles.yearInvalid' | translate: { max: maxYear } }}</hlm-field-error>
+          }
+        </div>
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-make">{{ 'vehicles.make' | translate }}</label>
+        <input hlmInput id="vehicle-make" [formField]="form.make"
+          [attr.aria-invalid]="form.make().touched() && form.make().invalid()"
+          aria-describedby="vehicle-make-error" />
+        <div id="vehicle-make-error">
+          @if (form.make().touched() && form.make().invalid()) {
+            <hlm-field-error>{{ 'vehicles.attributeInvalid' | translate }}</hlm-field-error>
+          }
+        </div>
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="vehicle-model">{{ 'vehicles.model' | translate }}</label>
+        <input hlmInput id="vehicle-model" [formField]="form.model"
+          [attr.aria-invalid]="form.model().touched() && form.model().invalid()"
+          aria-describedby="vehicle-model-error" />
+        <div id="vehicle-model-error">
+          @if (form.model().touched() && form.model().invalid()) {
+            <hlm-field-error>{{ 'vehicles.attributeInvalid' | translate }}</hlm-field-error>
+          }
+        </div>
+      </div>
+    </div>
+    @if (!value()) {
+      <p class="type-meta mt-4">{{ 'vehicles.activeByDefault' | translate }}</p>
+    }
+    <div class="mt-6 flex justify-end gap-3">
+      <button hlmBtn variant="outline" type="button" (click)="cancelled.emit()">
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="submit">
+        @if (mutationPending()) {
+          <hlm-spinner aria-hidden="true" />
+        }
+        {{ (value() ? 'vehicles.saveChanges' : 'vehicles.add') | translate }}
+      </button>
+    </div>
+  </fieldset>
+</form>

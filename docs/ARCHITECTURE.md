@@ -28,9 +28,11 @@ Passengers owns Tenant-scoped Passenger identity and broker-specific member iden
 
 ### Trips
 
+Vehicle record management is provided by the separate Vehicles module described below. Trips retains all of its operational responsibilities; this separation introduces no changes to existing Trip behavior.
+
 **Interface:** review and accept a Manifest, plan and assign Trips, record Trip outcomes and actual timestamps, review and close Trips, and prepare a billing file.
 
-Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It owns Trip identity, Journey relationships, Tenant planning decisions, Assignment history, the Tenant's MTM-registered Vehicle reference list, Driver Primary Vehicle designations, Performed Vehicle snapshots, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
+Trips is one deep module organized internally by Manifest intake, planning, performance, review, and billing. It references the Tenant's Vehicle records and owns Trip identity, Journey relationships, Tenant planning decisions, Assignment history, Driver Primary Vehicle designations, Performed Vehicle snapshots, actual timestamps, outcomes, corrections, closure, billing readiness, and Operational History.
 
 CSV/XLSX readers translate external Manifests into reviewed input without owning Passenger or Trip state. Applying the same source repeatedly must not duplicate Passenger or Trip records, erase Tenant-owned changes, or discard earlier broker-provided details.
 
@@ -41,6 +43,14 @@ The Dispatcher experience is an implemented HTTP and web adapter over Trips. My 
 Billing-file writers translate billing-ready Trip data into the MTM workbook and retain the generated Billing Batch. The Dispatcher continues the manual MTM Link review and submission workflow.
 
 The exact file implementation generates the ten-column `.xlsx` Claims Sheet documented in `docs/research/mtm-bulk-claim-upload.md`. Production compatibility remains gated on a bounded synthetic portal trial for the unresolved validation, duplicate, correction, signature-document, and partial-failure behavior recorded in the research note.
+
+### Vehicles
+
+**Interface:** list, create, inspect, edit, deactivate, and reactivate the Tenant's Vehicles.
+
+Vehicles owns the reference records, required display labels, VIN format and Tenant-scoped uniqueness, and active state. It has a dedicated Vehicles navigation item and page. Administrators and Dispatchers can manage records; Drivers cannot. It follows the Passengers vertical-slice pattern across API, Application, Domain, and Infrastructure, using the common repository and ambient conjoined tenancy. The API normalizes VINs to uppercase before domain validation. A PostgreSQL unique index includes inactive records; concurrent uniqueness failures are translated into the same actionable validation feedback as a normal duplicate check.
+
+This slice implements no Driver Primary Vehicle designation, Trip assignment, Performed Vehicle resolution, VIN snapshot, or billing behavior. Those requirements remain with Trips for future integration. Vehicle registration and verification remain external MTM processes. See [ADR 0008](adr/0008-separate-vehicle-management.md) and [Vehicle management](vehicle-management.md).
 
 ### Access
 
@@ -102,7 +112,7 @@ Wolverine's lightweight EF Core transaction middleware calls one `SaveChangesAsy
 
 ## Web application
 
-Angular is organized as a small authenticated shell with lazy Trips routes. Angular code is organized by product capability: Administrator, Dispatcher, and Driver roles authorize routes and actions; they do not define top-level domain feature folders. Trips owns All Trips, My Trips, and Trip Import experiences. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Trip management tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local Trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
+Angular is organized as a small authenticated shell with lazy feature routes, including Trips, Users, and Vehicles. Angular code is organized by product capability: Administrator, Dispatcher, and Driver roles authorize routes and actions; they do not define top-level domain feature folders. Trips owns All Trips, My Trips, and Trip Import experiences. Vehicles owns its dedicated management page. TanStack Query owns server-state fetching, invalidation, and mutations. TanStack Table is limited to the dense Trip management tables. Spartan primitives and Tailwind provide the UI foundation. The Driver offline action queue and its local Trip fallback remain explicit durable browser workflows; the general TanStack Query cache is not persisted.
 
 The Angular interface supports English and Arabic using ngx-translate, with build-time ICU compilation and both catalogs bundled for instant offline switching. Language preference is browser-local. See [Localization](./localization.md).
 
@@ -116,6 +126,7 @@ src/
     Features/
       Trips/
       Access/
+      Vehicles/
   Mdsweep.Application/
   Mdsweep.Domain/
   Mdsweep.Infrastructure/

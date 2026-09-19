@@ -4,6 +4,7 @@ using Mdsweep.Domain.Passengers;
 using Mdsweep.Domain.Tenants;
 using Mdsweep.Domain.Trips;
 using Mdsweep.Domain.Users;
+using Mdsweep.Domain.Vehicles;
 
 namespace Mdsweep.Infrastructure.Persistence;
 
@@ -18,6 +19,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
     public DbSet<UserAggregate> Users => Set<UserAggregate>();
     public DbSet<InvitationAggregate> Invitations => Set<InvitationAggregate>();
+    public DbSet<VehicleAggregate> Vehicles => Set<VehicleAggregate>();
 
     // Single
     public Task<TAggregate?> GetByIdAsync<TAggregate, TId>(TId id, CancellationToken ct)

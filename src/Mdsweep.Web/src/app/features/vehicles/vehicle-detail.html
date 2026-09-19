@@ -1,0 +1,93 @@
+<div class="flex h-full min-h-0 flex-col overflow-y-auto p-6">
+  <header class="flex items-start justify-between gap-3 border-b pb-6">
+    <div class="flex min-w-0 items-center gap-3">
+      <ng-icon name="lucideCar" class="size-8 shrink-0" aria-hidden="true" />
+      <div class="min-w-0">
+        <h2 class="type-panel-title break-words">
+          <bdi>{{ vehicle().displayLabel }}</bdi>
+        </h2>
+        <span hlmBadge variant="secondary" class="mt-2">{{
+          (vehicle().isActive ? 'vehicles.status.Active' : 'vehicles.status.Inactive') | translate
+        }}</span>
+      </div>
+    </div>
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon"
+      type="button"
+      [disabled]="mutationPending()"
+      [attr.aria-label]="'vehicles.closeDetails' | translate"
+      (click)="closed.emit()"
+    >
+      <ng-icon name="lucideX" aria-hidden="true" />
+    </button>
+  </header>
+  <div class="mt-6 flex items-center justify-between gap-3">
+    <h3 class="type-card-title">{{ 'common.details' | translate }}</h3>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      type="button"
+      [disabled]="mutationPending()"
+      (click)="editClicked.emit()"
+    >
+      <ng-icon name="lucidePen" aria-hidden="true" />{{ 'common.edit' | translate }}
+    </button>
+  </div>
+  <dl class="type-body my-6 flex flex-col gap-6">
+    <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+      <dt class="type-meta">{{ 'vehicles.label' | translate }}</dt>
+      <dd class="min-w-0 break-words">
+        <bdi>{{ vehicle().displayLabel }}</bdi>
+      </dd>
+    </div>
+    <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+      <dt class="type-meta">{{ 'vehicles.vin' | translate }}</dt>
+      <dd class="min-w-0 break-all font-mono">
+        <bdi dir="ltr" class="uppercase">{{ vehicle().vin }}</bdi>
+      </dd>
+    </div>
+    <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+      <dt class="type-meta">{{ 'common.status' | translate }}</dt>
+      <dd>
+        {{
+          (vehicle().isActive ? 'vehicles.status.Active' : 'vehicles.status.Inactive') | translate
+        }}
+      </dd>
+    </div>
+    @if (vehicle().year) {
+      <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+        <dt class="type-meta">{{ 'vehicles.year' | translate }}</dt>
+        <dd class="min-w-0 break-words"><bdi>{{ vehicle().year }}</bdi></dd>
+      </div>
+    }
+    @if (vehicle().make) {
+      <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+        <dt class="type-meta">{{ 'vehicles.make' | translate }}</dt>
+        <dd class="min-w-0 break-words"><bdi>{{ vehicle().make }}</bdi></dd>
+      </div>
+    }
+    @if (vehicle().model) {
+      <div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+        <dt class="type-meta">{{ 'vehicles.model' | translate }}</dt>
+        <dd class="min-w-0 break-words"><bdi>{{ vehicle().model }}</bdi></dd>
+      </div>
+    }
+  </dl>
+  <div class="border-t pt-6">
+    <button
+      hlmBtn
+      [variant]="vehicle().isActive ? 'outline' : 'default'"
+      type="button"
+      class="w-full"
+      [class.text-destructive]="vehicle().isActive"
+      [disabled]="mutationPending()"
+      (click)="activeChanged.emit(!vehicle().isActive)"
+    >
+      <ng-icon [name]="vehicle().isActive ? 'lucideBan' : 'lucideRotateCcw'" aria-hidden="true" />
+      {{ (vehicle().isActive ? 'vehicles.deactivate' : 'vehicles.reactivate') | translate }}
+    </button>
+  </div>
+</div>

@@ -8,6 +8,7 @@ import { AuthSessionService, type TenantSession } from '@app/core/auth/auth-sess
 import { type ThemePreference, ThemeService } from '@app/core/theme/theme.service';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideCar,
   lucideMonitor,
   lucideMoon,
   lucideRoute,
@@ -31,7 +32,15 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
     ...HlmSidebarImports,
   ],
   providers: [
-    provideIcons({ lucideMonitor, lucideMoon, lucideRoute, lucideSun, lucideUserRound, lucideUsers }),
+    provideIcons({
+      lucideCar,
+      lucideMonitor,
+      lucideMoon,
+      lucideRoute,
+      lucideSun,
+      lucideUserRound,
+      lucideUsers,
+    }),
   ],
   templateUrl: './app-shell.html',
 })
@@ -47,6 +56,9 @@ export class AppShell {
 
   readonly navigation = computed(() => [
     { label: 'trips.title', route: '/trips', icon: 'lucideRoute' },
+    ...(this.session().roles.some((role) => role === 'Administrator' || role === 'Dispatcher')
+      ? [{ label: 'vehicles.title', route: '/vehicles', icon: 'lucideCar' }]
+      : []),
     ...(this.session().roles.some((role) => role === 'Dispatcher' || role === 'Administrator')
       ? [{ label: 'passengers.title', route: '/passengers', icon: 'lucideUserRound' }]
       : []),

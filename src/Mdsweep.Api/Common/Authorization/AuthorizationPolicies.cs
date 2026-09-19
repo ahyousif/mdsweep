@@ -7,4 +7,5 @@ public static class AuthorizationPolicies
     public const string TripsManage = "Trips.Manage";
     public const string TripsImport = "Trips.Import";
     public const string PassengersManage = "Passengers.Manage";
+    public const string VehiclesManage = "Vehicles.Manage";
 }
